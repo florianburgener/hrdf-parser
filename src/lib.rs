@@ -1,47 +1,71 @@
-use std::{error::Error, vec};
-
-struct A<T> {
-    data: T,
-}
-
-impl<T> A<T> {
-    fn new(data: T) -> Self {
-        A { data }
-    }
-}
-
-// fn test() -> ??? {
-//     let a = vec![A::new(32), A::new(24.5)];
-//     a
-// }
+use std::{error::Error, cmp};
 
 #[derive(Debug)]
-enum ParsedItem {
-    U32(u32),
-    F64(f64),
+enum ExpectedType {
+    // Float,
+    // Integer16,
+    Integer32,
+    String,
 }
 
-impl From<ParsedItem> for u32 {
-    fn from(item: ParsedItem) -> u32 {
-        match item {
-            ParsedItem::U32(u32_val) => u32_val,
-            _ => panic!(""),
+#[derive(Debug)]
+enum ParsedValue {
+    // Float(f64),
+    // Integer16(i16),
+    Integer32(i32),
+    String(String),
+}
+
+#[derive(Debug)]
+struct ColumnDefinition {
+    start: usize,
+    stop: usize,
+    expected_type: ExpectedType,
+}
+
+impl ColumnDefinition {
+    fn new(start: usize, stop: usize, expected_type: ExpectedType) -> Self {
+        ColumnDefinition {
+            start,
+            stop,
+            expected_type,
         }
     }
 }
 
-pub fn run() -> Result<(), Box<dyn Error>> {
-    print!("Hello\n");
-    let a = A::new(32);
-    println!("{}", a.data);
-    let my_list = vec![a];
-    let b: i32 = my_list[0].data;
-    println!("{}", b);
+fn parse_row(row_configuration: Vec<ColumnDefinition>, raw_row: &str) -> Vec<ParsedValue> {
+    let mut values = vec![];
 
-    let a = "535324";
-    // let aaa = a.parse::<u32>().unwrap();
-    let aaa = ParsedItem::F64(a.parse::<f64>().unwrap());
-    println!("{:?}", u32::from(aaa));
+    for column_definition in &row_configuration {
+        let start = column_definition.start - 1;
+        let stop = cmp::min(column_definition.stop, raw_row.len());
+        let value = &raw_row[start..stop];
+
+        let value = match column_definition.expected_type {
+            // ExpectedType::Float => ParsedValue::Float(value.parse::<f64>().unwrap()),
+            // ExpectedType::Integer16 => ParsedValue::Integer16(value.parse::<i16>().unwrap()),
+            ExpectedType::Integer32 => ParsedValue::Integer32(value.parse::<i32>().unwrap()),
+            ExpectedType::String => ParsedValue::String(value.parse::<String>().unwrap()),
+        };
+
+        values.push(value);
+    }
+
+    values
+}
+
+pub fn run() -> Result<(), Box<dyn Error>> {
+    let row_configuration = vec![
+        ColumnDefinition::new(1, 7, ExpectedType::Integer32),
+        ColumnDefinition::new(13, 62, ExpectedType::String),
+    ];
+    let raw_row = "8507000     Bern$<1>$BN$<3>";
+
+    let values = parse_row(row_configuration, raw_row);
+
+    for value in &values {
+        println!("{:?}", value);
+    }
 
     Ok(())
 }
