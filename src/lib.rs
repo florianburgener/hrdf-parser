@@ -33,37 +33,15 @@ impl ColumnDefinition {
     }
 }
 
-struct FileParser {
-    rows: Vec<String>,
-    row_configuration: Vec<ColumnDefinition>,
-}
+type RowConfiguration = Vec<ColumnDefinition>;
 
-impl FileParser {
-    fn new(file_path: &str, row_configuration: Vec<ColumnDefinition>) -> io::Result<Self> {
-        let contents = Self::read_file(file_path)?;
-        let rows = contents.lines().map(String::from).collect();
-
-        Ok(Self {
-            rows,
-            row_configuration,
-        })
-    }
-
-    fn read_file(file_path: &str) -> io::Result<String> {
-        fs::read_to_string(file_path)
-    }
-
-    fn iter(&self) -> FileParserIterator {
-        FileParserIterator {
-            parser: self,
-            index: 0,
-        }
-    }
+trait ItemParser {
+    fn reset(&self) {}
 
     fn parse_row(&self, raw_row: &str) -> Vec<ParsedValue> {
         let mut values = vec![];
 
-        for column_definition in &self.row_configuration {
+        for column_definition in self.row_configuration() {
             let start = column_definition.start - 1;
             let stop = cmp::min(column_definition.stop, raw_row.len());
             let value = &raw_row[start..stop];
@@ -80,10 +58,57 @@ impl FileParser {
 
         values
     }
+
+    fn row_configuration(&self) -> &RowConfiguration;
+}
+
+struct DefaultItemParser {
+    row_configuration: RowConfiguration,
+}
+
+impl DefaultItemParser {
+    fn new(row_configuration: RowConfiguration) -> Self {
+        Self { row_configuration }
+    }
+}
+
+impl ItemParser for DefaultItemParser {
+    fn row_configuration(&self) -> &RowConfiguration {
+        &self.row_configuration
+    }
+}
+
+struct FileParser {
+    rows: Vec<String>,
+    item_parser: Box<dyn ItemParser>,
+}
+
+impl FileParser {
+    fn new(file_path: &str, item_parser: Box<dyn ItemParser>) -> io::Result<Self> {
+        let contents = Self::read_file(file_path)?;
+        let rows = contents.lines().map(String::from).collect();
+
+        Ok(Self { rows, item_parser })
+    }
+
+    fn read_file(file_path: &str) -> io::Result<String> {
+        fs::read_to_string(file_path)
+    }
+
+    fn iter(&self) -> FileParserIterator {
+        self.item_parser.reset();
+
+        FileParserIterator {
+            file_parser: self,
+            item_parser: &*self.item_parser,
+            index: 0,
+        }
+    }
 }
 
 struct FileParserIterator<'a> {
-    parser: &'a FileParser,
+    file_parser: &'a FileParser,
+    item_parser: &'a dyn ItemParser,
     index: usize,
 }
 
@@ -91,11 +116,11 @@ impl<'a> Iterator for FileParserIterator<'a> {
     type Item = Vec<ParsedValue>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.index < self.parser.rows.len() {
-            let raw_row = &self.parser.rows[self.index];
-            let item = Some(self.parser.parse_row(raw_row));
+        if self.index < self.file_parser.rows.len() {
+            let row = &self.file_parser.rows[self.index];
+            let parsed_row = Some(self.item_parser.parse_row(row));
             self.index += 1;
-            item
+            parsed_row
         } else {
             None
         }
@@ -107,8 +132,9 @@ pub fn run() -> Result<(), Box<dyn Error>> {
         ColumnDefinition::new(1, 7, ExpectedType::Integer32),
         ColumnDefinition::new(13, 62, ExpectedType::String),
     ];
+    let item_parser = DefaultItemParser::new(row_configuration);
 
-    let parser = FileParser::new("A.txt", row_configuration)?;
+    let parser = FileParser::new("A.txt", Box::new(item_parser))?;
 
     for (index, values) in parser.iter().enumerate() {
         println!("Row {} :", index + 1);
