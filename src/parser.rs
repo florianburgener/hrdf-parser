@@ -29,14 +29,23 @@ impl From<ParsedValue> for i32 {
     }
 }
 
+impl From<ParsedValue> for String {
+    fn from(value: ParsedValue) -> Self {
+        match value {
+            ParsedValue::String(x) => x,
+            _ => panic!("Failed to convert ParsedValue to String"),
+        }
+    }
+}
+
 pub struct ColumnDefinition {
     start: usize,
-    stop: usize,
+    stop: isize,
     expected_type: ExpectedType,
 }
 
 impl ColumnDefinition {
-    pub fn new(start: usize, stop: usize, expected_type: ExpectedType) -> Self {
+    pub fn new(start: usize, stop: isize, expected_type: ExpectedType) -> Self {
         Self {
             start,
             stop,
@@ -48,14 +57,19 @@ impl ColumnDefinition {
 type RowConfiguration = Vec<ColumnDefinition>;
 
 pub trait RowParser {
-    fn reset(&self) {}
-
     fn parse(&self, row: &str) -> Vec<ParsedValue> {
         let mut values = vec![];
 
         for column_definition in self.row_configuration() {
             let start = column_definition.start - 1;
-            let stop = cmp::min(column_definition.stop, row.len());
+            let stop;
+
+            if column_definition.stop == -1 {
+                stop = row.len()
+            } else {
+                stop = cmp::min(column_definition.stop as usize, row.len());
+            }
+
             let value = &row[start..stop];
 
             let value = match column_definition.expected_type {
@@ -137,43 +151,17 @@ impl Iterator for FileParserIterator<'_> {
     }
 }
 
-// IntoIterator implementation for FileParser
-
-pub struct FileParserIntoIterator {
-    file_parser: FileParser,
-}
-
-impl Iterator for FileParserIntoIterator {
-    type Item = Vec<ParsedValue>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.file_parser.rows.len() == 0 {
-            None
-        } else {
-            let row = self.file_parser.rows.remove(0);
-            Some(self.file_parser.row_parser.parse(&row))
-        }
-    }
-}
-
-impl IntoIterator for FileParser {
-    type Item = Vec<ParsedValue>;
-    type IntoIter = FileParserIntoIterator;
-
-    fn into_iter(self) -> Self::IntoIter {
-        FileParserIntoIterator { file_parser: self }
-    }
-}
-
-pub fn parse_inline_values(item: &str) -> HashMap<i32, Vec<String>> {
-    let inline_values: HashMap<i32, Vec<String>> = item
+pub fn parse_stop_name(name: String) -> HashMap<i32, Vec<String>> {
+    let inline_values: HashMap<i32, Vec<String>> = name
         .split('>')
         .filter(|&s| !s.is_empty())
         .map(|s| s.replace('$', ""))
         .map(|s| {
             let mut parts = s.split('<');
+
             let value = parts.next().unwrap().to_string();
             let key = parts.next().unwrap().parse::<i32>().unwrap();
+
             (key, value)
         })
         .fold(HashMap::new(), |mut acc, (key, value)| {

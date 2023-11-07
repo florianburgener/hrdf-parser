@@ -1,3 +1,4 @@
 8507000     Bern$<1>$BN$<3>
 1507000     2Bern$<1>$BN$<3>
 5457076     Praha hl. n.$<1>$PRAH$<3>$Prag$<4>$Praga$<4>$Prague$<4>$Praha$<4>
+8587899     Biel/Bienne,Bf Mett/gare Mâche$<1>$Biel/Bienne, Bahnhof Mett/gare Mâche$<2>$BMBF$<3>
