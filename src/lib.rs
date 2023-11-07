@@ -9,7 +9,7 @@ use std::error::Error;
 
 use crate::models::Stop;
 
-pub fn run() -> Result<(), Box<dyn Error>> {
+fn parse_stops() -> Result<Vec<Stop>, Box<dyn Error>> {
     let row_configuration = vec![
         ColumnDefinition::new(1, 7, ExpectedType::Integer32),
         ColumnDefinition::new(13, -1, ExpectedType::String),
@@ -20,7 +20,7 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     let mut stops: Vec<Stop> = vec![];
 
     for (index, mut values) in parser.iter().enumerate() {
-        println!("Row {} : {:?}", index + 1, values);
+        // println!("Row {} : {:?}", index + 1, values);
 
         let id = i32::from(values.remove(0));
         let raw_name = String::from(values.remove(0));
@@ -31,6 +31,16 @@ pub fn run() -> Result<(), Box<dyn Error>> {
         stops.push(Stop::new(id, name));
     }
 
-    println!("Stops:\n{:?}", stops);
+    Ok(stops)
+}
+
+pub fn run() -> Result<(), Box<dyn Error>> {
+    let stops = parse_stops()?;
+    println!("Stops:");
+
+    for stop in &stops {
+        println!("{:?}", stop);
+    }
+
     Ok(())
 }

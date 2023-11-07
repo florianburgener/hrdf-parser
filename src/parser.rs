@@ -152,7 +152,7 @@ impl Iterator for FileParserIterator<'_> {
 }
 
 pub fn parse_stop_name(name: String) -> HashMap<i32, Vec<String>> {
-    let inline_values: HashMap<i32, Vec<String>> = name
+    let parsed_name: HashMap<i32, Vec<String>> = name
         .split('>')
         .filter(|&s| !s.is_empty())
         .map(|s| s.replace('$', ""))
@@ -168,5 +168,5 @@ pub fn parse_stop_name(name: String) -> HashMap<i32, Vec<String>> {
             acc.entry(key).or_insert(Vec::new()).push(value);
             acc
         });
-    inline_values
+    parsed_name
 }
