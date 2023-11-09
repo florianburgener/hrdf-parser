@@ -2,7 +2,7 @@ use std::error::Error;
 
 use crate::{
     models::Stop,
-    parser::{self, ColumnDefinition, DefaultRowParser, ExpectedType, FileParser},
+    parsing::{self, ColumnDefinition, ExpectedType, FileParser, SingleConfigurationRowParser},
 };
 
 pub struct Hrdf {
@@ -21,25 +21,26 @@ impl Hrdf {
             ColumnDefinition::new(1, 7, ExpectedType::Integer32),
             ColumnDefinition::new(13, -1, ExpectedType::String),
         ];
-        let row_parser = DefaultRowParser::new(row_configuration);
-        let parser = FileParser::new("A.txt", Box::new(row_parser))?;
+        let row_parser = SingleConfigurationRowParser::new(row_configuration);
+        let file_parser = FileParser::new("data/BAHNHOF", Box::new(row_parser))?;
 
-        let mut stops: Vec<Stop> = vec![];
+        let data = file_parser
+            .iter()
+            .map(|mut values| {
+                let id = i32::from(values.remove(0));
+                let raw_name = String::from(values.remove(0));
 
-        for mut values in parser.iter() {
-            let id = i32::from(values.remove(0));
-            let raw_name = String::from(values.remove(0));
+                let parsed_name = parsing::parse_stop_name(raw_name);
 
-            let parsed_name = parser::parse_stop_name(raw_name);
+                let name = parsed_name.get(&1).unwrap()[0].clone();
+                let long_name = parsed_name.get(&2).map(|x| x[0].clone());
+                let abbreviation = parsed_name.get(&3).map(|x| x[0].clone());
+                let synonyms = parsed_name.get(&4).cloned();
 
-            let name = parsed_name.get(&1).unwrap()[0].clone();
-            let long_name = parsed_name.get(&2).map(|x| x[0].clone());
-            let abbreviation = parsed_name.get(&3).map(|x| x[0].clone());
-            let synonyms = parsed_name.get(&4).cloned();
+                Stop::new(id, name, long_name, abbreviation, synonyms)
+            })
+            .collect();
 
-            stops.push(Stop::new(id, name, long_name, abbreviation, synonyms));
-        }
-
-        Ok(stops)
+        Ok(data)
     }
 }

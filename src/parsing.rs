@@ -88,21 +88,24 @@ pub trait RowParser {
     fn row_configuration(&self) -> &RowConfiguration;
 }
 
-pub struct DefaultRowParser {
+pub struct SingleConfigurationRowParser {
     row_configuration: RowConfiguration,
 }
 
-impl DefaultRowParser {
+impl SingleConfigurationRowParser {
     pub fn new(row_configuration: RowConfiguration) -> Self {
         Self { row_configuration }
     }
 }
 
-impl RowParser for DefaultRowParser {
+impl RowParser for SingleConfigurationRowParser {
     fn row_configuration(&self) -> &RowConfiguration {
         &self.row_configuration
     }
 }
+
+// MultipleConfigurationRowParser
+// SequentialConfigurationRowParser
 
 pub struct FileParser {
     rows: Vec<String>,
@@ -123,8 +126,8 @@ impl FileParser {
 
     pub fn iter(&self) -> FileParserIterator {
         FileParserIterator {
-            file_parser: self,
-            index: 0,
+            rows_iter: self.rows.iter(),
+            row_parser: &self.row_parser,
         }
     }
 }
@@ -132,22 +135,15 @@ impl FileParser {
 // Iterator implementation for FileParser
 
 pub struct FileParserIterator<'a> {
-    file_parser: &'a FileParser,
-    index: usize,
+    rows_iter: std::slice::Iter<'a, String>,
+    row_parser: &'a Box<dyn RowParser>,
 }
 
 impl Iterator for FileParserIterator<'_> {
     type Item = Vec<ParsedValue>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.index < self.file_parser.rows.len() {
-            let row = &self.file_parser.rows[self.index];
-            let parsed_row = Some(self.file_parser.row_parser.parse(row));
-            self.index += 1;
-            parsed_row
-        } else {
-            None
-        }
+        self.rows_iter.next().map(|row| self.row_parser.parse(row))
     }
 }
 
