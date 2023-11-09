@@ -1,12 +1,12 @@
-use std::error::Error;
+use std::{collections::HashMap, error::Error};
 
 use crate::{
-    models::Stop,
+    models::{Stop, Coordinate},
     parsing::{self, ColumnDefinition, ExpectedType, FileParser, SingleConfigurationRowParser},
 };
 
 pub struct Hrdf {
-    pub stops: Vec<Stop>,
+    pub stops: HashMap<i32, Stop>,
 }
 
 impl Hrdf {
@@ -16,7 +16,8 @@ impl Hrdf {
         })
     }
 
-    fn load_stops() -> Result<Vec<Stop>, Box<dyn Error>> {
+    // BAHNHOF
+    fn load_stops() -> Result<HashMap<i32, Stop>, Box<dyn Error>> {
         let row_configuration = vec![
             ColumnDefinition::new(1, 7, ExpectedType::Integer32),
             ColumnDefinition::new(13, -1, ExpectedType::String),
@@ -24,7 +25,7 @@ impl Hrdf {
         let row_parser = SingleConfigurationRowParser::new(row_configuration);
         let file_parser = FileParser::new("data/BAHNHOF", Box::new(row_parser))?;
 
-        let data = file_parser
+        let stops = file_parser
             .iter()
             .map(|mut values| {
                 let id = i32::from(values.remove(0));
@@ -39,8 +40,40 @@ impl Hrdf {
 
                 Stop::new(id, name, long_name, abbreviation, synonyms)
             })
-            .collect();
+            .fold(HashMap::new(), |mut acc, stop| {
+                acc.insert(stop.id, stop);
+                acc
+            });
 
-        Ok(data)
+        // TODO : mut vs shadowing
+        let stops = Self::bind_wgs_coordinates_to_stops(stops)?;
+
+        Ok(stops)
+    }
+
+    // BFKOORD_WGS
+    fn bind_wgs_coordinates_to_stops(mut stops: HashMap<i32, Stop>) -> Result<HashMap<i32, Stop>, Box<dyn Error>> {
+        let row_configuration = vec![
+            ColumnDefinition::new(1, 7, ExpectedType::Integer32),
+            ColumnDefinition::new(9, 18, ExpectedType::Float),
+            ColumnDefinition::new(20, 29, ExpectedType::Float),
+            ColumnDefinition::new(31, 36, ExpectedType::Integer16),
+        ];
+        let row_parser = SingleConfigurationRowParser::new(row_configuration);
+        let file_parser = FileParser::new("data/BFKOORD_WGS", Box::new(row_parser))?;
+
+        for mut values in file_parser.iter() {
+            let stop_id = i32::from(values.remove(0));
+
+            if let Some(stop) = stops.get_mut(&stop_id) {
+                let x = f64::from(values.remove(0));
+                let y = f64::from(values.remove(0));
+                let z = i16::from(values.remove(0));
+
+                stop.wgs_coordinate = Some(Coordinate::new(x, y, z));
+            }
+        }
+
+        Ok(stops)
     }
 }

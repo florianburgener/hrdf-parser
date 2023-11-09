@@ -6,18 +6,36 @@ use std::{
 };
 
 pub enum ExpectedType {
-    // Float,
-    // Integer16,
+    Float,
+    Integer16,
     Integer32,
     String,
 }
 
 #[derive(Debug)]
 pub enum ParsedValue {
-    // Float(f64),
-    // Integer16(i16),
+    Float(f64),
+    Integer16(i16),
     Integer32(i32),
     String(String),
+}
+
+impl From<ParsedValue> for f64 {
+    fn from(value: ParsedValue) -> Self {
+        match value {
+            ParsedValue::Float(x) => x,
+            _ => panic!("Failed to convert ParsedValue to f64"),
+        }
+    }
+}
+
+impl From<ParsedValue> for i16 {
+    fn from(value: ParsedValue) -> Self {
+        match value {
+            ParsedValue::Integer16(x) => x,
+            _ => panic!("Failed to convert ParsedValue to i16"),
+        }
+    }
 }
 
 impl From<ParsedValue> for i32 {
@@ -60,7 +78,7 @@ pub trait RowParser {
     fn parse(&self, row: &str) -> Vec<ParsedValue> {
         let mut values = vec![];
 
-        for column_definition in self.row_configuration() {
+        for column_definition in self.row_configuration(row) {
             let start = column_definition.start - 1;
             let stop;
 
@@ -70,11 +88,11 @@ pub trait RowParser {
                 stop = cmp::min(column_definition.stop as usize, row.len());
             }
 
-            let value = &row[start..stop];
+            let value = &row[start..stop].trim();
 
             let value = match column_definition.expected_type {
-                // ExpectedType::Float => ParsedValue::Float(value.parse::<f64>().unwrap()),
-                // ExpectedType::Integer16 => ParsedValue::Integer16(value.parse::<i16>().unwrap()),
+                ExpectedType::Float => ParsedValue::Float(value.parse::<f64>().unwrap()),
+                ExpectedType::Integer16 => ParsedValue::Integer16(value.parse::<i16>().unwrap()),
                 ExpectedType::Integer32 => ParsedValue::Integer32(value.parse::<i32>().unwrap()),
                 ExpectedType::String => ParsedValue::String(value.parse::<String>().unwrap()),
             };
@@ -85,7 +103,7 @@ pub trait RowParser {
         values
     }
 
-    fn row_configuration(&self) -> &RowConfiguration;
+    fn row_configuration(&self, row: &str) -> &RowConfiguration;
 }
 
 pub struct SingleConfigurationRowParser {
@@ -99,7 +117,7 @@ impl SingleConfigurationRowParser {
 }
 
 impl RowParser for SingleConfigurationRowParser {
-    fn row_configuration(&self) -> &RowConfiguration {
+    fn row_configuration(&self, _: &str) -> &RowConfiguration {
         &self.row_configuration
     }
 }
