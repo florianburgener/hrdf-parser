@@ -9,6 +9,7 @@ pub struct Stop {
     abbreviation: Option<String>,
     synonyms: Option<Vec<String>>,
     pub wgs_coordinate: Option<Coordinate>,
+    pub lv95_coordinate: Option<Coordinate>,
 }
 
 impl Stop {
@@ -26,6 +27,7 @@ impl Stop {
             abbreviation,
             synonyms,
             wgs_coordinate: None,
+            lv95_coordinate: None,
         }
     }
 }
@@ -46,6 +48,6 @@ impl Coordinate {
 
 impl fmt::Display for Coordinate {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} {}", self.y, self.x)
+        write!(f, "{} {} {}", self.y, self.x, self.z)
     }
 }

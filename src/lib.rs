@@ -14,6 +14,7 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     if let Some(stop) = hrdf.stops.get(&8587387) {
         println!("{:?}", stop);
         println!("{}", stop.wgs_coordinate.as_ref().unwrap());
+        println!("{}", stop.lv95_coordinate.as_ref().unwrap());
     }
 
     Ok(())

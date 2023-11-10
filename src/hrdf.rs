@@ -1,7 +1,7 @@
 use std::{collections::HashMap, error::Error};
 
 use crate::{
-    models::{Stop, Coordinate},
+    models::{Coordinate, Stop},
     parsing::{self, ColumnDefinition, ExpectedType, FileParser, SingleConfigurationRowParser},
 };
 
@@ -25,7 +25,7 @@ impl Hrdf {
         let row_parser = SingleConfigurationRowParser::new(row_configuration);
         let file_parser = FileParser::new("data/BAHNHOF", Box::new(row_parser))?;
 
-        let stops = file_parser
+        let mut stops = file_parser
             .iter()
             .map(|mut values| {
                 let id = i32::from(values.remove(0));
@@ -45,14 +45,14 @@ impl Hrdf {
                 acc
             });
 
-        // TODO : mut vs shadowing
-        let stops = Self::bind_wgs_coordinates_to_stops(stops)?;
+        Self::load_wgs_coordinates(&mut stops)?;
+        Self::load_lv95_coordinates(&mut stops)?;
 
         Ok(stops)
     }
 
     // BFKOORD_WGS
-    fn bind_wgs_coordinates_to_stops(mut stops: HashMap<i32, Stop>) -> Result<HashMap<i32, Stop>, Box<dyn Error>> {
+    fn load_wgs_coordinates(stops: &mut HashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
         let row_configuration = vec![
             ColumnDefinition::new(1, 7, ExpectedType::Integer32),
             ColumnDefinition::new(9, 18, ExpectedType::Float),
@@ -74,6 +74,32 @@ impl Hrdf {
             }
         }
 
-        Ok(stops)
+        Ok(())
+    }
+
+    // BFKOORD_LV95
+    fn load_lv95_coordinates(stops: &mut HashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
+        let row_configuration = vec![
+            ColumnDefinition::new(1, 7, ExpectedType::Integer32),
+            ColumnDefinition::new(9, 18, ExpectedType::Float),
+            ColumnDefinition::new(20, 29, ExpectedType::Float),
+            ColumnDefinition::new(31, 36, ExpectedType::Integer16),
+        ];
+        let row_parser = SingleConfigurationRowParser::new(row_configuration);
+        let file_parser = FileParser::new("data/BFKOORD_LV95", Box::new(row_parser))?;
+
+        for mut values in file_parser.iter() {
+            let stop_id = i32::from(values.remove(0));
+
+            if let Some(stop) = stops.get_mut(&stop_id) {
+                let y = f64::from(values.remove(0));
+                let x = f64::from(values.remove(0));
+                let z = i16::from(values.remove(0));
+
+                stop.lv95_coordinate = Some(Coordinate::new(x, y, z));
+            }
+        }
+
+        Ok(())
     }
 }

@@ -76,30 +76,32 @@ type RowConfiguration = Vec<ColumnDefinition>;
 
 pub trait RowParser {
     fn parse(&self, row: &str) -> Vec<ParsedValue> {
-        let mut values = vec![];
+        let values = self.row_configuration(row)
+            .iter()
+            .map(|column_definition| {
+                let start = column_definition.start - 1;
+                let stop;
 
-        for column_definition in self.row_configuration(row) {
-            let start = column_definition.start - 1;
-            let stop;
+                if column_definition.stop == -1 {
+                    stop = row.len()
+                } else {
+                    stop = cmp::min(column_definition.stop as usize, row.len());
+                }
 
-            if column_definition.stop == -1 {
-                stop = row.len()
-            } else {
-                stop = cmp::min(column_definition.stop as usize, row.len());
-            }
+                let value = row[start..stop].trim();
 
-            let value = &row[start..stop].trim();
-
-            let value = match column_definition.expected_type {
-                ExpectedType::Float => ParsedValue::Float(value.parse::<f64>().unwrap()),
-                ExpectedType::Integer16 => ParsedValue::Integer16(value.parse::<i16>().unwrap()),
-                ExpectedType::Integer32 => ParsedValue::Integer32(value.parse::<i32>().unwrap()),
-                ExpectedType::String => ParsedValue::String(value.parse::<String>().unwrap()),
-            };
-
-            values.push(value);
-        }
-
+                match column_definition.expected_type {
+                    ExpectedType::Float => ParsedValue::Float(value.parse::<f64>().unwrap()),
+                    ExpectedType::Integer16 => {
+                        ParsedValue::Integer16(value.parse::<i16>().unwrap())
+                    }
+                    ExpectedType::Integer32 => {
+                        ParsedValue::Integer32(value.parse::<i32>().unwrap())
+                    }
+                    ExpectedType::String => ParsedValue::String(value.parse::<String>().unwrap()),
+                }
+            })
+            .collect();
         values
     }
 
