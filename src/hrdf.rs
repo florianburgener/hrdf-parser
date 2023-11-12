@@ -45,14 +45,14 @@ impl Hrdf {
                 acc
             });
 
-        Self::load_wgs_coordinates(&mut stops)?;
-        Self::load_lv95_coordinates(&mut stops)?;
+        Self::load_wgs_stop_coordinates(&mut stops)?;
+        Self::load_lv95_stop_coordinates(&mut stops)?;
 
         Ok(stops)
     }
 
-    // BFKOORD_WGS
-    fn load_wgs_coordinates(stops: &mut HashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
+    // BFKOORD_WGS (BF = BAHNHOF)
+    fn load_wgs_stop_coordinates(stops: &mut HashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
         let row_configuration = vec![
             ColumnDefinition::new(1, 7, ExpectedType::Integer32),
             ColumnDefinition::new(9, 18, ExpectedType::Float),
@@ -77,8 +77,8 @@ impl Hrdf {
         Ok(())
     }
 
-    // BFKOORD_LV95
-    fn load_lv95_coordinates(stops: &mut HashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
+    // BFKOORD_LV95 (BF = BAHNHOF)
+    fn load_lv95_stop_coordinates(stops: &mut HashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
         let row_configuration = vec![
             ColumnDefinition::new(1, 7, ExpectedType::Integer32),
             ColumnDefinition::new(9, 18, ExpectedType::Float),
