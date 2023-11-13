@@ -1,15 +1,13 @@
-use core::fmt;
+use std::{fmt, rc::Rc, collections::HashMap};
 
 #[allow(unused)]
-#[derive(Debug)]
 pub struct Stop {
     pub id: i32,
     name: String,
     long_name: Option<String>,
     abbreviation: Option<String>,
     synonyms: Option<Vec<String>>,
-    pub wgs_coordinate: Option<Coordinate>,
-    pub lv95_coordinate: Option<Coordinate>,
+    lv95_stop_coordinates_index_1: Rc<HashMap<i32, Rc<Lv95Coordinate>>>,
 }
 
 impl Stop {
@@ -19,6 +17,7 @@ impl Stop {
         long_name: Option<String>,
         abbreviation: Option<String>,
         synonyms: Option<Vec<String>>,
+        lv95_stop_coordinates_index_1: Rc<HashMap<i32, Rc<Lv95Coordinate>>>,
     ) -> Self {
         Self {
             id,
@@ -26,28 +25,59 @@ impl Stop {
             long_name,
             abbreviation,
             synonyms,
-            wgs_coordinate: None,
-            lv95_coordinate: None,
+            lv95_stop_coordinates_index_1,
+        }
+    }
+
+    pub fn lv95_coordinate(&self) -> Option<&Rc<Lv95Coordinate>> {
+        self.lv95_stop_coordinates_index_1.get(&self.id)
+    }
+}
+
+impl fmt::Debug for Stop {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Stop")
+            .field("id", &self.id)
+            .field("name", &self.name)
+            .finish()
+    }
+}
+
+#[allow(unused)]
+#[derive(Debug)]
+pub struct Lv95Coordinate {
+    easting: f64,
+    northing: f64,
+    altitude: i16,
+    pub stop_id: i32,
+}
+
+impl Lv95Coordinate {
+    pub fn new(easting: f64, northing: f64, altitude: i16, stop_id: i32) -> Self {
+        Self {
+            easting,
+            northing,
+            altitude,
+            stop_id
         }
     }
 }
 
 #[allow(unused)]
 #[derive(Debug)]
-pub struct Coordinate {
-    x: f64,
-    y: f64,
-    z: i16,
+pub struct WgsCoordinate {
+    latitude: f64,
+    longitude: f64,
+    altitude: i16,
 }
 
-impl Coordinate {
-    pub fn new(x: f64, y: f64, z: i16) -> Self {
-        Self { x, y, z }
+impl WgsCoordinate {
+    pub fn new(latitude: f64, longitude: f64, altitude: i16) -> Self {
+        Self {
+            latitude,
+            longitude,
+            altitude,
+        }
     }
 }
 
-impl fmt::Display for Coordinate {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} {} {}", self.y, self.x, self.z)
-    }
-}
