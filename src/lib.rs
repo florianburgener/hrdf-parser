@@ -9,9 +9,9 @@ use crate::hrdf::Hrdf;
 pub fn run() -> Result<(), Box<dyn Error>> {
     let hrdf = Hrdf::new()?;
 
-    println!("{} stops", hrdf.borrow().stops().len());
+    println!("{} stops", hrdf.stops().len());
 
-    if let Some(stop) = hrdf.borrow().stops_primary_index().get(&8587387) {
+    if let Some(stop) = hrdf.stops_primary_index().get(&8587387) {
         println!("{:?}", stop);
         println!("{:?}", stop.borrow().lv95_coordinate().unwrap());
     }

@@ -1,4 +1,4 @@
-use std::{cell::RefCell, fmt, rc::Rc};
+use std::{cell::RefCell, fmt, rc::{Rc, Weak}};
 
 use crate::hrdf::Hrdf;
 
@@ -9,7 +9,7 @@ pub struct Stop {
     long_name: Option<String>,
     abbreviation: Option<String>,
     synonyms: Option<Vec<String>>,
-    hrdf: Option<Rc<RefCell<Hrdf>>>,
+    parent: RefCell<Weak<Hrdf>>,
 }
 
 impl Stop {
@@ -26,16 +26,16 @@ impl Stop {
             long_name,
             abbreviation,
             synonyms,
-            hrdf: None,
+            parent: RefCell::new(Weak::new()),
         }
     }
 
     pub fn lv95_coordinate(&self) -> Option<Rc<Lv95Coordinate>> {
-        self.hrdf.as_ref().unwrap().borrow().lv95_stop_coordinates_index_1().get(&self.id).cloned()
+        self.parent.borrow().upgrade().unwrap().lv95_stop_coordinates_index_1().get(&self.id).cloned()
     }
 
-    pub fn set_hrdf(&mut self, hrdf: &Rc<RefCell<Hrdf>>) {
-        self.hrdf = Some(Rc::clone(hrdf))
+    pub fn set_parent(&self, parent: &Rc<Hrdf>) {
+        *self.parent.borrow_mut() = Rc::downgrade(parent);
     }
 }
 
