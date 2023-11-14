@@ -1,4 +1,4 @@
-use std::{collections::HashMap, error::Error, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, error::Error, rc::Rc};
 
 use crate::{
     models::{Lv95Coordinate, Stop},
@@ -11,12 +11,12 @@ pub struct Hrdf {
     lv95_stop_coordinates: Vec<Rc<Lv95Coordinate>>,
     lv95_stop_coordinates_index_1: Rc<HashMap<i32, Rc<Lv95Coordinate>>>,
     // wgs_stop_coordinates: Vec<WgsCoordinate>,
-    stops: Vec<Rc<Stop>>,
-    stops_primary_index: HashMap<i32, Rc<Stop>>,
+    stops: Vec<Rc<RefCell<Stop>>>,
+    stops_primary_index: HashMap<i32, Rc<RefCell<Stop>>>,
 }
 
 impl Hrdf {
-    pub fn new() -> Result<Self, Box<dyn Error>> {
+    pub fn new() -> Result<Rc<RefCell<Self>>, Box<dyn Error>> {
         let lv95_stop_coordinates = Self::load_lv95_stop_coordinates()?;
         let lv95_stop_coordinates_index_1 = Rc::new(Self::create_lv95_stop_coordinates_index_1(
             &lv95_stop_coordinates,
@@ -31,15 +31,31 @@ impl Hrdf {
             stops_primary_index,
         };
 
+        let instance = Rc::new(RefCell::new(instance));
+        instance
+            .as_ref()
+            .borrow_mut()
+            .set_self_references(&instance);
+
         Ok(instance)
     }
 
-    pub fn stops(&self) -> &Vec<Rc<Stop>> {
+    pub fn lv95_stop_coordinates_index_1(&self) -> &HashMap<i32, Rc<Lv95Coordinate>> {
+        &self.lv95_stop_coordinates_index_1
+    }
+
+    pub fn stops(&self) -> &Vec<Rc<RefCell<Stop>>> {
         &self.stops
     }
 
-    pub fn stops_primary_index(&self) -> &HashMap<i32, Rc<Stop>> {
+    pub fn stops_primary_index(&self) -> &HashMap<i32, Rc<RefCell<Stop>>> {
         &self.stops_primary_index
+    }
+
+    pub fn set_self_references(&mut self, self_reference: &Rc<RefCell<Self>>) {
+        for stop in self.stops.iter_mut() {
+            stop.as_ref().borrow_mut().set_hrdf(self_reference);
+        }
     }
 
     // BFKOORD_LV95 (BF = BAHNHOF)
@@ -82,7 +98,7 @@ impl Hrdf {
     // BAHNHOF
     fn load_stops(
         lv95_stop_coordinates_index_1: &Rc<HashMap<i32, Rc<Lv95Coordinate>>>,
-    ) -> Result<Vec<Rc<Stop>>, Box<dyn Error>> {
+    ) -> Result<Vec<Rc<RefCell<Stop>>>, Box<dyn Error>> {
         let row_configuration = vec![
             ColumnDefinition::new(1, 7, ExpectedType::Integer32),
             ColumnDefinition::new(13, -1, ExpectedType::String),
@@ -103,24 +119,25 @@ impl Hrdf {
                 let abbreviation = parsed_name.get(&3).map(|x| x[0].clone());
                 let synonyms = parsed_name.get(&4).cloned();
 
-                Rc::new(Stop::new(
+                Rc::new(RefCell::new(Stop::new(
                     id,
                     name,
                     long_name,
                     abbreviation,
                     synonyms,
-                    Rc::clone(lv95_stop_coordinates_index_1),
-                ))
+                )))
             })
             .collect();
 
         Ok(stops)
     }
 
-    fn create_stops_primary_index(stops: &Vec<Rc<Stop>>) -> HashMap<i32, Rc<Stop>> {
-        let stops_primary_index: HashMap<i32, Rc<Stop>> =
+    fn create_stops_primary_index(
+        stops: &Vec<Rc<RefCell<Stop>>>,
+    ) -> HashMap<i32, Rc<RefCell<Stop>>> {
+        let stops_primary_index: HashMap<i32, Rc<RefCell<Stop>>> =
             stops.iter().fold(HashMap::new(), |mut acc, stop| {
-                acc.insert(stop.id, Rc::clone(stop));
+                acc.insert(stop.borrow().id, Rc::clone(stop));
                 acc
             });
         stops_primary_index

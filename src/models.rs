@@ -1,4 +1,6 @@
-use std::{fmt, rc::Rc, collections::HashMap};
+use std::{cell::RefCell, fmt, rc::Rc};
+
+use crate::hrdf::Hrdf;
 
 #[allow(unused)]
 pub struct Stop {
@@ -7,7 +9,7 @@ pub struct Stop {
     long_name: Option<String>,
     abbreviation: Option<String>,
     synonyms: Option<Vec<String>>,
-    lv95_stop_coordinates_index_1: Rc<HashMap<i32, Rc<Lv95Coordinate>>>,
+    hrdf: Option<Rc<RefCell<Hrdf>>>,
 }
 
 impl Stop {
@@ -17,7 +19,6 @@ impl Stop {
         long_name: Option<String>,
         abbreviation: Option<String>,
         synonyms: Option<Vec<String>>,
-        lv95_stop_coordinates_index_1: Rc<HashMap<i32, Rc<Lv95Coordinate>>>,
     ) -> Self {
         Self {
             id,
@@ -25,12 +26,18 @@ impl Stop {
             long_name,
             abbreviation,
             synonyms,
-            lv95_stop_coordinates_index_1,
+            hrdf: None,
         }
     }
 
-    pub fn lv95_coordinate(&self) -> Option<&Rc<Lv95Coordinate>> {
-        self.lv95_stop_coordinates_index_1.get(&self.id)
+    pub fn lv95_coordinate(&self) -> Option<Rc<Lv95Coordinate>> {
+        self.hrdf.as_ref().and_then(|hrdf| {
+            hrdf.borrow().lv95_stop_coordinates_index_1().get(&self.id).cloned()
+        })
+    }
+
+    pub fn set_hrdf(&mut self, hrdf: &Rc<RefCell<Hrdf>>) {
+        self.hrdf = Some(Rc::clone(hrdf))
     }
 }
 
@@ -58,7 +65,7 @@ impl Lv95Coordinate {
             easting,
             northing,
             altitude,
-            stop_id
+            stop_id,
         }
     }
 }
@@ -80,4 +87,3 @@ impl WgsCoordinate {
         }
     }
 }
-
