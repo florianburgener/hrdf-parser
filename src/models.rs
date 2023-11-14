@@ -1,8 +1,9 @@
-use std::{cell::RefCell, fmt, rc::{Rc, Weak}};
+use std::{cell::RefCell, rc::{Rc, Weak}};
 
 use crate::hrdf::Hrdf;
 
 #[allow(unused)]
+#[derive(Debug)]
 pub struct Stop {
     pub id: i32,
     name: String,
@@ -34,17 +35,12 @@ impl Stop {
         self.parent.borrow().upgrade().unwrap().lv95_stop_coordinates_index_1().get(&self.id).cloned()
     }
 
+    pub fn wgs_coordinate(&self) -> Option<Rc<WgsCoordinate>> {
+        self.parent.borrow().upgrade().unwrap().wgs_stop_coordinates_index_1().get(&self.id).cloned()
+    }
+
     pub fn set_parent(&self, parent: &Rc<Hrdf>) {
         *self.parent.borrow_mut() = Rc::downgrade(parent);
-    }
-}
-
-impl fmt::Debug for Stop {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Stop")
-            .field("id", &self.id)
-            .field("name", &self.name)
-            .finish()
     }
 }
 
@@ -74,14 +70,16 @@ pub struct WgsCoordinate {
     latitude: f64,
     longitude: f64,
     altitude: i16,
+    pub stop_id: i32,
 }
 
 impl WgsCoordinate {
-    pub fn new(latitude: f64, longitude: f64, altitude: i16) -> Self {
+    pub fn new(latitude: f64, longitude: f64, altitude: i16, stop_id: i32) -> Self {
         Self {
             latitude,
             longitude,
             altitude,
+            stop_id,
         }
     }
 }
