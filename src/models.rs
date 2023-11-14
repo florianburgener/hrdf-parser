@@ -31,9 +31,7 @@ impl Stop {
     }
 
     pub fn lv95_coordinate(&self) -> Option<Rc<Lv95Coordinate>> {
-        self.hrdf.as_ref().and_then(|hrdf| {
-            hrdf.borrow().lv95_stop_coordinates_index_1().get(&self.id).cloned()
-        })
+        self.hrdf.as_ref().unwrap().borrow().lv95_stop_coordinates_index_1().get(&self.id).cloned()
     }
 
     pub fn set_hrdf(&mut self, hrdf: &Rc<RefCell<Hrdf>>) {
