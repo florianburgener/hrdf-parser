@@ -1,5 +1,3 @@
 TODO :
 
-* Coordinate
-  * WgsCoordinate ?
-  * Lv95Coordinate ?
+RowConfiguration => struct RowConfiguration with id

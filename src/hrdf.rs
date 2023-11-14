@@ -2,64 +2,51 @@ use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{
     models::{Lv95Coordinate, Stop, WgsCoordinate},
-    parsing::{self, ColumnDefinition, ExpectedType, FileParser, SingleConfigurationRowParser},
+    parsing::{
+        self, ColumnDefinition, ExpectedType, FileParser, MultipleConfigurationRowParser, RowType,
+        SingleConfigurationRowParser,
+    },
 };
 
 #[allow(unused)]
 #[derive(Debug)]
 pub struct Hrdf {
+    // Tables
     stops: Vec<Rc<Stop>>,
-    stops_primary_index: HashMap<i32, Rc<Stop>>,
     lv95_stop_coordinates: Vec<Rc<Lv95Coordinate>>,
-    lv95_stop_coordinates_index_1: HashMap<i32, Rc<Lv95Coordinate>>,
     wgs_stop_coordinates: Vec<Rc<WgsCoordinate>>,
+    // Indexes
+    stops_primary_index: HashMap<i32, Rc<Stop>>,
+    lv95_stop_coordinates_index_1: HashMap<i32, Rc<Lv95Coordinate>>,
     wgs_stop_coordinates_index_1: HashMap<i32, Rc<WgsCoordinate>>,
 }
 
 impl Hrdf {
     pub fn new() -> Result<Rc<Self>, Box<dyn Error>> {
         let stops = Self::load_stops()?;
-        let stops_primary_index = Self::create_stops_primary_index(&stops);
-
         let lv95_stop_coordinates = Self::load_lv95_stop_coordinates()?;
+        let wgs_stop_coordinates = Self::load_wgs_stop_coordinates()?;
+        Self::load_journey_stop_and_platforms()?;
+
+        let stops_primary_index = Self::create_stops_primary_index(&stops);
         let lv95_stop_coordinates_index_1 =
             Self::create_lv95_stop_coordinates_index_1(&lv95_stop_coordinates);
-
-        let wgs_stop_coordinates = Self::load_wgs_stop_coordinates()?;
         let wgs_stop_coordinates_index_1 =
             Self::create_wgs_stop_coordinates_index_1(&wgs_stop_coordinates);
 
         let instance = Rc::new(Self {
+            // Tables
             stops,
-            stops_primary_index,
             lv95_stop_coordinates,
-            lv95_stop_coordinates_index_1,
             wgs_stop_coordinates,
+            // Indexes
+            stops_primary_index,
+            lv95_stop_coordinates_index_1,
             wgs_stop_coordinates_index_1,
         });
 
-        for stop in &instance.stops {
-            stop.set_parent(&instance);
-        }
-
+        Self::set_parent_references(&instance);
         Ok(instance)
-    }
-
-    pub fn lv95_stop_coordinates_index_1(&self) -> &HashMap<i32, Rc<Lv95Coordinate>> {
-        &self.lv95_stop_coordinates_index_1
-    }
-
-    pub fn wgs_stop_coordinates_index_1(&self) -> &HashMap<i32, Rc<WgsCoordinate>> {
-        &self.wgs_stop_coordinates_index_1
-    }
-
-
-    pub fn stops(&self) -> &Vec<Rc<Stop>> {
-        &self.stops
-    }
-
-    pub fn stops_primary_index(&self) -> &HashMap<i32, Rc<Stop>> {
-        &self.stops_primary_index
     }
 
     // BAHNHOF
@@ -73,7 +60,7 @@ impl Hrdf {
 
         let stops = file_parser
             .iter()
-            .map(|mut values| {
+            .map(|(_, mut values)| {
                 let id = i32::from(values.remove(0));
                 let raw_name = String::from(values.remove(0));
 
@@ -91,15 +78,6 @@ impl Hrdf {
         Ok(stops)
     }
 
-    fn create_stops_primary_index(stops: &Vec<Rc<Stop>>) -> HashMap<i32, Rc<Stop>> {
-        let stops_primary_index: HashMap<i32, Rc<Stop>> =
-            stops.iter().fold(HashMap::new(), |mut acc, stop| {
-                acc.insert(stop.id, Rc::clone(stop));
-                acc
-            });
-        stops_primary_index
-    }
-
     // BFKOORD_LV95 (BF = BAHNHOF)
     fn load_lv95_stop_coordinates() -> Result<Vec<Rc<Lv95Coordinate>>, Box<dyn Error>> {
         let row_configuration = vec![
@@ -113,7 +91,7 @@ impl Hrdf {
 
         let lv95_stop_coordinates = file_parser
             .iter()
-            .map(|mut values| {
+            .map(|(_, mut values)| {
                 let stop_id = i32::from(values.remove(0));
                 let easting = f64::from(values.remove(0));
                 let northing = f64::from(values.remove(0));
@@ -124,18 +102,6 @@ impl Hrdf {
             .collect();
 
         Ok(lv95_stop_coordinates)
-    }
-
-    fn create_lv95_stop_coordinates_index_1(
-        coordinates: &Vec<Rc<Lv95Coordinate>>,
-    ) -> HashMap<i32, Rc<Lv95Coordinate>> {
-        let lv95_stop_coordinates_index_1: HashMap<i32, Rc<Lv95Coordinate>> = coordinates
-            .iter()
-            .fold(HashMap::new(), |mut acc, coordinate| {
-                acc.insert(coordinate.stop_id, Rc::clone(coordinate));
-                acc
-            });
-        lv95_stop_coordinates_index_1
     }
 
     // BFKOORD_WGS (BF = BAHNHOF)
@@ -151,7 +117,7 @@ impl Hrdf {
 
         let wgs_stop_coordinates = file_parser
             .iter()
-            .map(|mut values| {
+            .map(|(_, mut values)| {
                 let stop_id = i32::from(values.remove(0));
                 let longitude = f64::from(values.remove(0));
                 let latitude = f64::from(values.remove(0));
@@ -164,6 +130,70 @@ impl Hrdf {
         Ok(wgs_stop_coordinates)
     }
 
+    // GLEIS
+    fn load_journey_stop_and_platforms() -> Result<(), Box<dyn Error>> {
+        const GLEIS_ROW_A: i32 = 1;
+        const GLEIS_ROW_B: i32 = 2;
+
+        let row_types = vec![
+            RowType::new(
+                GLEIS_ROW_A,
+                8,
+                9,
+                "#",
+                false,
+                vec![
+                    ColumnDefinition::new(1, 7, ExpectedType::Integer32),
+                    ColumnDefinition::new(9, 14, ExpectedType::Integer32),
+                    ColumnDefinition::new(16, 21, ExpectedType::String),
+                ],
+            ),
+            RowType::new(
+                GLEIS_ROW_B,
+                8,
+                9,
+                "#",
+                true,
+                vec![
+                    ColumnDefinition::new(1, 7, ExpectedType::Integer32),
+                    ColumnDefinition::new(10, 16, ExpectedType::Integer32),
+                    ColumnDefinition::new(18, -1, ExpectedType::String),
+                ],
+            ),
+        ];
+        let row_parser = MultipleConfigurationRowParser::new(row_types);
+        let file_parser = FileParser::new("data/GLEIS", Box::new(row_parser))?;
+
+        for (_id, _values) in file_parser.iter() {
+            // if id == GLEIS_ROW_B {
+            //     println!("{:?}", values);
+            // }
+        }
+
+        Ok(())
+    }
+
+    fn create_stops_primary_index(stops: &Vec<Rc<Stop>>) -> HashMap<i32, Rc<Stop>> {
+        let stops_primary_index: HashMap<i32, Rc<Stop>> =
+            stops.iter().fold(HashMap::new(), |mut acc, stop| {
+                acc.insert(stop.id, Rc::clone(stop));
+                acc
+            });
+        stops_primary_index
+    }
+
+    fn create_lv95_stop_coordinates_index_1(
+        coordinates: &Vec<Rc<Lv95Coordinate>>,
+    ) -> HashMap<i32, Rc<Lv95Coordinate>> {
+        let lv95_stop_coordinates_index_1: HashMap<i32, Rc<Lv95Coordinate>> = coordinates
+            .iter()
+            .fold(HashMap::new(), |mut acc, coordinate| {
+                acc.insert(coordinate.stop_id, Rc::clone(coordinate));
+                acc
+            });
+        lv95_stop_coordinates_index_1
+    }
+
     fn create_wgs_stop_coordinates_index_1(
         coordinates: &Vec<Rc<WgsCoordinate>>,
     ) -> HashMap<i32, Rc<WgsCoordinate>> {
@@ -174,5 +204,27 @@ impl Hrdf {
                 acc
             });
         wgs_stop_coordinates_index_1
+    }
+
+    fn set_parent_references(instance: &Rc<Hrdf>) {
+        for stop in &instance.stops {
+            stop.set_parent_reference(&instance);
+        }
+    }
+
+    pub fn stops(&self) -> &Vec<Rc<Stop>> {
+        &self.stops
+    }
+
+    pub fn stops_primary_index(&self) -> &HashMap<i32, Rc<Stop>> {
+        &self.stops_primary_index
+    }
+
+    pub fn lv95_stop_coordinates_index_1(&self) -> &HashMap<i32, Rc<Lv95Coordinate>> {
+        &self.lv95_stop_coordinates_index_1
+    }
+
+    pub fn wgs_stop_coordinates_index_1(&self) -> &HashMap<i32, Rc<WgsCoordinate>> {
+        &self.wgs_stop_coordinates_index_1
     }
 }

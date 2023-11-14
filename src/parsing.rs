@@ -75,8 +75,9 @@ impl ColumnDefinition {
 type RowConfiguration = Vec<ColumnDefinition>;
 
 pub trait RowParser {
-    fn parse(&self, row: &str) -> Vec<ParsedValue> {
-        let values = self.row_configuration(row)
+    fn parse(&self, row: &str) -> (i32, Vec<ParsedValue>) {
+        let (id, row_configuration) = self.row_configuration(row);
+        let values = row_configuration
             .iter()
             .map(|column_definition| {
                 let start = column_definition.start - 1;
@@ -102,10 +103,10 @@ pub trait RowParser {
                 }
             })
             .collect();
-        values
+        (id, values)
     }
 
-    fn row_configuration(&self, row: &str) -> &RowConfiguration;
+    fn row_configuration(&self, row: &str) -> (i32, &RowConfiguration);
 }
 
 pub struct SingleConfigurationRowParser {
@@ -119,8 +120,62 @@ impl SingleConfigurationRowParser {
 }
 
 impl RowParser for SingleConfigurationRowParser {
-    fn row_configuration(&self, _: &str) -> &RowConfiguration {
-        &self.row_configuration
+    fn row_configuration(&self, _: &str) -> (i32, &RowConfiguration) {
+        (0, &self.row_configuration)
+    }
+}
+
+pub struct RowType {
+    id: i32,
+    start: usize,
+    stop: usize,
+    value: String,
+    should_equal_value: bool,
+    row_configuration: RowConfiguration,
+}
+
+impl RowType {
+    pub fn new(
+        id: i32,
+        start: usize,
+        stop: usize,
+        value: &str,
+        should_equal_value: bool,
+        row_configuration: RowConfiguration,
+    ) -> Self {
+        Self {
+            id,
+            start,
+            stop,
+            value: value.to_string(),
+            should_equal_value,
+            row_configuration,
+        }
+    }
+}
+
+pub struct MultipleConfigurationRowParser {
+    row_types: Vec<RowType>,
+}
+
+impl MultipleConfigurationRowParser {
+    pub fn new(row_types: Vec<RowType>) -> Self {
+        Self { row_types }
+    }
+}
+
+impl RowParser for MultipleConfigurationRowParser {
+    fn row_configuration(&self, row: &str) -> (i32, &RowConfiguration) {
+        for row_type in &self.row_types {
+            // TOOD : rename a
+            let a = row[row_type.start..row_type.stop] == row_type.value;
+
+            if row_type.should_equal_value == a {
+                return (row_type.id, &row_type.row_configuration);
+            }
+        }
+
+        panic!("This type of row is unknown. The unknown row :\n{}", row);
     }
 }
 
@@ -160,7 +215,7 @@ pub struct FileParserIterator<'a> {
 }
 
 impl Iterator for FileParserIterator<'_> {
-    type Item = Vec<ParsedValue>;
+    type Item = (i32, Vec<ParsedValue>);
 
     fn next(&mut self) -> Option<Self::Item> {
         self.rows_iter.next().map(|row| self.row_parser.parse(row))

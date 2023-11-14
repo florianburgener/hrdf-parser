@@ -31,6 +31,10 @@ impl Stop {
         }
     }
 
+    pub fn set_parent_reference(&self, parent: &Rc<Hrdf>) {
+        *self.parent.borrow_mut() = Rc::downgrade(parent);
+    }
+
     pub fn lv95_coordinate(&self) -> Option<Rc<Lv95Coordinate>> {
         self.parent.borrow().upgrade().unwrap().lv95_stop_coordinates_index_1().get(&self.id).cloned()
     }
@@ -39,9 +43,7 @@ impl Stop {
         self.parent.borrow().upgrade().unwrap().wgs_stop_coordinates_index_1().get(&self.id).cloned()
     }
 
-    pub fn set_parent(&self, parent: &Rc<Hrdf>) {
-        *self.parent.borrow_mut() = Rc::downgrade(parent);
-    }
+
 }
 
 #[allow(unused)]
