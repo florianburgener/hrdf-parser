@@ -58,7 +58,7 @@ impl Hrdf {
         let row_parser = SingleConfigurationRowParser::new(row_configuration);
         let file_parser = FileParser::new("data/BAHNHOF", Box::new(row_parser))?;
 
-        let stops = file_parser
+        Ok(file_parser
             .iter()
             .map(|(_, mut values)| {
                 let id = i32::from(values.remove(0));
@@ -73,9 +73,7 @@ impl Hrdf {
 
                 Rc::new(Stop::new(id, name, long_name, abbreviation, synonyms))
             })
-            .collect();
-
-        Ok(stops)
+            .collect())
     }
 
     // BFKOORD_LV95 (BF = BAHNHOF)
@@ -89,7 +87,7 @@ impl Hrdf {
         let row_parser = SingleConfigurationRowParser::new(row_configuration);
         let file_parser = FileParser::new("data/BFKOORD_LV95", Box::new(row_parser))?;
 
-        let lv95_stop_coordinates = file_parser
+        Ok(file_parser
             .iter()
             .map(|(_, mut values)| {
                 let stop_id = i32::from(values.remove(0));
@@ -99,9 +97,7 @@ impl Hrdf {
 
                 Rc::new(Lv95Coordinate::new(easting, northing, altitude, stop_id))
             })
-            .collect();
-
-        Ok(lv95_stop_coordinates)
+            .collect())
     }
 
     // BFKOORD_WGS (BF = BAHNHOF)
@@ -115,7 +111,7 @@ impl Hrdf {
         let row_parser = SingleConfigurationRowParser::new(row_configuration);
         let file_parser = FileParser::new("data/BFKOORD_WGS", Box::new(row_parser))?;
 
-        let wgs_stop_coordinates = file_parser
+        Ok(file_parser
             .iter()
             .map(|(_, mut values)| {
                 let stop_id = i32::from(values.remove(0));
@@ -125,9 +121,7 @@ impl Hrdf {
 
                 Rc::new(WgsCoordinate::new(latitude, longitude, altitude, stop_id))
             })
-            .collect();
-
-        Ok(wgs_stop_coordinates)
+            .collect())
     }
 
     // GLEIS
@@ -135,31 +129,18 @@ impl Hrdf {
         const GLEIS_ROW_A: i32 = 1;
         const GLEIS_ROW_B: i32 = 2;
 
+        #[rustfmt::skip]
         let row_types = vec![
-            RowType::new(
-                GLEIS_ROW_A,
-                8,
-                9,
-                "#",
-                false,
-                vec![
-                    ColumnDefinition::new(1, 7, ExpectedType::Integer32),
-                    ColumnDefinition::new(9, 14, ExpectedType::Integer32),
-                    ColumnDefinition::new(16, 21, ExpectedType::String),
-                ],
-            ),
-            RowType::new(
-                GLEIS_ROW_B,
-                8,
-                9,
-                "#",
-                true,
-                vec![
-                    ColumnDefinition::new(1, 7, ExpectedType::Integer32),
-                    ColumnDefinition::new(10, 16, ExpectedType::Integer32),
-                    ColumnDefinition::new(18, -1, ExpectedType::String),
-                ],
-            ),
+            RowType::new(GLEIS_ROW_A, 8, 9, "#", false, vec![
+                ColumnDefinition::new(1, 7, ExpectedType::Integer32),
+                ColumnDefinition::new(9, 14, ExpectedType::Integer32),
+                ColumnDefinition::new(16, 21, ExpectedType::String),
+            ]),
+            RowType::new(GLEIS_ROW_B, 8, 9, "#", true, vec![
+                ColumnDefinition::new(1, 7, ExpectedType::Integer32),
+                ColumnDefinition::new(10, 16, ExpectedType::Integer32),
+                ColumnDefinition::new(18, -1, ExpectedType::String),
+            ]),
         ];
         let row_parser = MultipleConfigurationRowParser::new(row_types);
         let file_parser = FileParser::new("data/GLEIS", Box::new(row_parser))?;
@@ -174,36 +155,32 @@ impl Hrdf {
     }
 
     fn create_stops_primary_index(stops: &Vec<Rc<Stop>>) -> HashMap<i32, Rc<Stop>> {
-        let stops_primary_index: HashMap<i32, Rc<Stop>> =
-            stops.iter().fold(HashMap::new(), |mut acc, stop| {
-                acc.insert(stop.id, Rc::clone(stop));
-                acc
-            });
-        stops_primary_index
+        stops.iter().fold(HashMap::new(), |mut acc, stop| {
+            acc.insert(stop.id, Rc::clone(stop));
+            acc
+        })
     }
 
     fn create_lv95_stop_coordinates_index_1(
         coordinates: &Vec<Rc<Lv95Coordinate>>,
     ) -> HashMap<i32, Rc<Lv95Coordinate>> {
-        let lv95_stop_coordinates_index_1: HashMap<i32, Rc<Lv95Coordinate>> = coordinates
+        coordinates
             .iter()
             .fold(HashMap::new(), |mut acc, coordinate| {
                 acc.insert(coordinate.stop_id, Rc::clone(coordinate));
                 acc
-            });
-        lv95_stop_coordinates_index_1
+            })
     }
 
     fn create_wgs_stop_coordinates_index_1(
         coordinates: &Vec<Rc<WgsCoordinate>>,
     ) -> HashMap<i32, Rc<WgsCoordinate>> {
-        let wgs_stop_coordinates_index_1: HashMap<i32, Rc<WgsCoordinate>> = coordinates
+        coordinates
             .iter()
             .fold(HashMap::new(), |mut acc, coordinate| {
                 acc.insert(coordinate.stop_id, Rc::clone(coordinate));
                 acc
-            });
-        wgs_stop_coordinates_index_1
+            })
     }
 
     fn set_parent_references(instance: &Rc<Hrdf>) {
