@@ -1,7 +1,7 @@
 use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{
-    models::{Lv95Coordinate, Stop, WgsCoordinate},
+    models::{JourneyStop, Lv95Coordinate, Platform, Stop, WgsCoordinate},
     parsing::{
         self, ColumnDefinition, ExpectedType, FileParser, MultipleConfigurationRowParser, RowType,
         SingleConfigurationRowParser,
@@ -15,10 +15,15 @@ pub struct Hrdf {
     stops: Vec<Rc<Stop>>,
     lv95_stop_coordinates: Vec<Rc<Lv95Coordinate>>,
     wgs_stop_coordinates: Vec<Rc<WgsCoordinate>>,
+    journey_stop_platforms: Vec<Rc<JourneyStop>>,
+    platforms: Vec<Rc<Platform>>,
+
     // Indexes
-    stops_primary_index: HashMap<i32, Rc<Stop>>,
-    lv95_stop_coordinates_index_1: HashMap<i32, Rc<Lv95Coordinate>>,
-    wgs_stop_coordinates_index_1: HashMap<i32, Rc<WgsCoordinate>>,
+    stops_primary_index: HashMap<i32, Rc<Stop>>, // Key = Haltestellennummer
+    lv95_stop_coordinates_index_1: HashMap<i32, Rc<Lv95Coordinate>>, // Key = Haltestellennummer
+    wgs_stop_coordinates_index_1: HashMap<i32, Rc<WgsCoordinate>>, // Key = Haltestellennummer
+    journey_stop_platforms_index_1: HashMap<(i32, i32), Vec<Rc<JourneyStop>>>, // Key = (Haltestellennummer, Fahrtnummer)
+    platforms_primary_index: HashMap<(i32, i32), Rc<Platform>>, // Key = (Haltestellennummer, Index der Gleistextinformation)
 }
 
 impl Hrdf {
@@ -26,23 +31,31 @@ impl Hrdf {
         let stops = Self::load_stops()?;
         let lv95_stop_coordinates = Self::load_lv95_stop_coordinates()?;
         let wgs_stop_coordinates = Self::load_wgs_stop_coordinates()?;
-        Self::load_journey_stop_and_platforms()?;
+        let (journey_stop_platforms, platforms) =
+            Self::load_journey_stop_platforms_and_platforms()?;
 
         let stops_primary_index = Self::create_stops_primary_index(&stops);
         let lv95_stop_coordinates_index_1 =
             Self::create_lv95_stop_coordinates_index_1(&lv95_stop_coordinates);
         let wgs_stop_coordinates_index_1 =
             Self::create_wgs_stop_coordinates_index_1(&wgs_stop_coordinates);
+        let journey_stop_platforms_index_1 =
+            Self::create_journey_stop_platforms_index_1(&journey_stop_platforms);
+        let platforms_primary_index = Self::create_platforms_primary_index(&platforms);
 
         let instance = Rc::new(Self {
             // Tables
             stops,
             lv95_stop_coordinates,
             wgs_stop_coordinates,
+            journey_stop_platforms,
+            platforms,
             // Indexes
             stops_primary_index,
             lv95_stop_coordinates_index_1,
             wgs_stop_coordinates_index_1,
+            journey_stop_platforms_index_1,
+            platforms_primary_index,
         });
 
         Self::set_parent_references(&instance);
@@ -125,7 +138,8 @@ impl Hrdf {
     }
 
     // GLEIS
-    fn load_journey_stop_and_platforms() -> Result<(), Box<dyn Error>> {
+    fn load_journey_stop_platforms_and_platforms(
+    ) -> Result<(Vec<Rc<JourneyStop>>, Vec<Rc<Platform>>), Box<dyn Error>> {
         const GLEIS_ROW_A: i32 = 1;
         const GLEIS_ROW_B: i32 = 2;
 
@@ -135,9 +149,12 @@ impl Hrdf {
                 ColumnDefinition::new(1, 7, ExpectedType::Integer32),
                 ColumnDefinition::new(9, 14, ExpectedType::Integer32),
                 ColumnDefinition::new(16, 21, ExpectedType::String),
+                // 23-30 with #
+                ColumnDefinition::new(24, 30, ExpectedType::Integer32),
             ]),
             RowType::new(GLEIS_ROW_B, 8, 9, "#", true, vec![
                 ColumnDefinition::new(1, 7, ExpectedType::Integer32),
+                // 9-16 with #
                 ColumnDefinition::new(10, 16, ExpectedType::Integer32),
                 ColumnDefinition::new(18, -1, ExpectedType::String),
             ]),
@@ -145,18 +162,37 @@ impl Hrdf {
         let row_parser = MultipleConfigurationRowParser::new(row_types);
         let file_parser = FileParser::new("data/GLEIS", Box::new(row_parser))?;
 
-        for (_id, _values) in file_parser.iter() {
-            // if id == GLEIS_ROW_B {
-            //     println!("{:?}", values);
-            // }
+        let mut journey_stop_platforms = vec![];
+        let mut platforms = vec![];
+
+        for (id, mut values) in file_parser.iter() {
+            match id {
+                GLEIS_ROW_A => {
+                    let stop_id = i32::from(values.remove(0));
+                    let journey_id = i32::from(values.remove(0));
+
+                    journey_stop_platforms.push(Rc::new(JourneyStop::new(
+                        stop_id,
+                        journey_id,
+                        String::from(values.remove(0)),
+                        i32::from(values.remove(0)),
+                    )))
+                }
+                GLEIS_ROW_B => platforms.push(Rc::new(Platform::new(
+                    i32::from(values.remove(0)),
+                    i32::from(values.remove(0)),
+                    String::from(values.remove(0)),
+                ))),
+                _ => unreachable!(),
+            }
         }
 
-        Ok(())
+        Ok((journey_stop_platforms, platforms))
     }
 
     fn create_stops_primary_index(stops: &Vec<Rc<Stop>>) -> HashMap<i32, Rc<Stop>> {
-        stops.iter().fold(HashMap::new(), |mut acc, stop| {
-            acc.insert(stop.id, Rc::clone(stop));
+        stops.iter().fold(HashMap::new(), |mut acc, item| {
+            acc.insert(item.id, Rc::clone(item));
             acc
         })
     }
@@ -164,23 +200,41 @@ impl Hrdf {
     fn create_lv95_stop_coordinates_index_1(
         coordinates: &Vec<Rc<Lv95Coordinate>>,
     ) -> HashMap<i32, Rc<Lv95Coordinate>> {
-        coordinates
-            .iter()
-            .fold(HashMap::new(), |mut acc, coordinate| {
-                acc.insert(coordinate.stop_id, Rc::clone(coordinate));
-                acc
-            })
+        coordinates.iter().fold(HashMap::new(), |mut acc, item| {
+            acc.insert(item.stop_id, Rc::clone(item));
+            acc
+        })
     }
 
     fn create_wgs_stop_coordinates_index_1(
         coordinates: &Vec<Rc<WgsCoordinate>>,
     ) -> HashMap<i32, Rc<WgsCoordinate>> {
-        coordinates
+        coordinates.iter().fold(HashMap::new(), |mut acc, item| {
+            acc.insert(item.stop_id, Rc::clone(item));
+            acc
+        })
+    }
+
+    fn create_journey_stop_platforms_index_1(
+        journey_stop_platforms: &Vec<Rc<JourneyStop>>,
+    ) -> HashMap<(i32, i32), Vec<Rc<JourneyStop>>> {
+        journey_stop_platforms
             .iter()
-            .fold(HashMap::new(), |mut acc, coordinate| {
-                acc.insert(coordinate.stop_id, Rc::clone(coordinate));
+            .fold(HashMap::new(), |mut acc, item| {
+                acc.entry((item.journey_id, item.stop_id))
+                    .or_insert(Vec::new())
+                    .push(Rc::clone(item));
                 acc
             })
+    }
+
+    fn create_platforms_primary_index(
+        platforms: &Vec<Rc<Platform>>,
+    ) -> HashMap<(i32, i32), Rc<Platform>> {
+        platforms.iter().fold(HashMap::new(), |mut acc, item| {
+            acc.insert((item.stop_id, item.platform_index), Rc::clone(item));
+            acc
+        })
     }
 
     fn set_parent_references(instance: &Rc<Hrdf>) {
