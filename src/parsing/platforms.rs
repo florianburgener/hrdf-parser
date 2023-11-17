@@ -7,8 +7,15 @@ use crate::{
     },
 };
 
-pub fn load_journey_stop_platforms_and_platforms(
-) -> Result<(Vec<Rc<JourneyStop>>, Vec<Rc<Platform>>), Box<dyn Error>> {
+pub fn load_journey_stop_platforms_and_platforms() -> Result<
+    (
+        Vec<Rc<JourneyStop>>,
+        HashMap<(i32, i32), Vec<Rc<JourneyStop>>>,
+        Vec<Rc<Platform>>,
+        HashMap<(i32, i32), Rc<Platform>>,
+    ),
+    Box<dyn Error>,
+> {
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
 
@@ -31,7 +38,7 @@ pub fn load_journey_stop_platforms_and_platforms(
     let row_parser = MultipleConfigurationRowParser::new(row_types);
     let file_parser = FileParser::new("data/GLEIS", Box::new(row_parser))?;
 
-    let mut journey_stop_platforms = vec![];
+    let mut journey_platform = vec![];
     let mut platforms = vec![];
 
     for (id, mut values) in file_parser.iter() {
@@ -40,7 +47,7 @@ pub fn load_journey_stop_platforms_and_platforms(
                 let stop_id = i32::from(values.remove(0));
                 let journey_id = i32::from(values.remove(0));
 
-                journey_stop_platforms.push(Rc::new(JourneyStop::new(
+                journey_platform.push(Rc::new(JourneyStop::new(
                     stop_id,
                     journey_id,
                     String::from(values.remove(0)),
@@ -56,13 +63,21 @@ pub fn load_journey_stop_platforms_and_platforms(
         }
     }
 
-    Ok((journey_stop_platforms, platforms))
+    let journey_platform_index = create_journey_platform_index(&journey_platform);
+    let platforms_index = create_platforms_index(&platforms);
+
+    Ok((
+        journey_platform,
+        journey_platform_index,
+        platforms,
+        platforms_index,
+    ))
 }
 
-pub fn create_journey_stop_platforms_index_1(
-    journey_stop_platforms: &Vec<Rc<JourneyStop>>,
+fn create_journey_platform_index(
+    journey_platform: &Vec<Rc<JourneyStop>>,
 ) -> HashMap<(i32, i32), Vec<Rc<JourneyStop>>> {
-    journey_stop_platforms
+    journey_platform
         .iter()
         .fold(HashMap::new(), |mut acc, item| {
             acc.entry((item.journey_id, item.stop_id))
@@ -72,9 +87,7 @@ pub fn create_journey_stop_platforms_index_1(
         })
 }
 
-pub fn create_platforms_primary_index(
-    platforms: &Vec<Rc<Platform>>,
-) -> HashMap<(i32, i32), Rc<Platform>> {
+fn create_platforms_index(platforms: &Vec<Rc<Platform>>) -> HashMap<(i32, i32), Rc<Platform>> {
     platforms.iter().fold(HashMap::new(), |mut acc, item| {
         acc.insert((item.stop_id, item.platform_index), Rc::clone(item));
         acc

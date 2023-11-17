@@ -1,3 +1,4 @@
+// ECKDATEN
 use std::error::Error;
 
 use crate::parsing::{MultipleConfigurationRowParser, ParsedValue, RowType};

@@ -1,21 +1,18 @@
-use std::{
-    cell::RefCell,
-    rc::{Rc, Weak},
-};
-
-use crate::hrdf::Hrdf;
+use std::cell::{Ref, RefCell};
 
 #[allow(unused)]
 #[derive(Debug)]
 pub struct Stop {
-    pub id: i32,
+    id: i32,
     name: String,
     long_name: Option<String>,
     abbreviation: Option<String>,
     synonyms: Option<Vec<String>>,
-    parent: RefCell<Weak<Hrdf>>,
+    lv95_coordinate: RefCell<Option<Coordinate>>,
+    wgs84_coordinate: RefCell<Option<Coordinate>>,
 }
 
+#[allow(unused)]
 impl Stop {
     pub fn new(
         id: i32,
@@ -30,74 +27,104 @@ impl Stop {
             long_name,
             abbreviation,
             synonyms,
-            parent: RefCell::new(Weak::new()),
+            lv95_coordinate: RefCell::new(None),
+            wgs84_coordinate: RefCell::new(None),
         }
     }
 
-    pub fn set_parent_reference(&self, parent: &Rc<Hrdf>) {
-        *self.parent.borrow_mut() = Rc::downgrade(parent);
+    pub fn id(&self) -> &i32 {
+        &self.id
     }
 
-    pub fn lv95_coordinate(&self) -> Option<Rc<Lv95Coordinate>> {
-        self.parent
-            .borrow()
-            .upgrade()
-            .unwrap()
-            .lv95_stop_coordinates_index_1()
-            .get(&self.id)
-            .cloned()
+    pub fn name(&self) -> &String {
+        &self.name
     }
 
-    pub fn wgs_coordinate(&self) -> Option<Rc<WgsCoordinate>> {
-        self.parent
-            .borrow()
-            .upgrade()
-            .unwrap()
-            .wgs_stop_coordinates_index_1()
-            .get(&self.id)
-            .cloned()
+    pub fn long_name(&self) -> &Option<String> {
+        &self.long_name
     }
+
+    pub fn abbreviation(&self) -> &Option<String> {
+        &self.abbreviation
+    }
+
+    pub fn synonyms(&self) -> &Option<Vec<String>> {
+        &self.synonyms
+    }
+
+    pub fn lv95_coordinate(&self) -> Ref<'_, Option<Coordinate>> {
+        self.lv95_coordinate.borrow()
+    }
+
+    pub fn set_lv95_coordinate(&self, coordinate: Coordinate) {
+        *self.lv95_coordinate.borrow_mut() = Some(coordinate);
+    }
+
+    pub fn wgs84_coordinate(&self) -> Ref<'_, Option<Coordinate>> {
+        self.wgs84_coordinate.borrow()
+    }
+
+    pub fn set_wgs84_coordinate(&self, coordinate: Coordinate) {
+        *self.wgs84_coordinate.borrow_mut() = Some(coordinate);
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum CoordinateType {
+    LV95,
+    WGS84,
 }
 
 #[allow(unused)]
 #[derive(Debug)]
-pub struct Lv95Coordinate {
-    easting: f64,
-    northing: f64,
-    altitude: i16,
-    pub stop_id: i32,
-}
-
-impl Lv95Coordinate {
-    pub fn new(easting: f64, northing: f64, altitude: i16, stop_id: i32) -> Self {
-        Self {
-            easting,
-            northing,
-            altitude,
-            stop_id,
-        }
-    }
+pub struct Coordinate {
+    // TODO : should I add a getter for the field?
+    coordinate_type: CoordinateType,
+    x: f64,
+    y: f64,
+    z: i16,
+    // TODO : is this field useless?
+    stop_id: i32,
 }
 
 #[allow(unused)]
-#[derive(Debug)]
-pub struct WgsCoordinate {
-    latitude: f64,
-    longitude: f64,
-    altitude: i16,
-    pub stop_id: i32,
-}
-
-impl WgsCoordinate {
-    pub fn new(latitude: f64, longitude: f64, altitude: i16, stop_id: i32) -> Self {
+impl Coordinate {
+    pub fn new(coordinate_type: CoordinateType, x: f64, y: f64, z: i16, stop_id: i32) -> Self {
         Self {
-            latitude,
-            longitude,
-            altitude,
+            coordinate_type,
+            x,
+            y,
+            z,
             stop_id,
         }
     }
+
+    pub fn easting(&self) -> &f64 {
+        assert!(self.coordinate_type == CoordinateType::LV95);
+        &self.x
+    }
+
+    pub fn northing(&self) -> &f64 {
+        assert!(self.coordinate_type == CoordinateType::LV95);
+        &self.y
+    }
+
+    pub fn latitude(&self) -> &f64 {
+        assert!(self.coordinate_type == CoordinateType::WGS84);
+        &self.x
+    }
+
+    pub fn longitude(&self) -> &f64 {
+        assert!(self.coordinate_type == CoordinateType::WGS84);
+        &self.y
+    }
+
+    pub fn altitude(&self) -> &i16 {
+        &self.z
+    }
 }
+
+// TODO :
 
 #[allow(unused)]
 #[derive(Debug)]
@@ -108,6 +135,7 @@ pub struct JourneyStop {
     platform_index: i32,
 }
 
+#[allow(unused)]
 impl JourneyStop {
     pub fn new(journey_id: i32, stop_id: i32, unknown1: String, platform_index: i32) -> Self {
         Self {
