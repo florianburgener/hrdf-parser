@@ -125,6 +125,7 @@ pub struct Platform {
     pub stop_id: i32,
     pub platform_index: i32,
     data: String,
+    sloid: RefCell<String>,
 }
 
 impl Platform {
@@ -133,6 +134,7 @@ impl Platform {
             stop_id,
             platform_index,
             data,
+            sloid: RefCell::new("".to_string()),
         }
     }
 }

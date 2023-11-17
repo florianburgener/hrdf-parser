@@ -1,3 +1,20 @@
+// TODO : apply this rule only to the module definition.
+#![allow(non_snake_case)]
+mod BAHNHOF;
+mod BFKOORD_LV95;
+mod BFKOORD_WGS;
+mod ECKDATEN;
+mod GLEIS;
+
+pub use BAHNHOF::{create_stops_primary_index, load_stops};
+pub use BFKOORD_LV95::{create_lv95_stop_coordinates_index_1, load_lv95_stop_coordinates};
+pub use BFKOORD_WGS::{create_wgs_stop_coordinates_index_1, load_wgs_stop_coordinates};
+pub use ECKDATEN::load_timetable_key_data;
+pub use GLEIS::{
+    create_journey_stop_platforms_index_1, create_platforms_primary_index,
+    load_journey_stop_platforms_and_platforms,
+};
+
 use std::{
     cmp,
     collections::HashMap,
@@ -12,7 +29,6 @@ pub enum ExpectedType {
     String,
 }
 
-#[derive(Debug)]
 pub enum ParsedValue {
     Float(f64),
     Integer16(i16),
@@ -178,9 +194,6 @@ impl RowParser for MultipleConfigurationRowParser {
         panic!("This type of row is unknown. The unknown row :\n{}", row);
     }
 }
-
-// MultipleConfigurationRowParser
-// SequentialConfigurationRowParser
 
 pub struct FileParser {
     rows: Vec<String>,
