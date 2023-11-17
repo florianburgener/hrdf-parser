@@ -1,4 +1,4 @@
-// BAHNHOF, BHKOORD_LV95, BHKOORD_WGS
+// BAHNHOF, BFKOORD_LV95 (BF = BAHNHOF), BFKOORD_WGS (BF = BAHNHOF)
 use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::models::{Coordinate, CoordinateType, Stop};
