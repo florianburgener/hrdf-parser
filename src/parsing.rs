@@ -1,17 +1,12 @@
-mod platforms;
+mod platforms_parser;
 mod stops_parser;
 mod timetable_key_data_parser;
 
-pub use platforms::load_journey_stop_platforms_and_platforms;
+pub use platforms_parser::load_journey_stop_platforms_and_platforms;
 pub use stops_parser::load_stops;
 pub use timetable_key_data_parser::load_timetable_key_data;
 
-use std::{
-    cmp,
-    collections::HashMap,
-    fs::{self},
-    io,
-};
+use std::{cmp, fs, io};
 
 pub enum ExpectedType {
     Float,
@@ -63,6 +58,30 @@ impl From<ParsedValue> for String {
     }
 }
 
+pub struct RowMatcher {
+    start: usize,
+    stop: usize,
+    value: String,
+    should_equal_value: bool,
+}
+
+impl RowMatcher {
+    pub fn new(start: usize, stop: usize, value: &str, should_equal_value: bool) -> RowMatcher {
+        Self {
+            start,
+            stop,
+            value: value.to_string(),
+            should_equal_value,
+        }
+    }
+
+    fn match_row(&self, row: &str) -> bool {
+        // TOOD : rename a
+        let a = row[self.start..self.stop] == self.value;
+        self.should_equal_value == a
+    }
+}
+
 pub struct ColumnDefinition {
     start: usize,
     stop: isize,
@@ -81,10 +100,47 @@ impl ColumnDefinition {
 
 type RowConfiguration = Vec<ColumnDefinition>;
 
-pub trait RowParser {
-    fn parse(&self, row: &str) -> (i32, Vec<ParsedValue>) {
-        let (id, row_configuration) = self.row_configuration(row);
-        let values = row_configuration
+pub struct RowDefinition {
+    id: i32,
+    row_matcher: Option<RowMatcher>,
+    row_configuration: RowConfiguration,
+}
+
+impl RowDefinition {
+    pub fn new(id: i32, row_matcher: RowMatcher, row_configuration: RowConfiguration) -> Self {
+        Self {
+            id,
+            row_matcher: Some(row_matcher),
+            row_configuration,
+        }
+    }
+
+    pub fn new_with_row_configuration(row_configuration: RowConfiguration) -> Self {
+        Self {
+            id: 0,
+            row_matcher: None,
+            row_configuration,
+        }
+    }
+}
+
+// (RowDefinition.id, current cursor position in the file,  parsed row values)
+type ParsedRow = (i32, usize, Vec<ParsedValue>);
+
+pub struct RowParser {
+    row_definitions: Vec<RowDefinition>,
+}
+
+impl RowParser {
+    pub fn new(row_definitions: Vec<RowDefinition>) -> Self {
+        Self { row_definitions }
+    }
+
+    fn parse(&self, row: &str) -> ParsedRow {
+        let row_definition = self.row_definition(row);
+        let bytes_read = row.len() + 1;
+        let values = row_definition
+            .row_configuration
             .iter()
             .map(|column_definition| {
                 let start = column_definition.start - 1;
@@ -110,75 +166,17 @@ pub trait RowParser {
                 }
             })
             .collect();
-        (id, values)
+        (row_definition.id, bytes_read, values)
     }
 
-    fn row_configuration(&self, row: &str) -> (i32, &RowConfiguration);
-}
-
-pub struct SingleConfigurationRowParser {
-    row_configuration: RowConfiguration,
-}
-
-impl SingleConfigurationRowParser {
-    pub fn new(row_configuration: RowConfiguration) -> Self {
-        Self { row_configuration }
-    }
-}
-
-impl RowParser for SingleConfigurationRowParser {
-    fn row_configuration(&self, _: &str) -> (i32, &RowConfiguration) {
-        (0, &self.row_configuration)
-    }
-}
-
-pub struct RowType {
-    id: i32,
-    start: usize,
-    stop: usize,
-    value: String,
-    should_equal_value: bool,
-    row_configuration: RowConfiguration,
-}
-
-impl RowType {
-    pub fn new(
-        id: i32,
-        start: usize,
-        stop: usize,
-        value: &str,
-        should_equal_value: bool,
-        row_configuration: RowConfiguration,
-    ) -> Self {
-        Self {
-            id,
-            start,
-            stop,
-            value: value.to_string(),
-            should_equal_value,
-            row_configuration,
+    fn row_definition(&self, row: &str) -> &RowDefinition {
+        if self.row_definitions.len() == 1 {
+            return &self.row_definitions[0];
         }
-    }
-}
 
-pub struct MultipleConfigurationRowParser {
-    row_types: Vec<RowType>,
-}
-
-impl MultipleConfigurationRowParser {
-    pub fn new(row_types: Vec<RowType>) -> Self {
-        Self { row_types }
-    }
-}
-
-impl RowParser for MultipleConfigurationRowParser {
-    fn row_configuration(&self, row: &str) -> (i32, &RowConfiguration) {
-        for row_type in &self.row_types {
-            // TOOD : rename a
-            let a = row[row_type.start..row_type.stop] == row_type.value;
-
-            if row_type.should_equal_value == a {
-                return (row_type.id, &row_type.row_configuration);
+        for row_definition in &self.row_definitions {
+            if row_definition.row_matcher.as_ref().unwrap().match_row(row) {
+                return row_definition;
             }
         }
 
@@ -188,11 +186,11 @@ impl RowParser for MultipleConfigurationRowParser {
 
 pub struct FileParser {
     rows: Vec<String>,
-    row_parser: Box<dyn RowParser>,
+    row_parser: RowParser,
 }
 
 impl FileParser {
-    pub fn new(file_path: &str, row_parser: Box<dyn RowParser>) -> io::Result<Self> {
+    pub fn new(file_path: &str, row_parser: RowParser) -> io::Result<Self> {
         let contents = Self::read_file(file_path)?;
         let rows = contents.lines().map(String::from).collect();
 
@@ -203,45 +201,23 @@ impl FileParser {
         fs::read_to_string(file_path)
     }
 
-    pub fn iter(&self) -> FileParserIterator {
-        FileParserIterator {
+    pub fn parse(&self) -> ParsedRowIterator {
+        ParsedRowIterator {
             rows_iter: self.rows.iter(),
             row_parser: &self.row_parser,
         }
     }
 }
 
-// Iterator implementation for FileParser
-
-pub struct FileParserIterator<'a> {
+pub struct ParsedRowIterator<'a> {
     rows_iter: std::slice::Iter<'a, String>,
-    row_parser: &'a Box<dyn RowParser>,
+    row_parser: &'a RowParser,
 }
 
-impl Iterator for FileParserIterator<'_> {
-    type Item = (i32, Vec<ParsedValue>);
+impl Iterator for ParsedRowIterator<'_> {
+    type Item = ParsedRow;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.rows_iter.next().map(|row| self.row_parser.parse(row))
     }
-}
-
-pub fn parse_stop_name(name: String) -> HashMap<i32, Vec<String>> {
-    let parsed_name: HashMap<i32, Vec<String>> = name
-        .split('>')
-        .filter(|&s| !s.is_empty())
-        .map(|s| s.replace('$', ""))
-        .map(|s| {
-            let mut parts = s.split('<');
-
-            let value = parts.next().unwrap().to_string();
-            let key = parts.next().unwrap().parse::<i32>().unwrap();
-
-            (key, value)
-        })
-        .fold(HashMap::new(), |mut acc, (key, value)| {
-            acc.entry(key).or_insert(Vec::new()).push(value);
-            acc
-        });
-    parsed_name
 }

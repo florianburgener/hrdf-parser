@@ -128,7 +128,7 @@ impl Coordinate {
 
 #[allow(unused)]
 #[derive(Debug)]
-pub struct JourneyStop {
+pub struct JourneyPlatform {
     pub journey_id: i32,
     pub stop_id: i32,
     unknown1: String,
@@ -136,7 +136,7 @@ pub struct JourneyStop {
 }
 
 #[allow(unused)]
-impl JourneyStop {
+impl JourneyPlatform {
     pub fn new(journey_id: i32, stop_id: i32, unknown1: String, platform_index: i32) -> Self {
         Self {
             stop_id,

@@ -1,15 +1,15 @@
 use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{
-    models::{JourneyStop, Platform, Stop},
+    models::{JourneyPlatform, Platform, Stop},
     parsing,
 };
 
 #[allow(unused)]
 #[derive(Debug)]
 pub struct Hrdf {
-    journey_platform: Vec<Rc<JourneyStop>>,
-    journey_platform_index: HashMap<(i32, i32), Vec<Rc<JourneyStop>>>, // Key = (Haltestellennummer, Fahrtnummer)
+    journey_platform: Vec<Rc<JourneyPlatform>>,
+    journey_platform_index: HashMap<(i32, i32), Vec<Rc<JourneyPlatform>>>, // Key = (Haltestellennummer, Fahrtnummer)
 
     platforms: Vec<Rc<Platform>>,
     platforms_index: HashMap<(i32, i32), Rc<Platform>>, // Key = (Haltestellennummer, Index der Gleistextinformation)
