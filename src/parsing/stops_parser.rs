@@ -10,6 +10,7 @@ pub fn load_stops() -> Result<(Vec<Rc<Stop>>, HashMap<i32, Rc<Stop>>), Box<dyn E
     let row_parser = RowParser::new(vec![
         RowDefinition::new_with_row_configuration(vec![
             ColumnDefinition::new(1, 7, ExpectedType::Integer32),
+            // 13-62 (-1 instead of 62 because some rows are longer than index 62)
             ColumnDefinition::new(13, -1, ExpectedType::String),
         ]),
     ]);

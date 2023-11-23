@@ -6,13 +6,15 @@ pub use platforms_parser::load_journey_stop_platforms_and_platforms;
 pub use stops_parser::load_stops;
 pub use timetable_key_data_parser::load_timetable_key_data;
 
-use std::{cmp, fs, io};
+use std::{fs, io};
 
 pub enum ExpectedType {
     Float,
     Integer16,
     Integer32,
     String,
+    OptionInteger16,
+    OptionInteger32,
 }
 
 pub enum ParsedValue {
@@ -20,6 +22,8 @@ pub enum ParsedValue {
     Integer16(i16),
     Integer32(i32),
     String(String),
+    OptionInteger16(Option<i16>),
+    OptionInteger32(Option<i32>),
 }
 
 impl From<ParsedValue> for f64 {
@@ -54,6 +58,24 @@ impl From<ParsedValue> for String {
         match value {
             ParsedValue::String(x) => x,
             _ => panic!("Failed to convert ParsedValue to String"),
+        }
+    }
+}
+
+impl From<ParsedValue> for Option<i16> {
+    fn from(value: ParsedValue) -> Self {
+        match value {
+            ParsedValue::OptionInteger16(x) => x,
+            _ => panic!("Failed to convert ParsedValue to Option<i16>"),
+        }
+    }
+}
+
+impl From<ParsedValue> for Option<i32> {
+    fn from(value: ParsedValue) -> Self {
+        match value {
+            ParsedValue::OptionInteger32(x) => x,
+            _ => panic!("Failed to convert ParsedValue to Option<i32>"),
         }
     }
 }
@@ -144,25 +166,25 @@ impl RowParser {
             .iter()
             .map(|column_definition| {
                 let start = column_definition.start - 1;
-                let stop;
-
-                if column_definition.stop == -1 {
-                    stop = row.len()
+                let stop = if column_definition.stop == -1 {
+                    row.len()
                 } else {
-                    stop = cmp::min(column_definition.stop as usize, row.len());
-                }
+                    column_definition.stop as usize
+                };
 
                 let value = row[start..stop].trim();
 
                 match column_definition.expected_type {
-                    ExpectedType::Float => ParsedValue::Float(value.parse::<f64>().unwrap()),
-                    ExpectedType::Integer16 => {
-                        ParsedValue::Integer16(value.parse::<i16>().unwrap())
+                    ExpectedType::Float => ParsedValue::Float(value.parse().unwrap()),
+                    ExpectedType::Integer16 => ParsedValue::Integer16(value.parse().unwrap()),
+                    ExpectedType::Integer32 => ParsedValue::Integer32(value.parse().unwrap()),
+                    ExpectedType::String => ParsedValue::String(value.parse().unwrap()),
+                    ExpectedType::OptionInteger16 => {
+                        ParsedValue::OptionInteger16(value.parse().ok())
                     }
-                    ExpectedType::Integer32 => {
-                        ParsedValue::Integer32(value.parse::<i32>().unwrap())
+                    ExpectedType::OptionInteger32 => {
+                        ParsedValue::OptionInteger32(value.parse().ok())
                     }
-                    ExpectedType::String => ParsedValue::String(value.parse::<String>().unwrap()),
                 }
             })
             .collect();

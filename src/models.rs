@@ -2,6 +2,76 @@ use std::cell::{Ref, RefCell};
 
 #[allow(unused)]
 #[derive(Debug)]
+pub struct JourneyPlatform {
+    journey_id: i32,
+    stop_id: i32,
+    // Verwaltung für Fahrt
+    unknown1: String,
+    platform_index: i32,
+    hour: Option<i16>,
+    bit_field_id: Option<i32>,
+}
+
+#[allow(unused)]
+impl JourneyPlatform {
+    pub fn new(journey_id: i32, stop_id: i32, unknown1: String, platform_index: i32,  hour: Option<i16>, bit_field_id: Option<i32>) -> Self {
+        Self {
+            journey_id,
+            stop_id,
+            unknown1,
+            platform_index,
+            hour,
+            bit_field_id,
+        }
+    }
+
+    pub fn journey_id(&self) -> &i32 {
+        &self.journey_id
+    }
+
+    pub fn stop_id(&self) -> &i32 {
+        &self.stop_id
+    }
+
+    pub fn unknown1(&self) -> &String {
+        &self.unknown1
+    }
+
+    pub fn platform_index(&self) -> &i32 {
+        &self.platform_index
+    }
+}
+
+#[allow(unused)]
+#[derive(Debug, Default)]
+pub struct Platform {
+    stop_id: i32,
+    platform_index: i32,
+    data: String,
+    sloid: RefCell<String>,
+}
+
+impl Platform {
+    pub fn new(stop_id: i32, platform_index: i32, data: String) -> Self {
+        Self {
+            stop_id,
+            platform_index,
+            data,
+            sloid: RefCell::new("".to_string()),
+        }
+    }
+
+    pub fn stop_id(&self) -> &i32 {
+        &self.stop_id
+    }
+
+    pub fn platform_index(&self) -> &i32 {
+        &self.platform_index
+    }
+}
+
+#[allow(unused)]
+#[derive(Debug)]
 pub struct Stop {
     id: i32,
     name: String,
@@ -121,48 +191,5 @@ impl Coordinate {
 
     pub fn altitude(&self) -> &i16 {
         &self.z
-    }
-}
-
-// TODO :
-
-#[allow(unused)]
-#[derive(Debug)]
-pub struct JourneyPlatform {
-    pub journey_id: i32,
-    pub stop_id: i32,
-    unknown1: String,
-    platform_index: i32,
-}
-
-#[allow(unused)]
-impl JourneyPlatform {
-    pub fn new(journey_id: i32, stop_id: i32, unknown1: String, platform_index: i32) -> Self {
-        Self {
-            stop_id,
-            journey_id,
-            unknown1,
-            platform_index,
-        }
-    }
-}
-
-#[allow(unused)]
-#[derive(Debug)]
-pub struct Platform {
-    pub stop_id: i32,
-    pub platform_index: i32,
-    data: String,
-    sloid: RefCell<String>,
-}
-
-impl Platform {
-    pub fn new(stop_id: i32, platform_index: i32, data: String) -> Self {
-        Self {
-            stop_id,
-            platform_index,
-            data,
-            sloid: RefCell::new("".to_string()),
-        }
     }
 }

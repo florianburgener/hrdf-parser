@@ -26,6 +26,8 @@ pub fn load_journey_stop_platforms_and_platforms() -> Result<
             ColumnDefinition::new(16, 21, ExpectedType::String),
             // 23-30 with #
             ColumnDefinition::new(24, 30, ExpectedType::Integer32),
+            ColumnDefinition::new(32, 35, ExpectedType::OptionInteger16),
+            ColumnDefinition::new(37, 42, ExpectedType::OptionInteger32),
         ]),
         RowDefinition::new(ROW_B, RowMatcher::new(8, 9, "#", true), vec![
             ColumnDefinition::new(1, 7, ExpectedType::Integer32),
@@ -47,24 +49,35 @@ pub fn load_journey_stop_platforms_and_platforms() -> Result<
 
                 let stop_id = i32::from(values.remove(0));
                 let journey_id = i32::from(values.remove(0));
+                let unknown1 = String::from(values.remove(0));
+                let platform_index = i32::from(values.remove(0));
+                let hour: Option<i16> = values.remove(0).into();
+                let bit_field_id: Option<i32> = values.remove(0).into();
 
                 journey_platform.push(Rc::new(JourneyPlatform::new(
-                    stop_id,
                     journey_id,
-                    String::from(values.remove(0)),
-                    i32::from(values.remove(0)),
+                    stop_id,
+                    unknown1,
+                    platform_index,
+                    hour,
+                    bit_field_id,
                 )))
             }
-            ROW_B => platforms.push(Rc::new(Platform::new(
-                i32::from(values.remove(0)),
-                i32::from(values.remove(0)),
-                String::from(values.remove(0)),
-            ))),
+            ROW_B => {
+                let stop_id = i32::from(values.remove(0));
+                let platform_index = i32::from(values.remove(0));
+                let data = String::from(values.remove(0));
+
+                platforms.push(Rc::new(Platform::new(stop_id, platform_index, data)))
+            }
             _ => unreachable!(),
         }
     }
 
-    println!("{}", first_section_last_cursor_position);
+    println!(
+        "Size of section A of the GLEIS file in bytes: {}",
+        first_section_last_cursor_position
+    );
     let journey_platform_index = create_journey_platform_index(&journey_platform);
     let platforms_index = create_platforms_index(&platforms);
 
@@ -82,7 +95,7 @@ fn create_journey_platform_index(
     journey_platform
         .iter()
         .fold(HashMap::new(), |mut acc, item| {
-            acc.entry((item.journey_id, item.stop_id))
+            acc.entry((*item.journey_id(), *item.stop_id()))
                 .or_insert(Vec::new())
                 .push(Rc::clone(item));
             acc
@@ -91,7 +104,7 @@ fn create_journey_platform_index(
 
 fn create_platforms_index(platforms: &Vec<Rc<Platform>>) -> HashMap<(i32, i32), Rc<Platform>> {
     platforms.iter().fold(HashMap::new(), |mut acc, item| {
-        acc.insert((item.stop_id, item.platform_index), Rc::clone(item));
+        acc.insert((*item.stop_id(), *item.platform_index()), Rc::clone(item));
         acc
     })
 }
