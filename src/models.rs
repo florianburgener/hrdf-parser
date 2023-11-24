@@ -14,7 +14,14 @@ pub struct JourneyPlatform {
 
 #[allow(unused)]
 impl JourneyPlatform {
-    pub fn new(journey_id: i32, stop_id: i32, unknown1: String, platform_index: i32,  hour: Option<i16>, bit_field_id: Option<i32>) -> Self {
+    pub fn new(
+        journey_id: i32,
+        stop_id: i32,
+        unknown1: String,
+        platform_index: i32,
+        hour: Option<i16>,
+        bit_field_id: Option<i32>,
+    ) -> Self {
         Self {
             journey_id,
             stop_id,
@@ -47,17 +54,24 @@ impl JourneyPlatform {
 pub struct Platform {
     stop_id: i32,
     platform_index: i32,
-    data: String,
+    number: String,
+    sectors: Option<String>,
     sloid: RefCell<String>,
+    lv95_coordinate: RefCell<Coordinate>,
+    wgs84_coordinate: RefCell<Coordinate>,
 }
 
+#[allow(unused)]
 impl Platform {
-    pub fn new(stop_id: i32, platform_index: i32, data: String) -> Self {
+    pub fn new(stop_id: i32, platform_index: i32, number: String, sectors: Option<String>) -> Self {
         Self {
             stop_id,
             platform_index,
-            data,
+            number,
+            sectors,
             sloid: RefCell::new("".to_string()),
+            lv95_coordinate: RefCell::new(Coordinate::default()),
+            wgs84_coordinate: RefCell::new(Coordinate::default()),
         }
     }
 
@@ -67,6 +81,18 @@ impl Platform {
 
     pub fn platform_index(&self) -> &i32 {
         &self.platform_index
+    }
+
+    pub fn number(&self) -> &String {
+        &self.number
+    }
+
+    pub fn sectors(&self) -> &Option<String> {
+        &self.sectors
+    }
+
+    pub fn sloid(&self) -> Ref<'_, String> {
+        self.sloid.borrow()
     }
 }
 
@@ -139,14 +165,14 @@ impl Stop {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 pub enum CoordinateType {
-    LV95,
+    #[default] LV95,
     WGS84,
 }
 
 #[allow(unused)]
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Coordinate {
     // TODO : should I add a getter for the field?
     coordinate_type: CoordinateType,

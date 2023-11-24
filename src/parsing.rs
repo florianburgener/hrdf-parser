@@ -17,6 +17,7 @@ pub enum ExpectedType {
     OptionInteger32,
 }
 
+#[derive(Debug)]
 pub enum ParsedValue {
     Float(f64),
     Integer16(i16),
