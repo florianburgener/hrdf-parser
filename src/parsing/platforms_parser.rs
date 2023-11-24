@@ -134,16 +134,16 @@ fn load_lv95_coordinates(
         RowDefinition::new(ROW_A, RowMatcher::new(18, 1, "G", true), vec![]),
         // This row contains the SLOID.
         RowDefinition::new(ROW_B, RowMatcher::new(18, 3, "I A", true), vec![
-            ColumnDefinition::new(1, 7, ExpectedType::Integer32),
-            ColumnDefinition::new(10, 16, ExpectedType::Integer32),
-            ColumnDefinition::new(22, -1, ExpectedType::String),
+            ColumnDefinition::new(1, 7, ExpectedType::Integer32),   // Complies with the standard.
+            ColumnDefinition::new(10, 16, ExpectedType::Integer32), // Does not comply with the standard. Should be 9-16, but here the # character is ignored.
+            ColumnDefinition::new(22, -1, ExpectedType::String),    // Complies with the SBB standard.
         ]),
         // This row contains the LV95 coordinates of the platform.
         RowDefinition::new(ROW_C, RowMatcher::new(18, 1, "K", true), vec![
-            ColumnDefinition::new(1, 7, ExpectedType::Integer32),
-            ColumnDefinition::new(10, 16, ExpectedType::Integer32),
-            ColumnDefinition::new(20, 26, ExpectedType::Float),
-            ColumnDefinition::new(28, 34, ExpectedType::Float),
+            ColumnDefinition::new(1, 7, ExpectedType::Integer32),   // Complies with the standard.
+            ColumnDefinition::new(10, 16, ExpectedType::Integer32), // Does not comply with the standard. Should be 9-16, but here the # character is ignored.
+            ColumnDefinition::new(20, 26, ExpectedType::Float),     // Complies with the SBB standard.
+            ColumnDefinition::new(28, 34, ExpectedType::Float),     // Complies with the SBB standard.
         ]),
     ]);
     let file_parser = FileParser::new("data/GLEIS_LV95", row_parser)?;
