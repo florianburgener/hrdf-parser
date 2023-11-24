@@ -1,3 +1,12 @@
+Progression (7/38) :
+* BAHNHOF
+* BFKOORD_LV95
+* BFKOORD_WGS
+* GLEIS
+* GLEIS_LV95
+* GLEIS_WGS
+* GRENZHLT (the file is empty)
+
 TODO :
 
 * thiserror
