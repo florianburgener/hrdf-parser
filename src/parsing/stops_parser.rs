@@ -9,9 +9,8 @@ pub fn load_stops() -> Result<(Vec<Rc<Stop>>, HashMap<i32, Rc<Stop>>), Box<dyn E
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         RowDefinition::new_with_row_configuration(vec![
-            ColumnDefinition::new(1, 7, ExpectedType::Integer32),
-            // 13-62 (-1 instead of 62 because some rows are longer than index 62)
-            ColumnDefinition::new(13, -1, ExpectedType::String),
+            ColumnDefinition::new(1, 7, ExpectedType::Integer32), // Complies with the standard.
+            ColumnDefinition::new(13, -1, ExpectedType::String),  // Does not comply with the standard. Should be 13-62, but some entries go beyond column 62.
         ]),
     ]);
     let file_parser = FileParser::new("data/BAHNHOF", row_parser)?;
@@ -19,8 +18,8 @@ pub fn load_stops() -> Result<(Vec<Rc<Stop>>, HashMap<i32, Rc<Stop>>), Box<dyn E
     let stops = file_parser
         .parse()
         .map(|(_, _, mut values)| {
-            let id = i32::from(values.remove(0));
-            let raw_name = String::from(values.remove(0));
+            let id: i32 = values.remove(0).into();
+            let raw_name: String = values.remove(0).into();
 
             let parsed_name = parse_stop_name(raw_name);
 
@@ -34,8 +33,8 @@ pub fn load_stops() -> Result<(Vec<Rc<Stop>>, HashMap<i32, Rc<Stop>>), Box<dyn E
         .collect();
 
     let stops_index = create_stops_index(&stops);
-    load_lv95_stop_coordinates(&stops_index)?;
-    load_wgs84_stop_coordinates(&stops_index)?;
+    load_lv95_coordinates(&stops_index)?;
+    load_wgs84_coordinates(&stops_index)?;
 
     Ok((stops, stops_index))
 }
@@ -47,23 +46,23 @@ fn create_stops_index(stops: &Vec<Rc<Stop>>) -> HashMap<i32, Rc<Stop>> {
     })
 }
 
-fn load_lv95_stop_coordinates(stops_index: &HashMap<i32, Rc<Stop>>) -> Result<(), Box<dyn Error>> {
+fn load_lv95_coordinates(stops_index: &HashMap<i32, Rc<Stop>>) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         RowDefinition::new_with_row_configuration(vec![
-            ColumnDefinition::new(1, 7, ExpectedType::Integer32),
-            ColumnDefinition::new(9, 18, ExpectedType::Float),
-            ColumnDefinition::new(20, 29, ExpectedType::Float),
-            ColumnDefinition::new(31, 36, ExpectedType::Integer16),
+            ColumnDefinition::new(1, 7, ExpectedType::Integer32),   // Complies with the standard.
+            ColumnDefinition::new(9, 18, ExpectedType::Float),      // Complies with the standard.
+            ColumnDefinition::new(20, 29, ExpectedType::Float),     // Complies with the standard.
+            ColumnDefinition::new(31, 36, ExpectedType::Integer16), // Complies with the standard.
         ]),
     ]);
     let file_parser = FileParser::new("data/BFKOORD_LV95", row_parser)?;
 
     for (_, _, mut values) in file_parser.parse() {
-        let stop_id = i32::from(values.remove(0));
-        let easting = f64::from(values.remove(0));
-        let northing = f64::from(values.remove(0));
-        let altitude = i16::from(values.remove(0));
+        let stop_id: i32 = values.remove(0).into();
+        let easting: f64 = values.remove(0).into();
+        let northing: f64 = values.remove(0).into();
+        let altitude: i16 = values.remove(0).into();
 
         let coordinate =
             Coordinate::new(CoordinateType::LV95, easting, northing, altitude, stop_id);
@@ -76,20 +75,22 @@ fn load_lv95_stop_coordinates(stops_index: &HashMap<i32, Rc<Stop>>) -> Result<()
     Ok(())
 }
 
-fn load_wgs84_stop_coordinates(stops_index: &HashMap<i32, Rc<Stop>>) -> Result<(), Box<dyn Error>> {
-    let row_parser = RowParser::new(vec![RowDefinition::new_with_row_configuration(vec![
-        ColumnDefinition::new(1, 7, ExpectedType::Integer32),
-        ColumnDefinition::new(9, 18, ExpectedType::Float),
-        ColumnDefinition::new(20, 29, ExpectedType::Float),
-        ColumnDefinition::new(31, 36, ExpectedType::Integer16),
-    ])]);
+fn load_wgs84_coordinates(stops_index: &HashMap<i32, Rc<Stop>>) -> Result<(), Box<dyn Error>> {
+    let row_parser = RowParser::new(vec![
+        RowDefinition::new_with_row_configuration(vec![
+            ColumnDefinition::new(1, 7, ExpectedType::Integer32),   // Complies with the standard.
+            ColumnDefinition::new(9, 18, ExpectedType::Float),      // Complies with the standard.
+            ColumnDefinition::new(20, 29, ExpectedType::Float),     // Complies with the standard.
+            ColumnDefinition::new(31, 36, ExpectedType::Integer16), // Complies with the standard.
+        ])
+    ]);
     let file_parser = FileParser::new("data/BFKOORD_WGS", row_parser)?;
 
     for (_, _, mut values) in file_parser.parse() {
-        let stop_id = i32::from(values.remove(0));
-        let longitude = f64::from(values.remove(0));
-        let latitude = f64::from(values.remove(0));
-        let altitude = i16::from(values.remove(0));
+        let stop_id: i32 = values.remove(0).into();
+        let longitude: f64 = values.remove(0).into();
+        let latitude: f64 = values.remove(0).into();
+        let altitude: i16 = values.remove(0).into();
 
         let coordinate = Coordinate::new(
             CoordinateType::WGS84,

@@ -1,30 +1,38 @@
 // ECKDATEN
 use std::error::Error;
 
-use crate::parsing::{ParsedValue, RowDefinition, RowMatcher, RowParser};
+use crate::{
+    models::TimetableKeyData,
+    parsing::{ParsedValue, RowDefinition, RowMatcher, RowParser},
+};
 
 use super::{ColumnDefinition, ExpectedType, FileParser};
 
-pub fn load_timetable_key_data() -> Result<(), Box<dyn Error>> {
+pub fn load_timetable_key_data() -> Result<TimetableKeyData, Box<dyn Error>> {
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 1;
 
+    // TODO : If there is a "." in column 3 for ROW_B, this code will not work.
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
-        RowDefinition::new(ROW_A, RowMatcher::new(2, 3, ".", true), vec![
-            ColumnDefinition::new(1, 10, ExpectedType::String),
+        RowDefinition::new(ROW_A, RowMatcher::new(3, 1, ".", true), vec![
+            ColumnDefinition::new(1, 10, ExpectedType::String), // Complies with the standard.
         ]),
-        RowDefinition::new(ROW_B, RowMatcher::new(2, 3, ".", false), vec![
-            ColumnDefinition::new(1, -1, ExpectedType::String),
+        RowDefinition::new(ROW_B, RowMatcher::new(3, 1, ".", false), vec![
+            ColumnDefinition::new(1, -1, ExpectedType::String), // Complies with the standard.
         ]),
     ]);
 
     let file_parser = FileParser::new("data/ECKDATEN", row_parser)?;
 
-    let mut data: Vec<Vec<ParsedValue>> = file_parser.parse().map(|x| x.2).collect();
-    let _timetable_start = String::from(data[0].remove(0));
-    let _timetable_end = String::from(data[1].remove(0));
-    let _metadata = String::from(data[2].remove(0));
+    let mut data: Vec<ParsedValue> = file_parser.parse().map(|mut x| x.2.remove(0)).collect();
+    let timetable_start: String = data.remove(0).into();
+    let timetable_end: String = data.remove(0).into();
+    let metadata: String = data.remove(0).into();
 
-    Ok(())
+    let metada = metadata.split('$').map(String::from).collect();
+
+    let timetable_key_data = TimetableKeyData::new(timetable_start, timetable_end, metada);
+
+    Ok(timetable_key_data)
 }

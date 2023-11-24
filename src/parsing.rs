@@ -82,31 +82,34 @@ impl From<ParsedValue> for Option<i32> {
 }
 
 pub struct RowMatcher {
+    // 1-based indexing
     start: usize,
-    stop: usize,
+    length: usize,
     value: String,
     should_equal_value: bool,
 }
 
 impl RowMatcher {
-    pub fn new(start: usize, stop: usize, value: &str, should_equal_value: bool) -> RowMatcher {
+    pub fn new(start: usize, length: usize, value: &str, should_equal_value: bool) -> RowMatcher {
         Self {
             start,
-            stop,
+            length,
             value: value.to_string(),
             should_equal_value,
         }
     }
 
     fn match_row(&self, row: &str) -> bool {
-        // TOOD : rename a
-        let a = row[self.start..self.stop] == self.value;
-        self.should_equal_value == a
+        let start = self.start - 1;
+        let target_value = &row[start..(start + self.length)];
+        self.should_equal_value == (target_value == self.value)
     }
 }
 
 pub struct ColumnDefinition {
+    // 1-based indexing
     start: usize,
+    // 1-based indexing
     stop: isize,
     expected_type: ExpectedType,
 }

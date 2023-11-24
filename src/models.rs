@@ -1,5 +1,69 @@
 use std::cell::{Ref, RefCell};
 
+// ------------------------------------------------------------------------------------------------
+// --- Coordinate
+// ------------------------------------------------------------------------------------------------
+
+#[derive(Debug, Default, PartialEq)]
+pub enum CoordinateType {
+    #[default]
+    LV95,
+    WGS84,
+}
+
+#[allow(unused)]
+#[derive(Debug, Default)]
+pub struct Coordinate {
+    // TODO : should I add a getter for the field?
+    coordinate_type: CoordinateType,
+    x: f64,
+    y: f64,
+    z: i16,
+    // TODO : is this field useless?
+    stop_id: i32,
+}
+
+#[allow(unused)]
+impl Coordinate {
+    pub fn new(coordinate_type: CoordinateType, x: f64, y: f64, z: i16, stop_id: i32) -> Self {
+        Self {
+            coordinate_type,
+            x,
+            y,
+            z,
+            stop_id,
+        }
+    }
+
+    pub fn easting(&self) -> &f64 {
+        assert!(self.coordinate_type == CoordinateType::LV95);
+        &self.x
+    }
+
+    pub fn northing(&self) -> &f64 {
+        assert!(self.coordinate_type == CoordinateType::LV95);
+        &self.y
+    }
+
+    pub fn latitude(&self) -> &f64 {
+        assert!(self.coordinate_type == CoordinateType::WGS84);
+        &self.x
+    }
+
+    pub fn longitude(&self) -> &f64 {
+        assert!(self.coordinate_type == CoordinateType::WGS84);
+        &self.y
+    }
+
+    pub fn altitude(&self) -> &i16 {
+        &self.z
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
+// --- JourneyPlatform
+// ------------------------------------------------------------------------------------------------
+
 #[allow(unused)]
 #[derive(Debug)]
 pub struct JourneyPlatform {
@@ -49,6 +113,10 @@ impl JourneyPlatform {
     }
 }
 
+// ------------------------------------------------------------------------------------------------
+// --- Platform
+// ------------------------------------------------------------------------------------------------
+
 #[allow(unused)]
 #[derive(Debug, Default)]
 pub struct Platform {
@@ -69,7 +137,7 @@ impl Platform {
             platform_index,
             number,
             sectors,
-            sloid: RefCell::new("".to_string()),
+            sloid: RefCell::new(String::default()),
             lv95_coordinate: RefCell::new(Coordinate::default()),
             wgs84_coordinate: RefCell::new(Coordinate::default()),
         }
@@ -94,7 +162,31 @@ impl Platform {
     pub fn sloid(&self) -> Ref<'_, String> {
         self.sloid.borrow()
     }
+
+    pub fn set_sloid(&self, sloid: String) {
+        *self.sloid.borrow_mut() = sloid;
+    }
+
+    pub fn lv95_coordinate(&self) -> Ref<'_, Coordinate> {
+        self.lv95_coordinate.borrow()
+    }
+
+    pub fn set_lv95_coordinate(&self, coordinate: Coordinate) {
+        *self.lv95_coordinate.borrow_mut() = coordinate;
+    }
+
+    pub fn wgs84_coordinate(&self) -> Ref<'_, Coordinate> {
+        self.wgs84_coordinate.borrow()
+    }
+
+    pub fn set_wgs84_coordinate(&self, coordinate: Coordinate) {
+        *self.wgs84_coordinate.borrow_mut() = coordinate;
+    }
 }
+
+// ------------------------------------------------------------------------------------------------
+// --- Stop
+// ------------------------------------------------------------------------------------------------
 
 #[allow(unused)]
 #[derive(Debug)]
@@ -165,57 +257,39 @@ impl Stop {
     }
 }
 
-#[derive(Debug, Default, PartialEq)]
-pub enum CoordinateType {
-    #[default] LV95,
-    WGS84,
+// ------------------------------------------------------------------------------------------------
+// --- TimetableKeyData
+// ------------------------------------------------------------------------------------------------
+
+#[allow(unused)]
+#[derive(Debug)]
+pub struct TimetableKeyData {
+    // TODO : Use a library to store a date.
+    start: String,
+    // TODO : Use a library to store a date.
+    end: String,
+    metadata: Vec<String>,
 }
 
 #[allow(unused)]
-#[derive(Debug, Default)]
-pub struct Coordinate {
-    // TODO : should I add a getter for the field?
-    coordinate_type: CoordinateType,
-    x: f64,
-    y: f64,
-    z: i16,
-    // TODO : is this field useless?
-    stop_id: i32,
-}
-
-#[allow(unused)]
-impl Coordinate {
-    pub fn new(coordinate_type: CoordinateType, x: f64, y: f64, z: i16, stop_id: i32) -> Self {
+impl TimetableKeyData {
+    pub fn new(start: String, end: String, metadata: Vec<String>) -> Self {
         Self {
-            coordinate_type,
-            x,
-            y,
-            z,
-            stop_id,
+            start,
+            end,
+            metadata,
         }
     }
 
-    pub fn easting(&self) -> &f64 {
-        assert!(self.coordinate_type == CoordinateType::LV95);
-        &self.x
+    pub fn start(&self) -> &String {
+        &self.start
     }
 
-    pub fn northing(&self) -> &f64 {
-        assert!(self.coordinate_type == CoordinateType::LV95);
-        &self.y
+    pub fn end(&self) -> &String {
+        &self.end
     }
 
-    pub fn latitude(&self) -> &f64 {
-        assert!(self.coordinate_type == CoordinateType::WGS84);
-        &self.x
-    }
-
-    pub fn longitude(&self) -> &f64 {
-        assert!(self.coordinate_type == CoordinateType::WGS84);
-        &self.y
-    }
-
-    pub fn altitude(&self) -> &i16 {
-        &self.z
+    pub fn metadata(&self) -> &Vec<String> {
+        &self.metadata
     }
 }

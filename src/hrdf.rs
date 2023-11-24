@@ -1,7 +1,7 @@
 use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{
-    models::{JourneyPlatform, Platform, Stop},
+    models::{JourneyPlatform, Platform, Stop, TimetableKeyData},
     parsing,
 };
 
@@ -16,14 +16,16 @@ pub struct Hrdf {
 
     stops: Vec<Rc<Stop>>,
     stops_index: HashMap<i32, Rc<Stop>>, // Key = Haltestellennummer
+
+    timetable_key_data: TimetableKeyData,
 }
 
 impl Hrdf {
     pub fn new() -> Result<Rc<Self>, Box<dyn Error>> {
-        let _ = parsing::load_timetable_key_data();
         let (journey_platform, journey_platform_index, platforms, platforms_index) =
             parsing::load_journey_stop_platforms_and_platforms()?;
         let (stops, stops_index) = parsing::load_stops()?;
+        let timetable_key_data = parsing::load_timetable_key_data()?;
 
         let instance = Rc::new(Self {
             journey_platform,
@@ -32,6 +34,7 @@ impl Hrdf {
             platforms_index,
             stops,
             stops_index,
+            timetable_key_data,
         });
 
         // Self::set_parent_references(&instance);
