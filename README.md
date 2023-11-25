@@ -12,6 +12,5 @@ TODO :
 
 * thiserror
 * Remove "#[allow(unused)]"
-* Trouver un meilleur nom pour bit_field (e.g. bit_field_id)
-* Trouver un meilleur nom pour platform_index (confusion avec platforms_index)
-* Coordinate.stop_id useless ?
+* Trouver un meilleur nom pour bit_field (actuellement : bit_field_id, etc.)
+* Trouver un meilleur nom pour platform_index (confusion avec platforms_index), platform_id ?
