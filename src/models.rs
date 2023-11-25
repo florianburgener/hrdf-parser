@@ -1,5 +1,7 @@
 use std::cell::{Ref, RefCell};
 
+use chrono::NaiveDate;
+
 // ------------------------------------------------------------------------------------------------
 // --- Coordinate
 // ------------------------------------------------------------------------------------------------
@@ -261,16 +263,14 @@ impl Stop {
 #[allow(unused)]
 #[derive(Debug)]
 pub struct TimetableKeyData {
-    // TODO : Use a library to store a date.
-    start: String,
-    // TODO : Use a library to store a date.
-    end: String,
+    start: NaiveDate,
+    end: NaiveDate,
     metadata: Vec<String>,
 }
 
 #[allow(unused)]
 impl TimetableKeyData {
-    pub fn new(start: String, end: String, metadata: Vec<String>) -> Self {
+    pub fn new(start: NaiveDate, end: NaiveDate, metadata: Vec<String>) -> Self {
         Self {
             start,
             end,
@@ -278,11 +278,11 @@ impl TimetableKeyData {
         }
     }
 
-    pub fn start(&self) -> &String {
+    pub fn start(&self) -> &NaiveDate {
         &self.start
     }
 
-    pub fn end(&self) -> &String {
+    pub fn end(&self) -> &NaiveDate {
         &self.end
     }
 

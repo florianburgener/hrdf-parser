@@ -1,7 +1,8 @@
-Progression (7/38) :
+Progression (8/38) :
 * BAHNHOF
 * BFKOORD_LV95
 * BFKOORD_WGS
+* ECKDATEN
 * GLEIS
 * GLEIS_LV95
 * GLEIS_WGS

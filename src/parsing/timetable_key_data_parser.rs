@@ -1,6 +1,8 @@
 // ECKDATEN
 use std::error::Error;
 
+use chrono::NaiveDate;
+
 use crate::{
     models::TimetableKeyData,
     parsing::{ParsedValue, RowDefinition, RowMatcher, RowParser},
@@ -31,6 +33,8 @@ pub fn load_timetable_key_data() -> Result<TimetableKeyData, Box<dyn Error>> {
     let timetable_end: String = data.remove(0).into();
     let metadata: String = data.remove(0).into();
 
+    let timetable_start = NaiveDate::parse_from_str(&timetable_start, "%d.%m.%Y")?;
+    let timetable_end = NaiveDate::parse_from_str(&timetable_end, "%d.%m.%Y")?;
     let metada = metadata.split('$').map(String::from).collect();
 
     let timetable_key_data = TimetableKeyData::new(timetable_start, timetable_end, metada);
