@@ -6,9 +6,10 @@ use crate::models::{Coordinate, CoordinateType, Stop};
 use super::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser};
 
 pub fn load_stops() -> Result<(Vec<Rc<Stop>>, HashMap<i32, Rc<Stop>>), Box<dyn Error>> {
+    println!("Parsing BAHNHOF...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
-        RowDefinition::new_with_row_configuration(vec![
+        RowDefinition::from(vec![
             ColumnDefinition::new(1, 7, ExpectedType::Integer32), // Complies with the standard.
             ColumnDefinition::new(13, -1, ExpectedType::String),  // Does not comply with the standard. Should be 13-62, but some entries go beyond column 62.
         ]),
@@ -33,8 +34,10 @@ pub fn load_stops() -> Result<(Vec<Rc<Stop>>, HashMap<i32, Rc<Stop>>), Box<dyn E
         .collect();
 
     let stops_index = create_stops_index(&stops);
-    load_lv95_coordinates(&stops_index)?;
-    load_wgs84_coordinates(&stops_index)?;
+    println!("Parsing BFKOORD_LV95...");
+    load_coordinates(CoordinateType::LV95, &stops_index)?;
+    println!("Parsing BFKOORD_WGS...");
+    load_coordinates(CoordinateType::WGS84, &stops_index)?;
 
     Ok((stops, stops_index))
 }
@@ -46,63 +49,50 @@ fn create_stops_index(stops: &Vec<Rc<Stop>>) -> HashMap<i32, Rc<Stop>> {
     })
 }
 
-fn load_lv95_coordinates(stops_index: &HashMap<i32, Rc<Stop>>) -> Result<(), Box<dyn Error>> {
+fn load_coordinates(
+    coordinate_type: CoordinateType,
+    stops_index: &HashMap<i32, Rc<Stop>>,
+) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
-        RowDefinition::new_with_row_configuration(vec![
+        RowDefinition::from(vec![
             ColumnDefinition::new(1, 7, ExpectedType::Integer32),   // Complies with the standard.
             ColumnDefinition::new(9, 18, ExpectedType::Float),      // Complies with the standard.
             ColumnDefinition::new(20, 29, ExpectedType::Float),     // Complies with the standard.
             ColumnDefinition::new(31, 36, ExpectedType::Integer16), // Complies with the standard.
         ]),
     ]);
-    let file_parser = FileParser::new("data/BFKOORD_LV95", row_parser)?;
+    let file_path = "data/".to_owned()
+        + match coordinate_type {
+            CoordinateType::LV95 => "BFKOORD_LV95",
+            CoordinateType::WGS84 => "BFKOORD_WGS",
+        };
+    let file_parser = FileParser::new(&file_path, row_parser)?;
 
     for (_, _, mut values) in file_parser.parse() {
         let stop_id: i32 = values.remove(0).into();
-        let easting: f64 = values.remove(0).into();
-        let northing: f64 = values.remove(0).into();
+        let x: f64;
+        let y: f64;
+
+        match coordinate_type {
+            CoordinateType::LV95 => {
+                x = values.remove(0).into();
+                y = values.remove(0).into();
+            }
+            CoordinateType::WGS84 => {
+                y = values.remove(0).into();
+                x = values.remove(0).into();
+            }
+        }
+
         let altitude: i16 = values.remove(0).into();
+        let coordinate = Coordinate::new(coordinate_type, x, y, altitude);
+        let stop = stops_index.get(&stop_id).unwrap();
 
-        let coordinate =
-            Coordinate::new(CoordinateType::LV95, easting, northing, altitude, stop_id);
-        stops_index
-            .get(&stop_id)
-            .unwrap()
-            .set_lv95_coordinate(coordinate);
-    }
-
-    Ok(())
-}
-
-fn load_wgs84_coordinates(stops_index: &HashMap<i32, Rc<Stop>>) -> Result<(), Box<dyn Error>> {
-    let row_parser = RowParser::new(vec![
-        RowDefinition::new_with_row_configuration(vec![
-            ColumnDefinition::new(1, 7, ExpectedType::Integer32),   // Complies with the standard.
-            ColumnDefinition::new(9, 18, ExpectedType::Float),      // Complies with the standard.
-            ColumnDefinition::new(20, 29, ExpectedType::Float),     // Complies with the standard.
-            ColumnDefinition::new(31, 36, ExpectedType::Integer16), // Complies with the standard.
-        ])
-    ]);
-    let file_parser = FileParser::new("data/BFKOORD_WGS", row_parser)?;
-
-    for (_, _, mut values) in file_parser.parse() {
-        let stop_id: i32 = values.remove(0).into();
-        let longitude: f64 = values.remove(0).into();
-        let latitude: f64 = values.remove(0).into();
-        let altitude: i16 = values.remove(0).into();
-
-        let coordinate = Coordinate::new(
-            CoordinateType::WGS84,
-            latitude,
-            longitude,
-            altitude,
-            stop_id,
-        );
-        stops_index
-            .get(&stop_id)
-            .unwrap()
-            .set_wgs84_coordinate(coordinate);
+        match coordinate_type {
+            CoordinateType::LV95 => stop.set_lv95_coordinate(coordinate),
+            CoordinateType::WGS84 => stop.set_wgs84_coordinate(coordinate),
+        }
     }
 
     Ok(())

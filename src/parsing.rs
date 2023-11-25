@@ -6,7 +6,10 @@ pub use platforms_parser::load_journey_stop_platforms_and_platforms;
 pub use stops_parser::load_stops;
 pub use timetable_key_data_parser::load_timetable_key_data;
 
-use std::{fs, io};
+use std::{
+    fs::{self, File},
+    io::{self, Read, Seek},
+};
 
 pub enum ExpectedType {
     Float,
@@ -140,10 +143,12 @@ impl RowDefinition {
             row_configuration,
         }
     }
+}
 
-    pub fn new_with_row_configuration(row_configuration: RowConfiguration) -> Self {
+impl From<RowConfiguration> for RowDefinition {
+    fn from(row_configuration: RowConfiguration) -> Self {
         Self {
-            id: 0,
+            id: 1,
             row_matcher: None,
             row_configuration,
         }
@@ -164,7 +169,8 @@ impl RowParser {
 
     fn parse(&self, row: &str) -> ParsedRow {
         let row_definition = self.row_definition(row);
-        let bytes_read = row.len() + 1;
+        // 2 bytes for \r\n
+        let bytes_read = row.len() + 2;
         let values = row_definition
             .row_configuration
             .iter()
@@ -217,14 +223,29 @@ pub struct FileParser {
 
 impl FileParser {
     pub fn new(file_path: &str, row_parser: RowParser) -> io::Result<Self> {
-        let contents = Self::read_file(file_path)?;
-        let rows = contents.lines().map(String::from).collect();
-
+        let rows = Self::read_lines(file_path)?;
         Ok(Self { rows, row_parser })
     }
 
-    fn read_file(file_path: &str) -> io::Result<String> {
-        fs::read_to_string(file_path)
+    pub fn new_seek(file_path: &str, row_parser: RowParser, bytes_offset: u64) -> io::Result<Self> {
+        let rows = Self::read_lines_seek(file_path, bytes_offset)?;
+        Ok(Self { rows, row_parser })
+    }
+
+    fn read_lines(file_path: &str) -> io::Result<Vec<String>> {
+        let contents = fs::read_to_string(file_path)?;
+        let lines = contents.lines().map(String::from).collect();
+        Ok(lines)
+    }
+
+    fn read_lines_seek(file_path: &str, bytes_offset: u64) -> io::Result<Vec<String>> {
+        let mut file = File::open(file_path)?;
+        file.seek(io::SeekFrom::Start(bytes_offset))?;
+        let mut reader = io::BufReader::new(file);
+        let mut contents = String::new();
+        reader.read_to_string(&mut contents)?;
+        let lines = contents.lines().map(String::from).collect();
+        Ok(lines)
     }
 
     pub fn parse(&self) -> ParsedRowIterator {

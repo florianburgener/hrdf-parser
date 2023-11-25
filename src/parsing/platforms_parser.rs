@@ -15,6 +15,7 @@ pub fn load_journey_stop_platforms_and_platforms() -> Result<
     ),
     Box<dyn Error>,
 > {
+    println!("Parsing GLEIS...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
 
@@ -38,12 +39,12 @@ pub fn load_journey_stop_platforms_and_platforms() -> Result<
 
     let mut journey_platform = vec![];
     let mut platforms = vec![];
-    let mut first_section_last_cursor_position = 0;
+    let mut bytes_offset = 0;
 
     for (id, bytes_read, mut values) in file_parser.parse() {
         match id {
             ROW_A => {
-                first_section_last_cursor_position += bytes_read;
+                bytes_offset += bytes_read as u64;
 
                 let stop_id: i32 = values.remove(0).into();
                 let journey_id: i32 = values.remove(0).into();
@@ -77,16 +78,13 @@ pub fn load_journey_stop_platforms_and_platforms() -> Result<
         }
     }
 
-    println!(
-        "Size of section A of the GLEIS file in bytes: {}",
-        first_section_last_cursor_position
-    );
     let journey_platform_index = create_journey_platform_index(&journey_platform);
     let platforms_index = create_platforms_index(&platforms);
 
-    println!("Start parsing GLEIS_LV95...");
-    load_lv95_coordinates(&platforms_index)?;
-    load_wgs84_coordinates(&platforms_index)?;
+    println!("Parsing GLEIS_LV95...");
+    load_coordinates(CoordinateType::LV95, bytes_offset, &platforms_index)?;
+    println!("Parsing GLEIS_WGS84...");
+    load_coordinates(CoordinateType::WGS84, bytes_offset, &platforms_index)?;
 
     Ok((
         journey_platform,
@@ -116,7 +114,9 @@ fn create_platforms_index(platforms: &Vec<Rc<Platform>>) -> HashMap<(i32, i32), 
     })
 }
 
-fn load_lv95_coordinates(
+fn load_coordinates(
+    coordinate_type: CoordinateType,
+    bytes_offset: u64,
     platforms_index: &HashMap<(i32, i32), Rc<Platform>>,
 ) -> Result<(), Box<dyn Error>> {
     const ROW_A: i32 = 1;
@@ -125,121 +125,74 @@ fn load_lv95_coordinates(
 
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
-        // TODO : Remove this and do a seek in the file.
-        RowDefinition::new(0, RowMatcher::new(9, 1, "#", false), vec![
-            ColumnDefinition::new(1, 7, ExpectedType::Integer32),
-        ]),
-
         // This row is ignored.
         RowDefinition::new(ROW_A, RowMatcher::new(18, 1, "G", true), vec![]),
         // This row contains the SLOID.
         RowDefinition::new(ROW_B, RowMatcher::new(18, 3, "I A", true), vec![
             ColumnDefinition::new(1, 7, ExpectedType::Integer32),   // Complies with the standard.
             ColumnDefinition::new(10, 16, ExpectedType::Integer32), // Does not comply with the standard. Should be 9-16, but here the # character is ignored.
-            ColumnDefinition::new(22, -1, ExpectedType::String),    // Complies with the SBB standard.
+            ColumnDefinition::new(22, -1, ExpectedType::String),    // Complies with the standard. Please note that the type and columns are not explicitly described in the SBB specification.
         ]),
-        // This row contains the LV95 coordinates of the platform.
+        // This row contains the LV95/WGS84 coordinates.
         RowDefinition::new(ROW_C, RowMatcher::new(18, 1, "K", true), vec![
             ColumnDefinition::new(1, 7, ExpectedType::Integer32),   // Complies with the standard.
             ColumnDefinition::new(10, 16, ExpectedType::Integer32), // Does not comply with the standard. Should be 9-16, but here the # character is ignored.
-            ColumnDefinition::new(20, 26, ExpectedType::Float),     // Complies with the SBB standard.
-            ColumnDefinition::new(28, 34, ExpectedType::Float),     // Complies with the SBB standard.
+            ColumnDefinition::new(20, 26, ExpectedType::Float),     // Complies with the standard. Please note that the type and columns are not explicitly described in the SBB specification.
+            ColumnDefinition::new(28, 34, ExpectedType::Float),     // Complies with the standard. Please note that the type and columns are not explicitly described in the SBB specification.
         ]),
     ]);
-    let file_parser = FileParser::new("data/GLEIS_LV95", row_parser)?;
+    let file_path: String = "data/".to_owned()
+        + match coordinate_type {
+            CoordinateType::LV95 => "GLEIS_LV95",
+            CoordinateType::WGS84 => "GLEIS_WGS",
+        };
+    let file_parser = FileParser::new_seek(&file_path, row_parser, bytes_offset)?;
 
     for (id, _, mut values) in file_parser.parse() {
         match id {
-            0 | ROW_A => continue,
+            ROW_A => continue,
             ROW_B => {
-                let stop_id: i32 = values.remove(0).into();
-                let platform_index: i32 = values.remove(0).into();
-                let sloid: String = values.remove(0).into();
+                match coordinate_type {
+                    // The SLOID is processed only when loading LV95 coordinates.
+                    CoordinateType::LV95 => {
+                        let stop_id: i32 = values.remove(0).into();
+                        let platform_index: i32 = values.remove(0).into();
+                        let sloid: String = values.remove(0).into();
 
-                platforms_index
-                    .get(&(stop_id, platform_index))
-                    .unwrap()
-                    .set_sloid(sloid);
+                        platforms_index
+                            .get(&(stop_id, platform_index))
+                            .unwrap()
+                            .set_sloid(sloid);
+                    }
+                    CoordinateType::WGS84 => continue,
+                }
             }
             ROW_C => {
                 let stop_id: i32 = values.remove(0).into();
                 let platform_index: i32 = values.remove(0).into();
-                let easting: f64 = values.remove(0).into();
-                let northing: f64 = values.remove(0).into();
+                let x: f64;
+                let y: f64;
 
-                let coordinate =
-                    Coordinate::new(CoordinateType::LV95, easting, northing, 0, stop_id);
+                match coordinate_type {
+                    CoordinateType::LV95 => {
+                        x = values.remove(0).into();
+                        y = values.remove(0).into();
+                    }
+                    CoordinateType::WGS84 => {
+                        y = values.remove(0).into();
+                        x = values.remove(0).into();
+                    }
+                }
 
-                platforms_index
-                    .get(&(stop_id, platform_index))
-                    .unwrap()
-                    .set_lv95_coordinate(coordinate);
-            }
-            _ => unreachable!(),
-        }
-    }
+                // Altitude is not provided for platforms.
+                let altitude = 0;
+                let coordinate = Coordinate::new(coordinate_type, x, y, altitude);
+                let platform = platforms_index.get(&(stop_id, platform_index)).unwrap();
 
-    Ok(())
-}
-
-fn load_wgs84_coordinates(
-    platforms_index: &HashMap<(i32, i32), Rc<Platform>>,
-) -> Result<(), Box<dyn Error>> {
-    const ROW_A: i32 = 1;
-    const ROW_B: i32 = 2;
-    const ROW_C: i32 = 3;
-
-    #[rustfmt::skip]
-    let row_parser = RowParser::new(vec![
-        // TODO : Remove this and do a seek in the file.
-        RowDefinition::new(0, RowMatcher::new(9, 1, "#", false), vec![
-            ColumnDefinition::new(1, 7, ExpectedType::Integer32),
-        ]),
-
-        // This row is ignored.
-        RowDefinition::new(ROW_A, RowMatcher::new(18, 1, "G", true), vec![]),
-        // This row contains the SLOID.
-        RowDefinition::new(ROW_B, RowMatcher::new(18, 3, "I A", true), vec![
-            ColumnDefinition::new(1, 7, ExpectedType::Integer32),
-            ColumnDefinition::new(10, 16, ExpectedType::Integer32),
-            ColumnDefinition::new(22, -1, ExpectedType::String),
-        ]),
-        // This row contains the WGS84 coordinates of the platform.
-        RowDefinition::new(ROW_C, RowMatcher::new(18, 1, "K", true), vec![
-            ColumnDefinition::new(1, 7, ExpectedType::Integer32),
-            ColumnDefinition::new(10, 16, ExpectedType::Integer32),
-            ColumnDefinition::new(20, 26, ExpectedType::Float),
-            ColumnDefinition::new(28, 34, ExpectedType::Float),
-        ]),
-    ]);
-    let file_parser = FileParser::new("data/GLEIS_WGS", row_parser)?;
-
-    for (id, _, mut values) in file_parser.parse() {
-        match id {
-            0 | ROW_A => continue,
-            ROW_B => {
-                let stop_id: i32 = values.remove(0).into();
-                let platform_index: i32 = values.remove(0).into();
-                let sloid: String = values.remove(0).into();
-
-                platforms_index
-                    .get(&(stop_id, platform_index))
-                    .unwrap()
-                    .set_sloid(sloid);
-            }
-            ROW_C => {
-                let stop_id: i32 = values.remove(0).into();
-                let platform_index: i32 = values.remove(0).into();
-                let longitude: f64 = values.remove(0).into();
-                let latitude: f64 = values.remove(0).into();
-
-                let coordinate =
-                    Coordinate::new(CoordinateType::WGS84, latitude, longitude, 0, stop_id);
-
-                platforms_index
-                    .get(&(stop_id, platform_index))
-                    .unwrap()
-                    .set_wgs84_coordinate(coordinate);
+                match coordinate_type {
+                    CoordinateType::LV95 => platform.set_lv95_coordinate(coordinate),
+                    CoordinateType::WGS84 => platform.set_wgs84_coordinate(coordinate),
+                }
             }
             _ => unreachable!(),
         }

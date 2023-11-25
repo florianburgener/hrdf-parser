@@ -9,6 +9,7 @@ use crate::hrdf::Hrdf;
 pub fn run() -> Result<(), Box<dyn Error>> {
     let hrdf = Hrdf::new()?;
 
+    println!("\nTests:\n");
     println!("{} platforms", hrdf.platforms().len());
     println!("{} stops", hrdf.stops().len());
 

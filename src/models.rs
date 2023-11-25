@@ -4,7 +4,7 @@ use std::cell::{Ref, RefCell};
 // --- Coordinate
 // ------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub enum CoordinateType {
     #[default]
     LV95,
@@ -19,19 +19,16 @@ pub struct Coordinate {
     x: f64,
     y: f64,
     z: i16,
-    // TODO : is this field useless?
-    stop_id: i32,
 }
 
 #[allow(unused)]
 impl Coordinate {
-    pub fn new(coordinate_type: CoordinateType, x: f64, y: f64, z: i16, stop_id: i32) -> Self {
+    pub fn new(coordinate_type: CoordinateType, x: f64, y: f64, z: i16) -> Self {
         Self {
             coordinate_type,
             x,
             y,
             z,
-            stop_id,
         }
     }
 
