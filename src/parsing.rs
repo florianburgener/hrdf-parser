@@ -2,12 +2,12 @@ mod platforms_parser;
 mod stops_parser;
 mod timetable_key_data_parser;
 
-pub use platforms_parser::load_journey_stop_platforms_and_platforms;
+pub use platforms_parser::load_journey_platform_and_platforms;
 pub use stops_parser::load_stops;
 pub use timetable_key_data_parser::load_timetable_key_data;
 
 use std::{
-    fs::{self, File},
+    fs::File,
     io::{self, Read, Seek},
 };
 
@@ -222,24 +222,21 @@ pub struct FileParser {
 }
 
 impl FileParser {
-    pub fn new(file_path: &str, row_parser: RowParser) -> io::Result<Self> {
-        let rows = Self::read_lines(file_path)?;
+    pub fn new(path: &str, row_parser: RowParser) -> io::Result<Self> {
+        Self::new_with_bytes_offset(path, row_parser, 0)
+    }
+
+    pub fn new_with_bytes_offset(
+        path: &str,
+        row_parser: RowParser,
+        bytes_offset: u64,
+    ) -> io::Result<Self> {
+        let rows = Self::read_lines(path, bytes_offset)?;
         Ok(Self { rows, row_parser })
     }
 
-    pub fn new_seek(file_path: &str, row_parser: RowParser, bytes_offset: u64) -> io::Result<Self> {
-        let rows = Self::read_lines_seek(file_path, bytes_offset)?;
-        Ok(Self { rows, row_parser })
-    }
-
-    fn read_lines(file_path: &str) -> io::Result<Vec<String>> {
-        let contents = fs::read_to_string(file_path)?;
-        let lines = contents.lines().map(String::from).collect();
-        Ok(lines)
-    }
-
-    fn read_lines_seek(file_path: &str, bytes_offset: u64) -> io::Result<Vec<String>> {
-        let mut file = File::open(file_path)?;
+    fn read_lines(path: &str, bytes_offset: u64) -> io::Result<Vec<String>> {
+        let mut file = File::open(path)?;
         file.seek(io::SeekFrom::Start(bytes_offset))?;
         let mut reader = io::BufReader::new(file);
         let mut contents = String::new();

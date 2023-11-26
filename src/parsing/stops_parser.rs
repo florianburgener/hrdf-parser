@@ -62,32 +62,26 @@ fn load_coordinates(
             ColumnDefinition::new(31, 36, ExpectedType::Integer16), // Complies with the standard.
         ]),
     ]);
-    let file_path = "data/".to_owned()
-        + match coordinate_type {
+    let filename = match coordinate_type {
             CoordinateType::LV95 => "BFKOORD_LV95",
             CoordinateType::WGS84 => "BFKOORD_WGS",
         };
+    let file_path = format!("data/{}", filename);
     let file_parser = FileParser::new(&file_path, row_parser)?;
 
     for (_, _, mut values) in file_parser.parse() {
         let stop_id: i32 = values.remove(0).into();
-        let x: f64;
-        let y: f64;
+        let mut xy1: f64 = values.remove(0).into();
+        let mut xy2: f64 = values.remove(0).into();
+        let altitude: i16 = values.remove(0).into();
 
-        match coordinate_type {
-            CoordinateType::LV95 => {
-                x = values.remove(0).into();
-                y = values.remove(0).into();
-            }
-            CoordinateType::WGS84 => {
-                y = values.remove(0).into();
-                x = values.remove(0).into();
-            }
+        if coordinate_type == CoordinateType::WGS84 {
+            // WGS84 coordinates are stored in reverse order for some unknown reason.
+            (xy1, xy2) = (xy2, xy1);
         }
 
-        let altitude: i16 = values.remove(0).into();
-        let coordinate = Coordinate::new(coordinate_type, x, y, altitude);
         let stop = stops_index.get(&stop_id).unwrap();
+        let coordinate = Coordinate::new(coordinate_type, xy1, xy2, altitude);
 
         match coordinate_type {
             CoordinateType::LV95 => stop.set_lv95_coordinate(coordinate),

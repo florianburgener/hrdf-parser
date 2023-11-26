@@ -6,7 +6,7 @@ use crate::{
     parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowMatcher, RowParser},
 };
 
-pub fn load_journey_stop_platforms_and_platforms() -> Result<
+pub fn load_journey_platform_and_platforms() -> Result<
     (
         Vec<Rc<JourneyPlatform>>,
         HashMap<(i32, i32), Vec<Rc<JourneyPlatform>>>,
@@ -141,12 +141,12 @@ fn load_coordinates(
             ColumnDefinition::new(28, 34, ExpectedType::Float),     // Complies with the standard. Please note that the type and columns are not explicitly described in the SBB specification.
         ]),
     ]);
-    let file_path: String = "data/".to_owned()
-        + match coordinate_type {
-            CoordinateType::LV95 => "GLEIS_LV95",
-            CoordinateType::WGS84 => "GLEIS_WGS",
-        };
-    let file_parser = FileParser::new_seek(&file_path, row_parser, bytes_offset)?;
+    let filename = match coordinate_type {
+        CoordinateType::LV95 => "GLEIS_LV95",
+        CoordinateType::WGS84 => "GLEIS_WGS",
+    };
+    let file_path = format!("data/{}", filename);
+    let file_parser = FileParser::new_with_bytes_offset(&file_path, row_parser, bytes_offset)?;
 
     for (id, _, mut values) in file_parser.parse() {
         match id {
@@ -170,23 +170,17 @@ fn load_coordinates(
             ROW_C => {
                 let stop_id: i32 = values.remove(0).into();
                 let platform_index: i32 = values.remove(0).into();
-                let x: f64;
-                let y: f64;
-
-                match coordinate_type {
-                    CoordinateType::LV95 => {
-                        x = values.remove(0).into();
-                        y = values.remove(0).into();
-                    }
-                    CoordinateType::WGS84 => {
-                        y = values.remove(0).into();
-                        x = values.remove(0).into();
-                    }
-                }
-
+                let mut xy1: f64 = values.remove(0).into();
+                let mut xy2: f64 = values.remove(0).into();
                 // Altitude is not provided for platforms.
                 let altitude = 0;
-                let coordinate = Coordinate::new(coordinate_type, x, y, altitude);
+
+                if coordinate_type == CoordinateType::WGS84 {
+                    // WGS84 coordinates are stored in reverse order for some unknown reason.
+                    (xy1, xy2) = (xy2, xy1);
+                }
+
+                let coordinate = Coordinate::new(coordinate_type, xy1, xy2, altitude);
                 let platform = platforms_index.get(&(stop_id, platform_index)).unwrap();
 
                 match coordinate_type {
