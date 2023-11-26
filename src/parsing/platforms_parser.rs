@@ -44,7 +44,7 @@ pub fn load_journey_platform_and_platforms() -> Result<
     for (id, bytes_read, mut values) in file_parser.parse() {
         match id {
             ROW_A => {
-                bytes_offset += bytes_read as u64;
+                bytes_offset += bytes_read;
 
                 let stop_id: i32 = values.remove(0).into();
                 let journey_id: i32 = values.remove(0).into();

@@ -155,8 +155,8 @@ impl From<RowConfiguration> for RowDefinition {
     }
 }
 
-// (RowDefinition.id, current cursor position in the file,  parsed row values)
-type ParsedRow = (i32, usize, Vec<ParsedValue>);
+// (RowDefinition.id, number of bytes read, values parsed from the row)
+type ParsedRow = (i32, u64, Vec<ParsedValue>);
 
 pub struct RowParser {
     row_definitions: Vec<RowDefinition>,
@@ -170,7 +170,7 @@ impl RowParser {
     fn parse(&self, row: &str) -> ParsedRow {
         let row_definition = self.row_definition(row);
         // 2 bytes for \r\n
-        let bytes_read = row.len() + 2;
+        let bytes_read = row.len() as u64 + 2;
         let values = row_definition
             .row_configuration
             .iter()
