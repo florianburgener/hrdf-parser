@@ -44,7 +44,7 @@ pub fn load_stops() -> Result<(Vec<Rc<Stop>>, HashMap<i32, Rc<Stop>>), Box<dyn E
 
 fn create_stops_index(stops: &Vec<Rc<Stop>>) -> HashMap<i32, Rc<Stop>> {
     stops.iter().fold(HashMap::new(), |mut acc, item| {
-        acc.insert(*item.id(), Rc::clone(item));
+        acc.insert(item.id(), Rc::clone(item));
         acc
     })
 }

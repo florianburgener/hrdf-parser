@@ -100,7 +100,7 @@ fn create_journey_platform_index(
     journey_platform
         .iter()
         .fold(HashMap::new(), |mut acc, item| {
-            acc.entry((*item.journey_id(), *item.stop_id()))
+            acc.entry((item.journey_id(), item.stop_id()))
                 .or_insert(Vec::new())
                 .push(Rc::clone(item));
             acc
@@ -109,7 +109,7 @@ fn create_journey_platform_index(
 
 fn create_platforms_index(platforms: &Vec<Rc<Platform>>) -> HashMap<(i32, i32), Rc<Platform>> {
     platforms.iter().fold(HashMap::new(), |mut acc, item| {
-        acc.insert((*item.stop_id(), *item.platform_index()), Rc::clone(item));
+        acc.insert((item.stop_id(), item.platform_index()), Rc::clone(item));
         acc
     })
 }

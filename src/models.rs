@@ -34,28 +34,28 @@ impl Coordinate {
         }
     }
 
-    pub fn easting(&self) -> &f64 {
+    pub fn easting(&self) -> f64 {
         assert!(self.coordinate_type == CoordinateType::LV95);
-        &self.x
+        self.x
     }
 
-    pub fn northing(&self) -> &f64 {
+    pub fn northing(&self) -> f64 {
         assert!(self.coordinate_type == CoordinateType::LV95);
-        &self.y
+        self.y
     }
 
-    pub fn latitude(&self) -> &f64 {
+    pub fn latitude(&self) -> f64 {
         assert!(self.coordinate_type == CoordinateType::WGS84);
-        &self.x
+        self.x
     }
 
-    pub fn longitude(&self) -> &f64 {
+    pub fn longitude(&self) -> f64 {
         assert!(self.coordinate_type == CoordinateType::WGS84);
-        &self.y
+        self.y
     }
 
-    pub fn altitude(&self) -> &i16 {
-        &self.z
+    pub fn altitude(&self) -> i16 {
+        self.z
     }
 }
 
@@ -95,20 +95,20 @@ impl JourneyPlatform {
         }
     }
 
-    pub fn journey_id(&self) -> &i32 {
-        &self.journey_id
+    pub fn journey_id(&self) -> i32 {
+        self.journey_id
     }
 
-    pub fn stop_id(&self) -> &i32 {
-        &self.stop_id
+    pub fn stop_id(&self) -> i32 {
+        self.stop_id
     }
 
     pub fn unknown1(&self) -> &String {
         &self.unknown1
     }
 
-    pub fn platform_index(&self) -> &i32 {
-        &self.platform_index
+    pub fn platform_index(&self) -> i32 {
+        self.platform_index
     }
 }
 
@@ -142,12 +142,12 @@ impl Platform {
         }
     }
 
-    pub fn stop_id(&self) -> &i32 {
-        &self.stop_id
+    pub fn stop_id(&self) -> i32 {
+        self.stop_id
     }
 
-    pub fn platform_index(&self) -> &i32 {
-        &self.platform_index
+    pub fn platform_index(&self) -> i32 {
+        self.platform_index
     }
 
     pub fn number(&self) -> &String {
@@ -219,8 +219,8 @@ impl Stop {
         }
     }
 
-    pub fn id(&self) -> &i32 {
-        &self.id
+    pub fn id(&self) -> i32 {
+        self.id
     }
 
     pub fn name(&self) -> &String {
