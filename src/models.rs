@@ -263,7 +263,9 @@ impl Stop {
 #[allow(unused)]
 #[derive(Debug)]
 pub struct TimetableKeyData {
+    // The date is included.
     start_date: NaiveDate,
+    // The date is included.
     end_date: NaiveDate,
     metadata: Vec<String>,
 }
