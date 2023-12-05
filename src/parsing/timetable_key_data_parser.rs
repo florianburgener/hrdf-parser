@@ -29,15 +29,15 @@ pub fn load_timetable_key_data() -> Result<TimetableKeyData, Box<dyn Error>> {
     let file_parser = FileParser::new("data/ECKDATEN", row_parser)?;
 
     let mut data: Vec<ParsedValue> = file_parser.parse().map(|mut x| x.2.remove(0)).collect();
-    let timetable_start: String = data.remove(0).into();
-    let timetable_end: String = data.remove(0).into();
+    let start_date: String = data.remove(0).into();
+    let end_date: String = data.remove(0).into();
     let metadata: String = data.remove(0).into();
 
-    let timetable_start = NaiveDate::parse_from_str(&timetable_start, "%d.%m.%Y")?;
-    let timetable_end = NaiveDate::parse_from_str(&timetable_end, "%d.%m.%Y")?;
+    let start_date = NaiveDate::parse_from_str(&start_date, "%d.%m.%Y")?;
+    let end_date = NaiveDate::parse_from_str(&end_date, "%d.%m.%Y")?;
     let metada = metadata.split('$').map(String::from).collect();
 
-    let timetable_key_data = TimetableKeyData::new(timetable_start, timetable_end, metada);
+    let timetable_key_data = TimetableKeyData::new(start_date, end_date, metada);
 
     Ok(timetable_key_data)
 }

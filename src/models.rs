@@ -263,27 +263,27 @@ impl Stop {
 #[allow(unused)]
 #[derive(Debug)]
 pub struct TimetableKeyData {
-    start: NaiveDate,
-    end: NaiveDate,
+    start_date: NaiveDate,
+    end_date: NaiveDate,
     metadata: Vec<String>,
 }
 
 #[allow(unused)]
 impl TimetableKeyData {
-    pub fn new(start: NaiveDate, end: NaiveDate, metadata: Vec<String>) -> Self {
+    pub fn new(start_date: NaiveDate, end_date: NaiveDate, metadata: Vec<String>) -> Self {
         Self {
-            start,
-            end,
+            start_date,
+            end_date,
             metadata,
         }
     }
 
-    pub fn start(&self) -> &NaiveDate {
-        &self.start
+    pub fn start_date(&self) -> &NaiveDate {
+        &self.start_date
     }
 
-    pub fn end(&self) -> &NaiveDate {
-        &self.end
+    pub fn end_date(&self) -> &NaiveDate {
+        &self.end_date
     }
 
     pub fn metadata(&self) -> &Vec<String> {
