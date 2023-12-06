@@ -33,13 +33,13 @@ pub fn load_stops() -> Result<(Vec<Rc<Stop>>, HashMap<i32, Rc<Stop>>), Box<dyn E
         })
         .collect();
 
-    let stops_index = create_stops_index(&stops);
+    let stops_primary_index = create_stops_index(&stops);
     println!("Parsing BFKOORD_LV95...");
-    load_coordinates(CoordinateType::LV95, &stops_index)?;
+    load_coordinates(CoordinateType::LV95, &stops_primary_index)?;
     println!("Parsing BFKOORD_WGS...");
-    load_coordinates(CoordinateType::WGS84, &stops_index)?;
+    load_coordinates(CoordinateType::WGS84, &stops_primary_index)?;
 
-    Ok((stops, stops_index))
+    Ok((stops, stops_primary_index))
 }
 
 fn create_stops_index(stops: &Vec<Rc<Stop>>) -> HashMap<i32, Rc<Stop>> {
@@ -51,7 +51,7 @@ fn create_stops_index(stops: &Vec<Rc<Stop>>) -> HashMap<i32, Rc<Stop>> {
 
 fn load_coordinates(
     coordinate_type: CoordinateType,
-    stops_index: &HashMap<i32, Rc<Stop>>,
+    stops_primary_index: &HashMap<i32, Rc<Stop>>,
 ) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -80,7 +80,7 @@ fn load_coordinates(
             (xy1, xy2) = (xy2, xy1);
         }
 
-        let stop = stops_index.get(&stop_id).unwrap();
+        let stop = stops_primary_index.get(&stop_id).unwrap();
         let coordinate = Coordinate::new(coordinate_type, xy1, xy2, altitude);
 
         match coordinate_type {

@@ -67,10 +67,8 @@ impl Coordinate {
 #[derive(Debug)]
 pub struct JourneyPlatform {
     journey_id: i32,
-    stop_id: i32,
-    // Verwaltung für Fahrt
-    unknown1: String,
-    platform_index: i32,
+    platform_id: i64, // Haltestellennummer << 32 + "Index der Gleistextinformation"
+    unknown1: String, // "Verwaltung für Fahrt"
     hour: Option<i16>,
     bit_field_id: Option<i32>,
 }
@@ -79,17 +77,15 @@ pub struct JourneyPlatform {
 impl JourneyPlatform {
     pub fn new(
         journey_id: i32,
-        stop_id: i32,
+        platform_id: i64,
         unknown1: String,
-        platform_index: i32,
         hour: Option<i16>,
         bit_field_id: Option<i32>,
     ) -> Self {
         Self {
             journey_id,
-            stop_id,
+            platform_id,
             unknown1,
-            platform_index,
             hour,
             bit_field_id,
         }
@@ -99,16 +95,20 @@ impl JourneyPlatform {
         self.journey_id
     }
 
-    pub fn stop_id(&self) -> i32 {
-        self.stop_id
+    pub fn platform_id(&self) -> i64 {
+        self.platform_id
     }
 
     pub fn unknown1(&self) -> &String {
         &self.unknown1
     }
 
-    pub fn platform_index(&self) -> i32 {
-        self.platform_index
+    pub fn hour(&self) -> &Option<i16> {
+        &self.hour
+    }
+
+    pub fn bit_field_id(&self) -> &Option<i32> {
+        &self.bit_field_id
     }
 }
 
@@ -119,8 +119,7 @@ impl JourneyPlatform {
 #[allow(unused)]
 #[derive(Debug, Default)]
 pub struct Platform {
-    stop_id: i32,
-    platform_index: i32,
+    id: i64, // Haltestellennummer << 32 + "Index der Gleistextinformation"
     number: String,
     sectors: Option<String>,
     sloid: RefCell<String>,
@@ -130,10 +129,9 @@ pub struct Platform {
 
 #[allow(unused)]
 impl Platform {
-    pub fn new(stop_id: i32, platform_index: i32, number: String, sectors: Option<String>) -> Self {
+    pub fn new(id: i64, number: String, sectors: Option<String>) -> Self {
         Self {
-            stop_id,
-            platform_index,
+            id,
             number,
             sectors,
             sloid: RefCell::new(String::default()),
@@ -142,12 +140,12 @@ impl Platform {
         }
     }
 
-    pub fn stop_id(&self) -> i32 {
-        self.stop_id
+    pub fn create_id(stop_id: i32, pindex: i32) -> i64 {
+        ((stop_id as i64) << 32) + (pindex as i64)
     }
 
-    pub fn platform_index(&self) -> i32 {
-        self.platform_index
+    pub fn id(&self) -> i64 {
+        self.id
     }
 
     pub fn number(&self) -> &String {
@@ -263,10 +261,8 @@ impl Stop {
 #[allow(unused)]
 #[derive(Debug)]
 pub struct TimetableKeyData {
-    // The date is included.
-    start_date: NaiveDate,
-    // The date is included.
-    end_date: NaiveDate,
+    start_date: NaiveDate, // The date is included.
+    end_date: NaiveDate,   // The date is included.
     metadata: Vec<String>,
 }
 

@@ -9,31 +9,31 @@ use crate::{
 #[derive(Debug)]
 pub struct Hrdf {
     journey_platform: Vec<Rc<JourneyPlatform>>,
-    journey_platform_index: HashMap<(i32, i32), Vec<Rc<JourneyPlatform>>>, // Key = (Haltestellennummer, Fahrtnummer)
+    journey_platform_primary_index: HashMap<(i32, i64), Vec<Rc<JourneyPlatform>>>, // Key = (Stop.id, Platform.id)
 
     platforms: Vec<Rc<Platform>>,
-    platforms_index: HashMap<(i32, i32), Rc<Platform>>, // Key = (Haltestellennummer, Index der Gleistextinformation)
+    platforms_primary_index: HashMap<i64, Rc<Platform>>, // Key = Platform.id
 
     stops: Vec<Rc<Stop>>,
-    stops_index: HashMap<i32, Rc<Stop>>, // Key = Haltestellennummer
+    stops_primary_index: HashMap<i32, Rc<Stop>>, // Key = Stop.id
 
     timetable_key_data: TimetableKeyData,
 }
 
 impl Hrdf {
     pub fn new() -> Result<Rc<Self>, Box<dyn Error>> {
-        let (journey_platform, journey_platform_index, platforms, platforms_index) =
+        let (journey_platform, journey_platform_primary_index, platforms, platforms_primary_index) =
             parsing::load_journey_platform_and_platforms()?;
-        let (stops, stops_index) = parsing::load_stops()?;
+        let (stops, stops_primary_index) = parsing::load_stops()?;
         let timetable_key_data = parsing::load_timetable_key_data()?;
 
         let instance = Rc::new(Self {
             journey_platform,
-            journey_platform_index,
+            journey_platform_primary_index,
             platforms,
-            platforms_index,
+            platforms_primary_index,
             stops,
-            stops_index,
+            stops_primary_index,
             timetable_key_data,
         });
 
@@ -55,7 +55,7 @@ impl Hrdf {
         &self.stops
     }
 
-    pub fn stops_index(&self) -> &HashMap<i32, Rc<Stop>> {
-        &self.stops_index
+    pub fn stops_primary_index(&self) -> &HashMap<i32, Rc<Stop>> {
+        &self.stops_primary_index
     }
 }
