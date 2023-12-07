@@ -1,6 +1,58 @@
-use std::cell::{Ref, RefCell};
+use std::{cell::{Ref, RefCell}, collections::HashMap};
 
 use chrono::NaiveDate;
+
+// ------------------------------------------------------------------------------------------------
+// --- Attribute
+// ------------------------------------------------------------------------------------------------
+
+#[allow(unused)]
+#[derive(Debug)]
+pub struct Attribute {
+    id: String,
+    stop_scope: i16,
+    main_sorting_priority: i16,
+    secondary_sorting_priority: i16,
+    // Key: deu|fra|ita|eng
+    translations: RefCell<HashMap<String, String>>,
+}
+
+#[allow(unused)]
+impl Attribute {
+    pub fn new(id: String, stop_scope: i16, main_sorting_priority: i16, secondary_sorting_priority: i16) -> Self {
+        Self {
+            id,
+            stop_scope,
+            main_sorting_priority,
+            secondary_sorting_priority,
+            translations: RefCell::new(HashMap::new()),
+        }
+    }
+
+    pub fn id(&self) -> &String {
+        &self.id
+    }
+
+    pub fn stop_scope(&self) -> i16 {
+        self.stop_scope
+    }
+
+    pub fn main_sorting_priority(&self) -> i16 {
+        self.main_sorting_priority
+    }
+
+    pub fn secondary_sorting_priority(&self) -> i16 {
+        self.secondary_sorting_priority
+    }
+
+    pub fn add_translation() {
+
+    }
+
+    pub fn get_translation(&self, language: &str) -> String {
+        self.translations.borrow().get(language).cloned().unwrap()
+    }
+}
 
 // ------------------------------------------------------------------------------------------------
 // --- Coordinate

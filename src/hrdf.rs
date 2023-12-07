@@ -22,6 +22,7 @@ pub struct Hrdf {
 
 impl Hrdf {
     pub fn new() -> Result<Rc<Self>, Box<dyn Error>> {
+        let attributes = parsing::load_attributes()?;
         let (journey_platform, journey_platform_primary_index, platforms, platforms_primary_index) =
             parsing::load_journey_platform_and_platforms()?;
         let (stops, stops_primary_index) = parsing::load_stops()?;

@@ -1,7 +1,9 @@
+mod attributes_parser;
 mod platforms_parser;
 mod stops_parser;
 mod timetable_key_data_parser;
 
+pub use attributes_parser::load_attributes;
 pub use platforms_parser::load_journey_platform_and_platforms;
 pub use stops_parser::load_stops;
 pub use timetable_key_data_parser::load_timetable_key_data;
@@ -10,6 +12,8 @@ use std::{
     fs::File,
     io::{self, Read, Seek},
 };
+
+use regex::Regex;
 
 pub enum ExpectedType {
     Float,
@@ -90,6 +94,7 @@ pub struct RowMatcher {
     length: usize,
     value: String,
     should_equal_value: bool,
+    re: Option<Regex>,
 }
 
 impl RowMatcher {
@@ -99,13 +104,28 @@ impl RowMatcher {
             length,
             value: value.to_string(),
             should_equal_value,
+            re: None,
+        }
+    }
+
+    pub fn new_with_re_only(re: Regex) -> RowMatcher {
+        Self {
+            start: 0,
+            length: 0,
+            value: String::new(),
+            should_equal_value: false,
+            re: Some(re),
         }
     }
 
     fn match_row(&self, row: &str) -> bool {
-        let start = self.start - 1;
-        let target_value = &row[start..(start + self.length)];
-        self.should_equal_value == (target_value == self.value)
+        if let Some(re) = self.re.as_ref() {
+            re.is_match(row)
+        } else {
+            let start = self.start - 1;
+            let target_value = &row[start..(start + self.length)];
+            self.should_equal_value == (target_value == self.value)
+        }
     }
 }
 
