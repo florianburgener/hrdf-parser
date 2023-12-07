@@ -66,11 +66,11 @@ pub fn load_journey_platform_and_platforms() -> Result<
                 let stop_id: i32 = values.remove(0).into();
                 // TODO : How to name that ?
                 let pindex: i32 = values.remove(0).into();
-                let (number, sectors) = parse_platform_data(values.remove(0).into());
+                let (code, sectors) = parse_platform_data(values.remove(0).into());
 
                 platforms.push(Rc::new(Platform::new(
                     Platform::create_id(stop_id, pindex),
-                    number,
+                    code,
                     sectors,
                 )))
             }
@@ -82,9 +82,9 @@ pub fn load_journey_platform_and_platforms() -> Result<
     let platforms_primary_index = create_platforms_primary_index(&platforms);
 
     println!("Parsing GLEIS_LV95...");
-    load_coordinates(CoordinateType::LV95, bytes_offset, &platforms_primary_index)?;
+    load_coordinates_for_platforms(CoordinateType::LV95, bytes_offset, &platforms_primary_index)?;
     println!("Parsing GLEIS_WGS84...");
-    load_coordinates(
+    load_coordinates_for_platforms(
         CoordinateType::WGS84,
         bytes_offset,
         &platforms_primary_index,
@@ -118,7 +118,7 @@ fn create_platforms_primary_index(platforms: &Vec<Rc<Platform>>) -> HashMap<i64,
     })
 }
 
-fn load_coordinates(
+fn load_coordinates_for_platforms(
     coordinate_type: CoordinateType,
     bytes_offset: u64,
     platforms_primary_index: &HashMap<i64, Rc<Platform>>,
@@ -219,8 +219,8 @@ fn parse_platform_data(platform_data: String) -> (String, Option<String>) {
         });
 
     // There should always be a G entry.
-    let number = parsed_values.get("G").unwrap().to_string();
+    let code = parsed_values.get("G").unwrap().to_string();
     let sectors = parsed_values.get("A").map(|s| s.to_string());
 
-    (number, sectors)
+    (code, sectors)
 }

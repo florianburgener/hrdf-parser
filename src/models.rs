@@ -1,6 +1,10 @@
-use std::{cell::{Ref, RefCell}, collections::HashMap};
+use std::{
+    cell::{Ref, RefCell},
+    collections::HashMap,
+};
 
 use chrono::NaiveDate;
+use strum_macros::{self, Display, EnumString};
 
 // ------------------------------------------------------------------------------------------------
 // --- Attribute
@@ -13,19 +17,23 @@ pub struct Attribute {
     stop_scope: i16,
     main_sorting_priority: i16,
     secondary_sorting_priority: i16,
-    // Key: deu|fra|ita|eng
-    translations: RefCell<HashMap<String, String>>,
+    description: RefCell<HashMap<String, String>>, // Key: deu, fra, ita or eng.
 }
 
 #[allow(unused)]
 impl Attribute {
-    pub fn new(id: String, stop_scope: i16, main_sorting_priority: i16, secondary_sorting_priority: i16) -> Self {
+    pub fn new(
+        id: String,
+        stop_scope: i16,
+        main_sorting_priority: i16,
+        secondary_sorting_priority: i16,
+    ) -> Self {
         Self {
             id,
             stop_scope,
             main_sorting_priority,
             secondary_sorting_priority,
-            translations: RefCell::new(HashMap::new()),
+            description: RefCell::new(HashMap::new()),
         }
     }
 
@@ -45,20 +53,22 @@ impl Attribute {
         self.secondary_sorting_priority
     }
 
-    pub fn add_translation() {
+
+    pub fn description(&self, language: Language) -> String {
+        self.description.borrow().get(&language.to_string()).cloned().unwrap()
+    }
+
+    pub fn set_description(&self, language: Language, value: &str) {
 
     }
 
-    pub fn get_translation(&self, language: &str) -> String {
-        self.translations.borrow().get(language).cloned().unwrap()
-    }
 }
 
 // ------------------------------------------------------------------------------------------------
 // --- Coordinate
 // ------------------------------------------------------------------------------------------------
 
-#[derive(Copy, Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub enum CoordinateType {
     #[default]
     LV95,
@@ -112,6 +122,27 @@ impl Coordinate {
 }
 
 // ------------------------------------------------------------------------------------------------
+// --- Language
+// ------------------------------------------------------------------------------------------------
+
+#[allow(unused)]
+#[derive(Clone, Copy, Debug, Default, Display, EnumString)]
+pub enum Language {
+    #[default]
+    #[strum(serialize = "deu")]
+    German,
+
+    #[strum(serialize = "fra")]
+    French,
+
+    #[strum(serialize = "ita")]
+    Italian,
+
+    #[strum(serialize = "eng")]
+    English,
+}
+
+// ------------------------------------------------------------------------------------------------
 // --- JourneyPlatform
 // ------------------------------------------------------------------------------------------------
 
@@ -119,7 +150,7 @@ impl Coordinate {
 #[derive(Debug)]
 pub struct JourneyPlatform {
     journey_id: i32,
-    platform_id: i64, // Haltestellennummer << 32 + "Index der Gleistextinformation"
+    platform_id: i64,
     unknown1: String, // "Verwaltung für Fahrt"
     hour: Option<i16>,
     bit_field_id: Option<i32>,
@@ -172,7 +203,7 @@ impl JourneyPlatform {
 #[derive(Debug, Default)]
 pub struct Platform {
     id: i64, // Haltestellennummer << 32 + "Index der Gleistextinformation"
-    number: String,
+    code: String,
     sectors: Option<String>,
     sloid: RefCell<String>,
     lv95_coordinate: RefCell<Coordinate>,
@@ -181,10 +212,10 @@ pub struct Platform {
 
 #[allow(unused)]
 impl Platform {
-    pub fn new(id: i64, number: String, sectors: Option<String>) -> Self {
+    pub fn new(id: i64, code: String, sectors: Option<String>) -> Self {
         Self {
             id,
-            number,
+            code,
             sectors,
             sloid: RefCell::new(String::default()),
             lv95_coordinate: RefCell::new(Coordinate::default()),
@@ -200,8 +231,8 @@ impl Platform {
         self.id
     }
 
-    pub fn number(&self) -> &String {
-        &self.number
+    pub fn code(&self) -> &String {
+        &self.code
     }
 
     pub fn sectors(&self) -> &Option<String> {
@@ -212,24 +243,24 @@ impl Platform {
         self.sloid.borrow()
     }
 
-    pub fn set_sloid(&self, sloid: String) {
-        *self.sloid.borrow_mut() = sloid;
+    pub fn set_sloid(&self, value: String) {
+        *self.sloid.borrow_mut() = value;
     }
 
     pub fn lv95_coordinate(&self) -> Ref<'_, Coordinate> {
         self.lv95_coordinate.borrow()
     }
 
-    pub fn set_lv95_coordinate(&self, coordinate: Coordinate) {
-        *self.lv95_coordinate.borrow_mut() = coordinate;
+    pub fn set_lv95_coordinate(&self, value: Coordinate) {
+        *self.lv95_coordinate.borrow_mut() = value;
     }
 
     pub fn wgs84_coordinate(&self) -> Ref<'_, Coordinate> {
         self.wgs84_coordinate.borrow()
     }
 
-    pub fn set_wgs84_coordinate(&self, coordinate: Coordinate) {
-        *self.wgs84_coordinate.borrow_mut() = coordinate;
+    pub fn set_wgs84_coordinate(&self, value: Coordinate) {
+        *self.wgs84_coordinate.borrow_mut() = value;
     }
 }
 
@@ -293,16 +324,16 @@ impl Stop {
         self.lv95_coordinate.borrow()
     }
 
-    pub fn set_lv95_coordinate(&self, coordinate: Coordinate) {
-        *self.lv95_coordinate.borrow_mut() = Some(coordinate);
+    pub fn set_lv95_coordinate(&self, value: Coordinate) {
+        *self.lv95_coordinate.borrow_mut() = Some(value);
     }
 
     pub fn wgs84_coordinate(&self) -> Ref<'_, Option<Coordinate>> {
         self.wgs84_coordinate.borrow()
     }
 
-    pub fn set_wgs84_coordinate(&self, coordinate: Coordinate) {
-        *self.wgs84_coordinate.borrow_mut() = Some(coordinate);
+    pub fn set_wgs84_coordinate(&self, value: Coordinate) {
+        *self.wgs84_coordinate.borrow_mut() = Some(value);
     }
 }
 
