@@ -226,13 +226,13 @@ impl RowParser {
             return &self.row_definitions[0];
         }
 
-        for row_definition in &self.row_definitions {
-            if row_definition.row_matcher.as_ref().unwrap().match_row(row) {
-                return row_definition;
-            }
-        }
+        let matched_row_definition = self
+            .row_definitions
+            .iter()
+            .find(|row_definition| row_definition.row_matcher.as_ref().unwrap().match_row(row));
 
-        panic!("This type of row is unknown. The unknown row :\n{}", row);
+        return matched_row_definition
+            .unwrap_or_else(|| panic!("This type of row is unknown:\n{}", row));
     }
 }
 

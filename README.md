@@ -11,6 +11,7 @@ Progression (8/38) :
 TODO :
 
 * thiserror
-* Remove "#[allow(unused)]"
 * Trouver un meilleur nom pour bit_field (actuellement : bit_field_id, etc.)
-* Trouver un meilleur nom pour platform_index (confusion avec platforms_index), platform_id ?
+* Chunk loading des fichiers
+* FastRowMatcher, AdvancedRowMatcher
+* platforms_parser.rs => journey_platform_and_platforms_parser.rs ?

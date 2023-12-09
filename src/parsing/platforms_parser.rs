@@ -6,6 +6,8 @@ use crate::{
     parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowMatcher, RowParser},
 };
 
+use super::ParsedValue;
+
 pub fn load_journey_platform_and_platforms() -> Result<
     (
         Vec<Rc<JourneyPlatform>>,
@@ -37,46 +39,20 @@ pub fn load_journey_platform_and_platforms() -> Result<
     ]);
     let file_parser = FileParser::new("data/GLEIS", row_parser)?;
 
-    let mut journey_platform = vec![];
-    let mut platforms = vec![];
+    let mut journey_platform = Vec::new();
+    let mut platforms = Vec::new();
     let mut bytes_offset = 0;
 
-    for (id, bytes_read, mut values) in file_parser.parse() {
-        match id {
+    file_parser
+        .parse()
+        .for_each(|(id, bytes_read, values)| match id {
             ROW_A => {
                 bytes_offset += bytes_read;
-
-                let stop_id: i32 = values.remove(0).into();
-                let journey_id: i32 = values.remove(0).into();
-                let unknown1: String = values.remove(0).into();
-                // TODO : How to name that ?
-                let pindex: i32 = values.remove(0).into();
-                let hour: Option<i16> = values.remove(0).into();
-                let bit_field_id: Option<i32> = values.remove(0).into();
-
-                journey_platform.push(Rc::new(JourneyPlatform::new(
-                    journey_id,
-                    Platform::create_id(stop_id, pindex),
-                    unknown1,
-                    hour,
-                    bit_field_id,
-                )))
+                journey_platform.push(create_journey_platform(values))
             }
-            ROW_B => {
-                let stop_id: i32 = values.remove(0).into();
-                // TODO : How to name that ?
-                let pindex: i32 = values.remove(0).into();
-                let (code, sectors) = parse_platform_data(values.remove(0).into());
-
-                platforms.push(Rc::new(Platform::new(
-                    Platform::create_id(stop_id, pindex),
-                    code,
-                    sectors,
-                )))
-            }
+            ROW_B => platforms.push(create_platform(values)),
             _ => unreachable!(),
-        }
-    }
+        });
 
     let journey_platform_primary_index = create_journey_platform_primary_index(&journey_platform);
     let platforms_primary_index = create_platforms_primary_index(&platforms);
@@ -98,26 +74,6 @@ pub fn load_journey_platform_and_platforms() -> Result<
     ))
 }
 
-fn create_journey_platform_primary_index(
-    journey_platform: &Vec<Rc<JourneyPlatform>>,
-) -> HashMap<(i32, i64), Vec<Rc<JourneyPlatform>>> {
-    journey_platform
-        .iter()
-        .fold(HashMap::new(), |mut acc, item| {
-            acc.entry((item.journey_id(), item.platform_id()))
-                .or_insert(Vec::new())
-                .push(Rc::clone(item));
-            acc
-        })
-}
-
-fn create_platforms_primary_index(platforms: &Vec<Rc<Platform>>) -> HashMap<i64, Rc<Platform>> {
-    platforms.iter().fold(HashMap::new(), |mut acc, item| {
-        acc.insert(item.id(), Rc::clone(item));
-        acc
-    })
-}
-
 fn load_coordinates_for_platforms(
     coordinate_type: CoordinateType,
     bytes_offset: u64,
@@ -130,7 +86,7 @@ fn load_coordinates_for_platforms(
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row is ignored.
-        RowDefinition::new(ROW_A, RowMatcher::new(18, 1, "G", true), vec![]),
+        RowDefinition::new(ROW_A, RowMatcher::new(18, 1, "G", true), Vec::new()),
         // This row contains the SLOID.
         RowDefinition::new(ROW_B, RowMatcher::new(18, 3, "I A", true), vec![
             ColumnDefinition::new(1, 7, ExpectedType::Integer32),   // Complies with the standard.
@@ -152,56 +108,43 @@ fn load_coordinates_for_platforms(
     let file_path = format!("data/{}", filename);
     let file_parser = FileParser::new_with_bytes_offset(&file_path, row_parser, bytes_offset)?;
 
-    for (id, _, mut values) in file_parser.parse() {
-        match id {
-            ROW_A => continue,
-            ROW_B => {
-                match coordinate_type {
-                    // The SLOID is processed only when loading LV95 coordinates.
-                    CoordinateType::LV95 => {
-                        let stop_id: i32 = values.remove(0).into();
-                        // TODO : How to name that ?
-                        let pindex: i32 = values.remove(0).into();
-                        let sloid: String = values.remove(0).into();
-
-                        platforms_primary_index
-                            .get(&Platform::create_id(stop_id, pindex))
-                            .unwrap()
-                            .set_sloid(sloid);
-                    }
-                    CoordinateType::WGS84 => continue,
-                }
-            }
-            ROW_C => {
-                let stop_id: i32 = values.remove(0).into();
-                // TODO : How to name that ?
-                let pindex: i32 = values.remove(0).into();
-                let mut xy1: f64 = values.remove(0).into();
-                let mut xy2: f64 = values.remove(0).into();
-                // Altitude is not provided for platforms.
-                let altitude = 0;
-
-                if coordinate_type == CoordinateType::WGS84 {
-                    // WGS84 coordinates are stored in reverse order for some unknown reason.
-                    (xy1, xy2) = (xy2, xy1);
-                }
-
-                let coordinate = Coordinate::new(coordinate_type, xy1, xy2, altitude);
-                let platform = platforms_primary_index
-                    .get(&Platform::create_id(stop_id, pindex))
-                    .unwrap();
-
-                match coordinate_type {
-                    CoordinateType::LV95 => platform.set_lv95_coordinate(coordinate),
-                    CoordinateType::WGS84 => platform.set_wgs84_coordinate(coordinate),
-                }
-            }
-            _ => unreachable!(),
-        }
-    }
+    file_parser.parse().for_each(|(id, _, values)| match id {
+        ROW_A => return,
+        ROW_B => set_sloid_of_platform(values, coordinate_type, platforms_primary_index),
+        ROW_C => set_coordinate_of_platform(values, coordinate_type, platforms_primary_index),
+        _ => unreachable!(),
+    });
 
     Ok(())
 }
+
+// ------------------------------------------------------------------------------------------------
+// --- Indexes Creation
+// ------------------------------------------------------------------------------------------------
+
+fn create_journey_platform_primary_index(
+    journey_platform: &Vec<Rc<JourneyPlatform>>,
+) -> HashMap<(i32, i64), Vec<Rc<JourneyPlatform>>> {
+    journey_platform
+        .iter()
+        .fold(HashMap::new(), |mut acc, item| {
+            acc.entry((item.journey_id(), item.platform_id()))
+                .or_insert(Vec::new())
+                .push(Rc::clone(item));
+            acc
+        })
+}
+
+fn create_platforms_primary_index(platforms: &Vec<Rc<Platform>>) -> HashMap<i64, Rc<Platform>> {
+    platforms.iter().fold(HashMap::new(), |mut acc, item| {
+        acc.insert(item.id(), Rc::clone(item));
+        acc
+    })
+}
+
+// ------------------------------------------------------------------------------------------------
+// --- Helper Functions
+// ------------------------------------------------------------------------------------------------
 
 fn parse_platform_data(platform_data: String) -> (String, Option<String>) {
     let cleaned_platform_data = platform_data.trim().to_string() + " ";
@@ -223,4 +166,83 @@ fn parse_platform_data(platform_data: String) -> (String, Option<String>) {
     let sectors = parsed_values.get("A").map(|s| s.to_string());
 
     (code, sectors)
+}
+
+fn create_journey_platform(mut values: Vec<ParsedValue>) -> Rc<JourneyPlatform> {
+    let stop_id: i32 = values.remove(0).into();
+    let journey_id: i32 = values.remove(0).into();
+    let unknown1: String = values.remove(0).into();
+    // TODO : How to name that ?
+    let pindex: i32 = values.remove(0).into();
+    let hour: Option<i16> = values.remove(0).into();
+    let bit_field_id: Option<i32> = values.remove(0).into();
+
+    Rc::new(JourneyPlatform::new(
+        journey_id,
+        Platform::create_id(stop_id, pindex),
+        unknown1,
+        hour,
+        bit_field_id,
+    ))
+}
+
+fn create_platform(mut values: Vec<ParsedValue>) -> Rc<Platform> {
+    let stop_id: i32 = values.remove(0).into();
+    // TODO : How to name that ?
+    let pindex: i32 = values.remove(0).into();
+    let (code, sectors) = parse_platform_data(values.remove(0).into());
+
+    Rc::new(Platform::new(
+        Platform::create_id(stop_id, pindex),
+        code,
+        sectors,
+    ))
+}
+
+fn set_sloid_of_platform(
+    mut values: Vec<ParsedValue>,
+    coordinate_type: CoordinateType,
+    platforms_primary_index: &HashMap<i64, Rc<Platform>>,
+) {
+    // The SLOID is processed only when loading LV95 coordinates.
+    if coordinate_type == CoordinateType::LV95 {
+        let stop_id: i32 = values.remove(0).into();
+        // TODO : How to name that ?
+        let pindex: i32 = values.remove(0).into();
+        let sloid: String = values.remove(0).into();
+
+        platforms_primary_index
+            .get(&Platform::create_id(stop_id, pindex))
+            .unwrap()
+            .set_sloid(sloid);
+    }
+}
+
+fn set_coordinate_of_platform(
+    mut values: Vec<ParsedValue>,
+    coordinate_type: CoordinateType,
+    platforms_primary_index: &HashMap<i64, Rc<Platform>>,
+) {
+    let stop_id: i32 = values.remove(0).into();
+    // TODO : How to name that ?
+    let pindex: i32 = values.remove(0).into();
+    let mut xy1: f64 = values.remove(0).into();
+    let mut xy2: f64 = values.remove(0).into();
+    // Altitude is not provided for platforms.
+    let altitude = 0;
+
+    if coordinate_type == CoordinateType::WGS84 {
+        // WGS84 coordinates are stored in reverse order for some unknown reason.
+        (xy1, xy2) = (xy2, xy1);
+    }
+
+    let coordinate = Coordinate::new(coordinate_type, xy1, xy2, altitude);
+    let platform = platforms_primary_index
+        .get(&Platform::create_id(stop_id, pindex))
+        .unwrap();
+
+    match coordinate_type {
+        CoordinateType::LV95 => platform.set_lv95_coordinate(coordinate),
+        CoordinateType::WGS84 => platform.set_wgs84_coordinate(coordinate),
+    }
 }

@@ -37,7 +37,7 @@ impl Attribute {
         }
     }
 
-    pub fn id(&self) -> &String {
+    pub fn id(&self) -> &str {
         &self.id
     }
 
@@ -182,7 +182,7 @@ impl JourneyPlatform {
         self.platform_id
     }
 
-    pub fn unknown1(&self) -> &String {
+    pub fn unknown1(&self) -> &str {
         &self.unknown1
     }
 
@@ -231,7 +231,7 @@ impl Platform {
         self.id
     }
 
-    pub fn code(&self) -> &String {
+    pub fn code(&self) -> &str {
         &self.code
     }
 
@@ -304,7 +304,7 @@ impl Stop {
         self.id
     }
 
-    pub fn name(&self) -> &String {
+    pub fn name(&self) -> &str {
         &self.name
     }
 

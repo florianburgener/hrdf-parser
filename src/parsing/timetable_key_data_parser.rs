@@ -28,7 +28,7 @@ pub fn load_timetable_key_data() -> Result<TimetableKeyData, Box<dyn Error>> {
 
     let file_parser = FileParser::new("data/ECKDATEN", row_parser)?;
 
-    let mut data: Vec<ParsedValue> = file_parser.parse().map(|mut x| x.2.remove(0)).collect();
+    let mut data: Vec<ParsedValue> = file_parser.parse().map(|(_, _, mut values)| values.remove(0)).collect();
     let start_date: String = data.remove(0).into();
     let end_date: String = data.remove(0).into();
     let metadata: String = data.remove(0).into();
