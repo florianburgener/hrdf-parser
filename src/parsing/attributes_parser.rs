@@ -2,11 +2,11 @@
 // Unused files: ATTRIBUT_DE, ATTRIBUT_EN, ATTRIBUT_FR, ATTRIBUT_IT
 use std::{collections::HashMap, error::Error, rc::Rc, str::FromStr};
 
-use regex::Regex;
-
 use crate::{
     models::{Attribute, Language},
-    parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowMatcher, RowParser},
+    parsing::{
+        ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, RowDefinition, RowParser, AdvancedRowMatcher,
+    },
 };
 
 use super::ParsedValue;
@@ -22,20 +22,20 @@ pub fn load_attributes(
     // TODO : "Complies with the standard."
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
-        RowDefinition::new(ROW_A, RowMatcher::new_with_re_only(
-            Regex::new("^.{2} [0-9] [0-9 ]{3} [0-9 ]{2}$").unwrap()
+        RowDefinition::new(ROW_A, Box::new(
+            AdvancedRowMatcher::new("^.{2} [0-9] [0-9 ]{3} [0-9 ]{2}$")?
         ), vec![
             ColumnDefinition::new(1, 2, ExpectedType::String),      // Complies with the standard.
             ColumnDefinition::new(4, 4, ExpectedType::Integer16),   // Complies with the standard.
             ColumnDefinition::new(6, 8, ExpectedType::Integer16),   // Complies with the standard.
             ColumnDefinition::new(10, 11, ExpectedType::Integer16), // Complies with the standard.
         ]),
-        RowDefinition::new(ROW_B, RowMatcher::new(1, 1, "#", true), Vec::new()),
-        RowDefinition::new(ROW_C, RowMatcher::new(1, 1, "<", true), vec![
+        RowDefinition::new(ROW_B, Box::new(FastRowMatcher::new(1, 1, "#", true)), Vec::new()),
+        RowDefinition::new(ROW_C, Box::new(FastRowMatcher::new(1, 1, "<", true)), vec![
             ColumnDefinition::new(1, -1, ExpectedType::String), // Complies with the standard.
         ]),
-        RowDefinition::new(ROW_D, RowMatcher::new_with_re_only(
-            Regex::new("^.{2} .+$").unwrap()
+        RowDefinition::new(ROW_D, Box::new(
+            AdvancedRowMatcher::new("^.{2} .+$")?
         ), vec![
             ColumnDefinition::new(1, 2, ExpectedType::String),  // Complies with the standard.
             ColumnDefinition::new(4, -1, ExpectedType::String), // Complies with the standard.

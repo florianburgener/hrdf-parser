@@ -13,5 +13,4 @@ TODO :
 * thiserror
 * Trouver un meilleur nom pour bit_field (actuellement : bit_field_id, etc.)
 * Chunk loading des fichiers
-* FastRowMatcher, AdvancedRowMatcher
 * platforms_parser.rs => journey_platform_and_platforms_parser.rs ?

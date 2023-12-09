@@ -9,6 +9,7 @@ pub use stops_parser::load_stops;
 pub use timetable_key_data_parser::load_timetable_key_data;
 
 use std::{
+    error::Error,
     fs::File,
     io::{self, Read, Seek},
 };
@@ -88,46 +89,70 @@ impl From<ParsedValue> for Option<i32> {
     }
 }
 
-pub struct RowMatcher {
+// ------------------------------------------------------------------------------------------------
+// --- RowMatcher
+// ------------------------------------------------------------------------------------------------
+
+pub trait RowMatcher {
+    fn match_row(&self, row: &str) -> bool;
+}
+
+// ------------------------------------------------------------------------------------------------
+// --- FastRowMatcher
+// ------------------------------------------------------------------------------------------------
+
+pub struct FastRowMatcher {
     // 1-based indexing
     start: usize,
     length: usize,
     value: String,
     should_equal_value: bool,
-    re: Option<Regex>,
 }
 
-impl RowMatcher {
-    pub fn new(start: usize, length: usize, value: &str, should_equal_value: bool) -> RowMatcher {
+impl FastRowMatcher {
+    pub fn new(start: usize, length: usize, value: &str, should_equal_value: bool) -> Self {
         Self {
             start,
             length,
             value: value.to_string(),
             should_equal_value,
-            re: None,
-        }
-    }
-
-    pub fn new_with_re_only(re: Regex) -> RowMatcher {
-        Self {
-            start: 0,
-            length: 0,
-            value: String::new(),
-            should_equal_value: false,
-            re: Some(re),
-        }
-    }
-
-    fn match_row(&self, row: &str) -> bool {
-        if let Some(re) = self.re.as_ref() {
-            re.is_match(row)
-        } else {
-            let start = self.start - 1;
-            let target_value = &row[start..(start + self.length)];
-            self.should_equal_value == (target_value == self.value)
         }
     }
 }
+
+impl RowMatcher for FastRowMatcher {
+    fn match_row(&self, row: &str) -> bool {
+        let start = self.start - 1;
+        let target_value = &row[start..(start + self.length)];
+        self.should_equal_value == (target_value == self.value)
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
+// --- AdvancedRowMatcher
+// ------------------------------------------------------------------------------------------------
+
+pub struct AdvancedRowMatcher {
+    re: Regex,
+}
+
+impl AdvancedRowMatcher {
+    pub fn new(re: &str) -> Result<Self, Box<dyn Error>> {
+        Ok(Self {
+            re: Regex::new(re)?,
+        })
+    }
+}
+
+impl RowMatcher for AdvancedRowMatcher {
+    fn match_row(&self, row: &str) -> bool {
+        self.re.is_match(row)
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
+// --- ColumnDefinition
+// ------------------------------------------------------------------------------------------------
 
 pub struct ColumnDefinition {
     // 1-based indexing
@@ -147,16 +172,24 @@ impl ColumnDefinition {
     }
 }
 
+// ------------------------------------------------------------------------------------------------
+// --- RowDefinition
+// ------------------------------------------------------------------------------------------------
+
 type RowConfiguration = Vec<ColumnDefinition>;
 
 pub struct RowDefinition {
     id: i32,
-    row_matcher: Option<RowMatcher>,
+    row_matcher: Option<Box<dyn RowMatcher>>,
     row_configuration: RowConfiguration,
 }
 
 impl RowDefinition {
-    pub fn new(id: i32, row_matcher: RowMatcher, row_configuration: RowConfiguration) -> Self {
+    pub fn new(
+        id: i32,
+        row_matcher: Box<dyn RowMatcher>,
+        row_configuration: RowConfiguration,
+    ) -> Self {
         Self {
             id,
             row_matcher: Some(row_matcher),
@@ -174,6 +207,10 @@ impl From<RowConfiguration> for RowDefinition {
         }
     }
 }
+
+// ------------------------------------------------------------------------------------------------
+// --- RowParser
+// ------------------------------------------------------------------------------------------------
 
 // (RowDefinition.id, number of bytes read, values parsed from the row)
 type ParsedRow = (i32, u64, Vec<ParsedValue>);
@@ -236,6 +273,10 @@ impl RowParser {
     }
 }
 
+// ------------------------------------------------------------------------------------------------
+// --- FileParser
+// ------------------------------------------------------------------------------------------------
+
 pub struct FileParser {
     rows: Vec<String>,
     row_parser: RowParser,
@@ -272,6 +313,10 @@ impl FileParser {
         }
     }
 }
+
+// ------------------------------------------------------------------------------------------------
+// --- ParsedRowIterator
+// ------------------------------------------------------------------------------------------------
 
 pub struct ParsedRowIterator<'a> {
     rows_iter: std::slice::Iter<'a, String>,
