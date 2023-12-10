@@ -1,9 +1,11 @@
 mod attributes_parser;
+mod holidays_parser;
 mod platforms_parser;
 mod stops_parser;
 mod timetable_key_data_parser;
 
 pub use attributes_parser::load_attributes;
+pub use holidays_parser::load_holidays;
 pub use platforms_parser::load_journey_platform_and_platforms;
 pub use stops_parser::load_stops;
 pub use timetable_key_data_parser::load_timetable_key_data;

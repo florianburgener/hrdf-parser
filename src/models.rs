@@ -53,15 +53,15 @@ impl Attribute {
         self.secondary_sorting_priority
     }
 
-
     pub fn description(&self, language: Language) -> String {
-        self.description.borrow().get(&language.to_string()).cloned().unwrap()
+        self.description
+            .borrow()
+            .get(&language.to_string())
+            .cloned()
+            .unwrap()
     }
 
-    pub fn set_description(&self, language: Language, value: &str) {
-
-    }
-
+    pub fn set_description(&self, language: Language, value: &str) {}
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -118,6 +118,32 @@ impl Coordinate {
 
     pub fn altitude(&self) -> i16 {
         self.z
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
+// --- Holiday
+// ------------------------------------------------------------------------------------------------
+
+#[allow(unused)]
+#[derive(Debug)]
+pub struct Holiday {
+    date: NaiveDate,
+    name: HashMap<String, String>, // Key: deu, fra, ita or eng.
+}
+
+#[allow(unused)]
+impl Holiday {
+    pub fn new(date: NaiveDate, name: HashMap<String, String>) -> Self {
+        Self { date, name }
+    }
+
+    pub fn date(&self) -> NaiveDate {
+        self.date
+    }
+
+    pub fn name(&self, language: Language) -> String {
+        self.name.get(&language.to_string()).cloned().unwrap()
     }
 }
 
@@ -359,12 +385,12 @@ impl TimetableKeyData {
         }
     }
 
-    pub fn start_date(&self) -> &NaiveDate {
-        &self.start_date
+    pub fn start_date(&self) -> NaiveDate {
+        self.start_date
     }
 
-    pub fn end_date(&self) -> &NaiveDate {
-        &self.end_date
+    pub fn end_date(&self) -> NaiveDate {
+        self.end_date
     }
 
     pub fn metadata(&self) -> &Vec<String> {
