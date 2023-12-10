@@ -21,10 +21,8 @@ TODO :
 * Trouver un meilleur nom pour bit_field (actuellement : bit_field_id, etc.)
 * Chunk loading des fichiers
 * platforms_parser.rs => journey_platform_and_platforms_parser.rs ?
-* review holidays_parse.rs
-* review parse_* methods for fields
+* Normalize "Complies with the standard."
 
-Try :
-BITFIELD
+Next :
 LINIE
 ZUGART
