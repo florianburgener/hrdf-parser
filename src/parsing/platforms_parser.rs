@@ -25,6 +25,7 @@ pub fn load_journey_platform_and_platforms() -> Result<
 
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
+        // This row is used to create a JourneyPlatform instance.
         RowDefinition::new(ROW_A, Box::new(FastRowMatcher::new(9, 1, "#", false)), vec![
             ColumnDefinition::new(1, 7, ExpectedType::Integer32),         // Complies with the standard.
             ColumnDefinition::new(9, 14, ExpectedType::Integer32),        // Complies with the standard.
@@ -33,6 +34,7 @@ pub fn load_journey_platform_and_platforms() -> Result<
             ColumnDefinition::new(32, 35, ExpectedType::OptionInteger16), // Complies with the standard.
             ColumnDefinition::new(37, 42, ExpectedType::OptionInteger32), // Complies with the standard.
         ]),
+        // This row is used to create a Platform instance.
         RowDefinition::new(ROW_B, Box::new(FastRowMatcher::new(9, 1, "#", true)), vec![
             ColumnDefinition::new(1, 7, ExpectedType::Integer32),   // Complies with the standard.
             ColumnDefinition::new(10, 16, ExpectedType::Integer32), // Does not comply with the standard. Should be 9-16, but here the # character is ignored.
@@ -87,7 +89,7 @@ fn load_coordinates_for_platforms(
 
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
-        // This row is ignored.
+        // This line is ignored, as the data has already been retrieved from the GLEIS file.
         RowDefinition::new(ROW_A, Box::new(FastRowMatcher::new(18, 1, "G", true)), Vec::new()),
         // This row contains the SLOID.
         RowDefinition::new(ROW_B, Box::new(FastRowMatcher::new(18, 3, "I A", true)), vec![

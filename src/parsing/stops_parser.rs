@@ -9,6 +9,7 @@ pub fn load_stops() -> Result<(Vec<Rc<Stop>>, HashMap<i32, Rc<Stop>>), Box<dyn E
     println!("Parsing BAHNHOF...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
+        // This row is used to create a Stop instance.
         RowDefinition::from(vec![
             ColumnDefinition::new(1, 7, ExpectedType::Integer32), // Complies with the standard.
             ColumnDefinition::new(13, -1, ExpectedType::String),  // Does not comply with the standard. Should be 13-62, but some entries go beyond column 62.

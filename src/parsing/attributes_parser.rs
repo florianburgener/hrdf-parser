@@ -5,7 +5,8 @@ use std::{collections::HashMap, error::Error, rc::Rc, str::FromStr};
 use crate::{
     models::{Attribute, Language},
     parsing::{
-        ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, RowDefinition, RowParser, AdvancedRowMatcher,
+        AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser,
+        RowDefinition, RowParser,
     },
 };
 
@@ -19,9 +20,9 @@ pub fn load_attributes(
     const ROW_C: i32 = 3;
     const ROW_D: i32 = 4;
 
-    // TODO : "Complies with the standard."
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
+        // This row is used to create an Attribute instance.
         RowDefinition::new(ROW_A, Box::new(
             AdvancedRowMatcher::new("^.{2} [0-9] [0-9 ]{3} [0-9 ]{2}$")?
         ), vec![
@@ -30,10 +31,13 @@ pub fn load_attributes(
             ColumnDefinition::new(6, 8, ExpectedType::Integer16),   // Complies with the standard.
             ColumnDefinition::new(10, 11, ExpectedType::Integer16), // Complies with the standard.
         ]),
+        // This row is ignored. TODO : should i take care of this row?, e.g. # 1  1  1
         RowDefinition::new(ROW_B, Box::new(FastRowMatcher::new(1, 1, "#", true)), Vec::new()),
+        // Language indicator.
         RowDefinition::new(ROW_C, Box::new(FastRowMatcher::new(1, 1, "<", true)), vec![
-            ColumnDefinition::new(1, -1, ExpectedType::String), // Complies with the standard.
+            ColumnDefinition::new(1, -1, ExpectedType::String), // Complies with the standard. Please note that the type and columns are not explicitly described in the SBB specification.
         ]),
+        // Description of the attribute.
         RowDefinition::new(ROW_D, Box::new(
             AdvancedRowMatcher::new("^.{2} .+$")?
         ), vec![
@@ -41,6 +45,7 @@ pub fn load_attributes(
             ColumnDefinition::new(4, -1, ExpectedType::String), // Complies with the standard.
         ]),
     ]);
+    // The ATTRIBUT file is used instead of ATTRIBUT_* for simplicity's sake.
     let file_parser = FileParser::new("data/ATTRIBUT", row_parser)?;
 
     let mut attributes = Vec::new();
@@ -55,8 +60,6 @@ pub fn load_attributes(
                 // The primary index is then created only once.
                 attributes_primary_index = Some(create_attributes_primary_index(&attributes));
             }
-
-            // TODO
         }
         ROW_C => update_current_language(values, &mut current_language),
         ROW_D => set_description(values, &attributes_primary_index, current_language),
