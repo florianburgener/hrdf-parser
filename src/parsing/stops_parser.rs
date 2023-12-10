@@ -74,36 +74,37 @@ fn create_stops_primary_index(stops: &Vec<Rc<Stop>>) -> HashMap<i32, Rc<Stop>> {
 // --- Helper Functions
 // ------------------------------------------------------------------------------------------------
 
-fn parse_stop_name(stop_name: String) -> HashMap<i32, Vec<String>> {
-    let parsed_stop_name: HashMap<i32, Vec<String>> = stop_name
+fn parse_name(raw_name: String) -> (String, Option<String>, Option<String>, Option<Vec<String>>) {
+    let data: HashMap<i32, Vec<String>> = raw_name
         .split('>')
         .filter(|&s| !s.is_empty())
         .map(|s| {
             let s = s.replace('$', "");
             let mut parts = s.split('<');
 
-            let value = parts.next().unwrap().to_string();
-            let key = parts.next().unwrap().parse::<i32>().unwrap();
+            let v = parts.next().unwrap().to_string();
+            let k = parts.next().unwrap().parse::<i32>().unwrap();
 
-            (key, value)
+            (k, v)
         })
-        .fold(HashMap::new(), |mut acc, (key, value)| {
-            acc.entry(key).or_insert(Vec::new()).push(value);
+        .fold(HashMap::new(), |mut acc, (k, v)| {
+            acc.entry(k).or_insert(Vec::new()).push(v);
             acc
         });
-    parsed_stop_name
+
+    let name = data.get(&1).unwrap()[0].clone();
+    let long_name = data.get(&2).map(|x| x[0].clone());
+    let abbreviation = data.get(&3).map(|x| x[0].clone());
+    let synonyms = data.get(&4).cloned();
+
+    (name, long_name, abbreviation, synonyms)
 }
 
 fn create_stop(mut values: Vec<ParsedValue>) -> Rc<Stop> {
     let id: i32 = values.remove(0).into();
     let raw_name: String = values.remove(0).into();
 
-    let parsed_name = parse_stop_name(raw_name);
-
-    let name = parsed_name.get(&1).unwrap()[0].clone();
-    let long_name = parsed_name.get(&2).map(|x| x[0].clone());
-    let abbreviation = parsed_name.get(&3).map(|x| x[0].clone());
-    let synonyms = parsed_name.get(&4).cloned();
+    let (name, long_name, abbreviation, synonyms) = parse_name(raw_name);
 
     Rc::new(Stop::new(id, name, long_name, abbreviation, synonyms))
 }

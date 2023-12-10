@@ -1,7 +1,7 @@
 use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{
-    models::{JourneyPlatform, Platform, Stop, TimetableKeyData, Attribute, Holiday},
+    models::{Attribute, BitField, Holiday, JourneyPlatform, Platform, Stop, TimetableKeyData},
     parsing,
 };
 
@@ -10,6 +10,9 @@ use crate::{
 pub struct Hrdf {
     attributes: Vec<Rc<Attribute>>,
     attributes_primary_index: HashMap<String, Rc<Attribute>>, // Key = Attribute.id
+
+    bit_fields: Vec<Rc<BitField>>,
+    bit_fields_primary_index: HashMap<i32, Rc<BitField>>, // Key = BitField.id
 
     holidays: Vec<Rc<Holiday>>,
 
@@ -28,8 +31,8 @@ pub struct Hrdf {
 impl Hrdf {
     pub fn new() -> Result<Rc<Self>, Box<dyn Error>> {
         let (attributes, attributes_primary_index) = parsing::load_attributes()?;
+        let (bit_fields, bit_fields_primary_index) = parsing::load_bit_fields()?;
         let holidays = parsing::load_holidays()?;
-        print!("{:?}", holidays);
         let (journey_platform, journey_platform_primary_index, platforms, platforms_primary_index) =
             parsing::load_journey_platform_and_platforms()?;
         let (stops, stops_primary_index) = parsing::load_stops()?;
@@ -37,6 +40,8 @@ impl Hrdf {
 
         let instance = Rc::new(Self {
             attributes,
+            bit_fields,
+            bit_fields_primary_index,
             holidays,
             attributes_primary_index,
             journey_platform,

@@ -1,4 +1,4 @@
-Progression (14/38) :
+Progression (15/38) :
 * ATTRIBUT
 * ATTRIBUT_DE
 * ATTRIBUT_EN
@@ -7,6 +7,7 @@ Progression (14/38) :
 * BAHNHOF
 * BFKOORD_LV95
 * BFKOORD_WGS
+* BITFELD
 * ECKDATEN
 * FEIERTAG
 * GLEIS

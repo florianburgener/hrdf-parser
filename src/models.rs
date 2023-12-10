@@ -65,6 +65,33 @@ impl Attribute {
 }
 
 // ------------------------------------------------------------------------------------------------
+// --- BitField
+// ------------------------------------------------------------------------------------------------
+
+#[allow(unused)]
+#[derive(Debug)]
+pub struct BitField {
+    id: i32,
+    // TODO : find a better name, perhaps?
+    values: Vec<u8>,
+}
+
+#[allow(unused)]
+impl BitField {
+    pub fn new(id: i32, values: Vec<u8>) -> Self {
+        Self { id, values }
+    }
+
+    pub fn id(&self) -> i32 {
+        return self.id;
+    }
+
+    pub fn values(&self) -> &Vec<u8> {
+        return &self.values;
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
 // --- Coordinate
 // ------------------------------------------------------------------------------------------------
 

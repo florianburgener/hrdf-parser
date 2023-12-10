@@ -35,23 +35,22 @@ pub fn load_holidays() -> Result<Vec<Rc<Holiday>>, Box<dyn Error>> {
 // --- Helper Functions
 // ------------------------------------------------------------------------------------------------
 
-fn parse_holiday_name(holiday_name: String) -> HashMap<String, String> {
-    let parsed_holiday_name: HashMap<String, String> = holiday_name
+fn parse_name(raw_name: String) -> HashMap<String, String> {
+    raw_name
         .split('>')
         .filter(|&s| !s.is_empty())
         .map(|s| {
             let mut parts = s.split('<');
 
-            let value = parts.next().unwrap().to_string();
-            let key = parts.next().unwrap().to_string();
+            let v = parts.next().unwrap().to_string();
+            let k = parts.next().unwrap().to_string();
 
-            (key, value)
+            (k, v)
         })
         .fold(HashMap::new(), |mut acc, (k, v)| {
             acc.insert(k, v);
             acc
-        });
-    parsed_holiday_name
+        })
 }
 
 fn create_holiday(mut values: Vec<ParsedValue>) -> Result<Rc<Holiday>, Box<dyn Error>> {
@@ -59,7 +58,7 @@ fn create_holiday(mut values: Vec<ParsedValue>) -> Result<Rc<Holiday>, Box<dyn E
     let name: String = values.remove(0).into();
 
     let date = NaiveDate::parse_from_str(&date, "%d.%m.%Y")?;
-    let name = parse_holiday_name(name);
+    let name = parse_name(name);
 
     Ok(Rc::new(Holiday::new(date, name)))
 }

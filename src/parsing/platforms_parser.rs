@@ -69,6 +69,7 @@ pub fn load_journey_platform_and_platforms() -> Result<
         bytes_offset,
         &platforms_primary_index,
     )?;
+    parse_platform_data("G '5' A 'AB'".to_string());
 
     Ok((
         journey_platform,
@@ -150,24 +151,20 @@ fn create_platforms_primary_index(platforms: &Vec<Rc<Platform>>) -> HashMap<i64,
 // --- Helper Functions
 // ------------------------------------------------------------------------------------------------
 
-fn parse_platform_data(platform_data: String) -> (String, Option<String>) {
-    let cleaned_platform_data = platform_data.trim().to_string() + " ";
-    let parsed_values = cleaned_platform_data
+fn parse_platform_data(mut raw_data: String) -> (String, Option<String>) {
+    raw_data = format!("{} ", raw_data);
+    let data = raw_data
         .split("' ")
+        .filter(|&s| !s.is_empty())
         .fold(HashMap::new(), |mut acc, item| {
-            if item.is_empty() {
-                // There will always be an empty string as the last element, it is always ignored.
-                acc
-            } else {
-                let tmp: Vec<&str> = item.split(" '").collect();
-                acc.insert(tmp[0], tmp[1]);
-                acc
-            }
+            let parts: Vec<&str> = item.split(" '").collect();
+            acc.insert(parts[0], parts[1]);
+            acc
         });
 
     // There should always be a G entry.
-    let code = parsed_values.get("G").unwrap().to_string();
-    let sectors = parsed_values.get("A").map(|s| s.to_string());
+    let code = data.get("G").unwrap().to_string();
+    let sectors = data.get("A").map(|s| s.to_string());
 
     (code, sectors)
 }
@@ -194,7 +191,9 @@ fn create_platform(mut values: Vec<ParsedValue>) -> Rc<Platform> {
     let stop_id: i32 = values.remove(0).into();
     // TODO : How to name that ?
     let pindex: i32 = values.remove(0).into();
-    let (code, sectors) = parse_platform_data(values.remove(0).into());
+    let platform_data: String = values.remove(0).into();
+
+    let (code, sectors) = parse_platform_data(platform_data);
 
     Rc::new(Platform::new(
         Platform::create_id(stop_id, pindex),
