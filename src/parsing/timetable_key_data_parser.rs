@@ -31,13 +31,13 @@ pub fn load_timetable_key_data() -> Result<TimetableKeyData, Box<dyn Error>> {
     let file_parser = FileParser::new("data/ECKDATEN", row_parser)?;
 
     let mut data: Vec<ParsedValue> = file_parser.parse().map(|(_, _, mut values)| values.remove(0)).collect();
-    let start_date: String = data.remove(0).into();
-    let end_date: String = data.remove(0).into();
-    let metadata: String = data.remove(0).into();
+    let raw_start_date: String = data.remove(0).into();
+    let raw_end_date: String = data.remove(0).into();
+    let raw_metadata: String = data.remove(0).into();
 
-    let start_date = NaiveDate::parse_from_str(&start_date, "%d.%m.%Y")?;
-    let end_date = NaiveDate::parse_from_str(&end_date, "%d.%m.%Y")?;
-    let metada = metadata.split('$').map(String::from).collect();
+    let start_date = NaiveDate::parse_from_str(&raw_start_date, "%d.%m.%Y")?;
+    let end_date = NaiveDate::parse_from_str(&raw_end_date, "%d.%m.%Y")?;
+    let metada = raw_metadata.split('$').map(String::from).collect();
 
     let timetable_key_data = TimetableKeyData::new(start_date, end_date, metada);
 

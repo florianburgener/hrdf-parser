@@ -276,8 +276,8 @@ impl Platform {
         }
     }
 
-    pub fn create_id(stop_id: i32, pindex: i32) -> i64 {
-        ((stop_id as i64) << 32) + (pindex as i64)
+    pub fn create_id(stop_id: i32, stop_id_index: i32) -> i64 {
+        ((stop_id as i64) << 32) + (stop_id_index as i64)
     }
 
     pub fn id(&self) -> i64 {

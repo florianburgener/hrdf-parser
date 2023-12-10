@@ -54,11 +54,11 @@ fn parse_name(raw_name: String) -> HashMap<String, String> {
 }
 
 fn create_holiday(mut values: Vec<ParsedValue>) -> Result<Rc<Holiday>, Box<dyn Error>> {
-    let date: String = values.remove(0).into();
-    let name: String = values.remove(0).into();
+    let raw_date: String = values.remove(0).into();
+    let raw_name: String = values.remove(0).into();
 
-    let date = NaiveDate::parse_from_str(&date, "%d.%m.%Y")?;
-    let name = parse_name(name);
+    let date = NaiveDate::parse_from_str(&raw_date, "%d.%m.%Y")?;
+    let name = parse_name(raw_name);
 
     Ok(Rc::new(Holiday::new(date, name)))
 }

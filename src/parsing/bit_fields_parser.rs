@@ -58,9 +58,9 @@ fn parse_values(raw_values: String) -> Vec<u8> {
 
 fn create_bit_field(mut values: Vec<ParsedValue>) -> Rc<BitField> {
     let id: i32 = values.remove(0).into();
-    let values: String = values.remove(0).into();
+    let raw_values: String = values.remove(0).into();
 
-    let values = parse_values(values);
+    let values = parse_values(raw_values);
 
     Rc::new(BitField::new(id, values))
 }

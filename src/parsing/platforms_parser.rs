@@ -151,9 +151,9 @@ fn create_platforms_primary_index(platforms: &Vec<Rc<Platform>>) -> HashMap<i64,
 // --- Helper Functions
 // ------------------------------------------------------------------------------------------------
 
-fn parse_platform_data(mut raw_data: String) -> (String, Option<String>) {
-    raw_data = format!("{} ", raw_data);
-    let data = raw_data
+fn parse_platform_data(mut raw_platform_data: String) -> (String, Option<String>) {
+    raw_platform_data = format!("{} ", raw_platform_data);
+    let data = raw_platform_data
         .split("' ")
         .filter(|&s| !s.is_empty())
         .fold(HashMap::new(), |mut acc, item| {
@@ -173,14 +173,13 @@ fn create_journey_platform(mut values: Vec<ParsedValue>) -> Rc<JourneyPlatform> 
     let stop_id: i32 = values.remove(0).into();
     let journey_id: i32 = values.remove(0).into();
     let unknown1: String = values.remove(0).into();
-    // TODO : How to name that ?
-    let pindex: i32 = values.remove(0).into();
+    let stop_id_index: i32 = values.remove(0).into();
     let hour: Option<i16> = values.remove(0).into();
     let bit_field_id: Option<i32> = values.remove(0).into();
 
     Rc::new(JourneyPlatform::new(
         journey_id,
-        Platform::create_id(stop_id, pindex),
+        Platform::create_id(stop_id, stop_id_index),
         unknown1,
         hour,
         bit_field_id,
@@ -189,14 +188,13 @@ fn create_journey_platform(mut values: Vec<ParsedValue>) -> Rc<JourneyPlatform> 
 
 fn create_platform(mut values: Vec<ParsedValue>) -> Rc<Platform> {
     let stop_id: i32 = values.remove(0).into();
-    // TODO : How to name that ?
-    let pindex: i32 = values.remove(0).into();
-    let platform_data: String = values.remove(0).into();
+    let stop_id_index: i32 = values.remove(0).into();
+    let raw_platform_data: String = values.remove(0).into();
 
-    let (code, sectors) = parse_platform_data(platform_data);
+    let (code, sectors) = parse_platform_data(raw_platform_data);
 
     Rc::new(Platform::new(
-        Platform::create_id(stop_id, pindex),
+        Platform::create_id(stop_id, stop_id_index),
         code,
         sectors,
     ))
@@ -210,12 +208,11 @@ fn set_sloid_of_platform(
     // The SLOID is processed only when loading LV95 coordinates.
     if coordinate_type == CoordinateType::LV95 {
         let stop_id: i32 = values.remove(0).into();
-        // TODO : How to name that ?
-        let pindex: i32 = values.remove(0).into();
+        let stop_id_index: i32 = values.remove(0).into();
         let sloid: String = values.remove(0).into();
 
         platforms_primary_index
-            .get(&Platform::create_id(stop_id, pindex))
+            .get(&Platform::create_id(stop_id, stop_id_index))
             .unwrap()
             .set_sloid(sloid);
     }
@@ -227,8 +224,7 @@ fn set_coordinate_of_platform(
     platforms_primary_index: &HashMap<i64, Rc<Platform>>,
 ) {
     let stop_id: i32 = values.remove(0).into();
-    // TODO : How to name that ?
-    let pindex: i32 = values.remove(0).into();
+    let stop_id_index: i32 = values.remove(0).into();
     let mut xy1: f64 = values.remove(0).into();
     let mut xy2: f64 = values.remove(0).into();
     // Altitude is not provided for platforms.
@@ -241,7 +237,7 @@ fn set_coordinate_of_platform(
 
     let coordinate = Coordinate::new(coordinate_type, xy1, xy2, altitude);
     let platform = platforms_primary_index
-        .get(&Platform::create_id(stop_id, pindex))
+        .get(&Platform::create_id(stop_id, stop_id_index))
         .unwrap();
 
     match coordinate_type {
