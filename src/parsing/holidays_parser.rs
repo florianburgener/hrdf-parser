@@ -1,4 +1,5 @@
-// FEIERTAG
+// File(s) read by the parser:
+// FEIERTAG => Format does not match the standard.
 use std::{collections::HashMap, error::Error, rc::Rc};
 
 use chrono::NaiveDate;
@@ -16,8 +17,8 @@ pub fn load_holidays() -> Result<Vec<Rc<Holiday>>, Box<dyn Error>> {
     let row_parser = RowParser::new(vec![
         // This row is used to create a Holiday instance.
         RowDefinition::from(vec![
-            ColumnDefinition::new(1, 10, ExpectedType::String),  // Complies with the SBB standard.
-            ColumnDefinition::new(12, -1, ExpectedType::String), // Complies with the SBB standard.
+            ColumnDefinition::new(1, 10, ExpectedType::String),
+            ColumnDefinition::new(12, -1, ExpectedType::String),
         ]),
     ]);
     let file_parser = FileParser::new("data/FEIERTAG", row_parser)?;

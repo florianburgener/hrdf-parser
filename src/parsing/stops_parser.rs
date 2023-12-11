@@ -1,4 +1,7 @@
-// BAHNHOF, BFKOORD_LV95 (BF = BAHNHOF), BFKOORD_WGS (BF = BAHNHOF)
+// File(s) read by the parser:
+// BAHNHOF => Format matches the standard.
+// BFKOORD_LV95 (BF = BAHNHOF) => Format matches the standard.
+// BFKOORD_WGS (BF = BAHNHOF) => Format matches the standard.
 use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::models::{Coordinate, CoordinateType, Stop};
@@ -11,8 +14,8 @@ pub fn load_stops() -> Result<(Vec<Rc<Stop>>, HashMap<i32, Rc<Stop>>), Box<dyn E
     let row_parser = RowParser::new(vec![
         // This row is used to create a Stop instance.
         RowDefinition::from(vec![
-            ColumnDefinition::new(1, 7, ExpectedType::Integer32), // Complies with the standard.
-            ColumnDefinition::new(13, -1, ExpectedType::String),  // Does not comply with the standard. Should be 13-62, but some entries go beyond column 62.
+            ColumnDefinition::new(1, 7, ExpectedType::Integer32),
+            ColumnDefinition::new(13, -1, ExpectedType::String),  // Should be 13-62, but some entries go beyond column 62.
         ]),
     ]);
     let file_parser = FileParser::new("data/BAHNHOF", row_parser)?;
@@ -28,6 +31,8 @@ pub fn load_stops() -> Result<(Vec<Rc<Stop>>, HashMap<i32, Rc<Stop>>), Box<dyn E
     load_coordinates(CoordinateType::LV95, &stops_primary_index)?;
     println!("Parsing BFKOORD_WGS...");
     load_coordinates(CoordinateType::WGS84, &stops_primary_index)?;
+    println!("Parsing BFPRIOS...");
+    load_changing_priorities(&stops_primary_index)?;
 
     Ok((stops, stops_primary_index))
 }
@@ -38,11 +43,12 @@ fn load_coordinates(
 ) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
+        // This row contains the LV95/WGS84 coordinates.
         RowDefinition::from(vec![
-            ColumnDefinition::new(1, 7, ExpectedType::Integer32),   // Complies with the standard.
-            ColumnDefinition::new(9, 18, ExpectedType::Float),      // Complies with the standard.
-            ColumnDefinition::new(20, 29, ExpectedType::Float),     // Complies with the standard.
-            ColumnDefinition::new(31, 36, ExpectedType::Integer16), // Complies with the standard.
+            ColumnDefinition::new(1, 7, ExpectedType::Integer32),
+            ColumnDefinition::new(9, 18, ExpectedType::Float),
+            ColumnDefinition::new(20, 29, ExpectedType::Float),
+            ColumnDefinition::new(31, 36, ExpectedType::Integer16),
         ]),
     ]);
     let filename = match coordinate_type {
@@ -55,6 +61,27 @@ fn load_coordinates(
     file_parser
         .parse()
         .for_each(|(_, _, values)| set_coordinate(values, coordinate_type, stops_primary_index));
+
+    Ok(())
+}
+
+fn load_changing_priorities(
+    stops_primary_index: &HashMap<i32, Rc<Stop>>,
+) -> Result<(), Box<dyn Error>> {
+    #[rustfmt::skip]
+    let row_parser = RowParser::new(vec![
+        // This row contains the changing priority.
+        RowDefinition::from(vec![
+            ColumnDefinition::new(1, 7, ExpectedType::Integer32),
+            ColumnDefinition::new(9, 10, ExpectedType::Integer16),
+        ]),
+    ]);
+    let file_path = "data/BFPRIOS";
+    let file_parser = FileParser::new(&file_path, row_parser)?;
+
+    file_parser
+        .parse()
+        .for_each(|(_, _, values)| set_changing_priority(values, stops_primary_index));
 
     Ok(())
 }
@@ -131,4 +158,15 @@ fn set_coordinate(
         CoordinateType::LV95 => stop.set_lv95_coordinate(coordinate),
         CoordinateType::WGS84 => stop.set_wgs84_coordinate(coordinate),
     }
+}
+
+fn set_changing_priority(
+    mut values: Vec<ParsedValue>,
+    stops_primary_index: &HashMap<i32, Rc<Stop>>,
+) {
+    let stop_id: i32 = values.remove(0).into();
+    let changing_priority: i16 = values.remove(0).into();
+
+    let stop = stops_primary_index.get(&stop_id).unwrap();
+    stop.set_changing_priority(changing_priority);
 }

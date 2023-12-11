@@ -1,4 +1,7 @@
-// GLEIS, GLEIS_LV95, GLEIS_WGS
+// File(s) read by the parser:
+// GLEIS => Format matches the standard (this is questionable, as the file should be called GLEISE).
+// GLEIS_LV95 => Format does not match the standard (this is not explicitly stated in the SBB document).
+// GLEIS_WGS => Format does not match the standard (this is not explicitly stated in the SBB document).
 use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{
@@ -27,18 +30,18 @@ pub fn load_journey_platform_and_platforms() -> Result<
     let row_parser = RowParser::new(vec![
         // This row is used to create a JourneyPlatform instance.
         RowDefinition::new(ROW_A, Box::new(FastRowMatcher::new(9, 1, "#", false)), vec![
-            ColumnDefinition::new(1, 7, ExpectedType::Integer32),         // Complies with the standard.
-            ColumnDefinition::new(9, 14, ExpectedType::Integer32),        // Complies with the standard.
-            ColumnDefinition::new(16, 21, ExpectedType::String),          // Complies with the standard.
-            ColumnDefinition::new(24, 30, ExpectedType::Integer32),       // Does not comply with the standard. Should be 23-30, but here the # character is ignored.
-            ColumnDefinition::new(32, 35, ExpectedType::OptionInteger16), // Complies with the standard.
-            ColumnDefinition::new(37, 42, ExpectedType::OptionInteger32), // Complies with the standard.
+            ColumnDefinition::new(1, 7, ExpectedType::Integer32),
+            ColumnDefinition::new(9, 14, ExpectedType::Integer32),
+            ColumnDefinition::new(16, 21, ExpectedType::String),
+            ColumnDefinition::new(24, 30, ExpectedType::Integer32),       // Should be 23-30, but here the # character is ignored.
+            ColumnDefinition::new(32, 35, ExpectedType::OptionInteger16),
+            ColumnDefinition::new(37, 42, ExpectedType::OptionInteger32),
         ]),
         // This row is used to create a Platform instance.
         RowDefinition::new(ROW_B, Box::new(FastRowMatcher::new(9, 1, "#", true)), vec![
-            ColumnDefinition::new(1, 7, ExpectedType::Integer32),   // Complies with the standard.
-            ColumnDefinition::new(10, 16, ExpectedType::Integer32), // Does not comply with the standard. Should be 9-16, but here the # character is ignored.
-            ColumnDefinition::new(18, -1, ExpectedType::String),    // Complies with the standard.
+            ColumnDefinition::new(1, 7, ExpectedType::Integer32),
+            ColumnDefinition::new(10, 16, ExpectedType::Integer32), // Should be 9-16, but here the # character is ignored.
+            ColumnDefinition::new(18, -1, ExpectedType::String),
         ]),
     ]);
     let file_parser = FileParser::new("data/GLEIS", row_parser)?;
@@ -90,20 +93,20 @@ fn load_coordinates_for_platforms(
 
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
-        // This line is ignored, as the data has already been retrieved from the GLEIS file.
+        // This row is ignored, as the data has already been retrieved from the GLEIS file.
         RowDefinition::new(ROW_A, Box::new(FastRowMatcher::new(18, 1, "G", true)), Vec::new()),
         // This row contains the SLOID.
         RowDefinition::new(ROW_B, Box::new(FastRowMatcher::new(18, 3, "I A", true)), vec![
-            ColumnDefinition::new(1, 7, ExpectedType::Integer32),   // Complies with the standard.
-            ColumnDefinition::new(10, 16, ExpectedType::Integer32), // Does not comply with the standard. Should be 9-16, but here the # character is ignored.
-            ColumnDefinition::new(22, -1, ExpectedType::String),    // Complies with the standard. Please note that the type and columns are not explicitly described in the SBB specification.
+            ColumnDefinition::new(1, 7, ExpectedType::Integer32),
+            ColumnDefinition::new(10, 16, ExpectedType::Integer32), // Should be 9-16, but here the # character is ignored.
+            ColumnDefinition::new(22, -1, ExpectedType::String),    // This column has not been explicitly defined in the SBB specification.
         ]),
         // This row contains the LV95/WGS84 coordinates.
         RowDefinition::new(ROW_C, Box::new(FastRowMatcher::new(18, 1, "K", true)), vec![
-            ColumnDefinition::new(1, 7, ExpectedType::Integer32),   // Complies with the standard.
-            ColumnDefinition::new(10, 16, ExpectedType::Integer32), // Does not comply with the standard. Should be 9-16, but here the # character is ignored.
-            ColumnDefinition::new(20, 26, ExpectedType::Float),     // Complies with the standard. Please note that the type and columns are not explicitly described in the SBB specification.
-            ColumnDefinition::new(28, 34, ExpectedType::Float),     // Complies with the standard. Please note that the type and columns are not explicitly described in the SBB specification.
+            ColumnDefinition::new(1, 7, ExpectedType::Integer32),
+            ColumnDefinition::new(10, 16, ExpectedType::Integer32), // Should be 9-16, but here the # character is ignored.
+            ColumnDefinition::new(20, 26, ExpectedType::Float),     // This column has not been explicitly defined in the SBB specification.
+            ColumnDefinition::new(28, 34, ExpectedType::Float),     // This column has not been explicitly defined in the SBB specification.
         ]),
     ]);
     let filename = match coordinate_type {

@@ -1,5 +1,8 @@
-// ATTRIBUT
-// Unused files: ATTRIBUT_DE, ATTRIBUT_EN, ATTRIBUT_FR, ATTRIBUT_IT
+// File(s) read by the parser:
+// ATTRIBUT => it's unclear whether the format matches the standard or not.
+// ---
+// Files not used by the parser:
+// ATTRIBUT_DE, ATTRIBUT_EN, ATTRIBUT_FR, ATTRIBUT_IT
 use std::{collections::HashMap, error::Error, rc::Rc, str::FromStr};
 
 use crate::{
@@ -26,23 +29,23 @@ pub fn load_attributes(
         RowDefinition::new(ROW_A, Box::new(
             AdvancedRowMatcher::new("^.{2} [0-9] [0-9 ]{3} [0-9 ]{2}$")?
         ), vec![
-            ColumnDefinition::new(1, 2, ExpectedType::String),      // Complies with the standard.
-            ColumnDefinition::new(4, 4, ExpectedType::Integer16),   // Complies with the standard.
-            ColumnDefinition::new(6, 8, ExpectedType::Integer16),   // Complies with the standard.
-            ColumnDefinition::new(10, 11, ExpectedType::Integer16), // Complies with the standard.
+            ColumnDefinition::new(1, 2, ExpectedType::String),
+            ColumnDefinition::new(4, 4, ExpectedType::Integer16),
+            ColumnDefinition::new(6, 8, ExpectedType::Integer16),
+            ColumnDefinition::new(10, 11, ExpectedType::Integer16),
         ]),
         // This row is ignored. TODO : should i take care of this row?, e.g. # 1  1  1
         RowDefinition::new(ROW_B, Box::new(FastRowMatcher::new(1, 1, "#", true)), Vec::new()),
-        // Language indicator.
+        // This row indicates the language of the description.
         RowDefinition::new(ROW_C, Box::new(FastRowMatcher::new(1, 1, "<", true)), vec![
-            ColumnDefinition::new(1, -1, ExpectedType::String), // Complies with the standard. Please note that the type and columns are not explicitly described in the SBB specification.
+            ColumnDefinition::new(1, -1, ExpectedType::String), // This column has not been explicitly defined in the standard.
         ]),
-        // Description of the attribute.
+        // This row contains the description in a specific language.
         RowDefinition::new(ROW_D, Box::new(
             AdvancedRowMatcher::new("^.{2} .+$")?
         ), vec![
-            ColumnDefinition::new(1, 2, ExpectedType::String),  // Complies with the standard.
-            ColumnDefinition::new(4, -1, ExpectedType::String), // Complies with the standard.
+            ColumnDefinition::new(1, 2, ExpectedType::String),
+            ColumnDefinition::new(4, -1, ExpectedType::String),
         ]),
     ]);
     // The ATTRIBUT file is used instead of ATTRIBUT_* for simplicity's sake.

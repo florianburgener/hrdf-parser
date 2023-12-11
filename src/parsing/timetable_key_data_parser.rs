@@ -1,4 +1,5 @@
-// ECKDATEN
+// File(s) read by the parser:
+// ECKDATEN => Format does not match the standard (this is not explicitly stated in the SBB document).
 use std::error::Error;
 
 use chrono::NaiveDate;
@@ -18,13 +19,13 @@ pub fn load_timetable_key_data() -> Result<TimetableKeyData, Box<dyn Error>> {
     // TODO : If there is a "." in column 3 for ROW_B, this code will not work.
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
-        // Period (start/end data) in which timetables are effective.
+        // This row contains the period start/end date in which timetables are effective.
         RowDefinition::new(ROW_A, Box::new(FastRowMatcher::new(3, 1, ".", true)), vec![
-            ColumnDefinition::new(1, 10, ExpectedType::String), // Complies with the standard.
+            ColumnDefinition::new(1, 10, ExpectedType::String),
         ]),
-        // Metadata (name, version, etc.).
+        // This row contains the metadata (name, version, etc.).
         RowDefinition::new(ROW_B, Box::new(FastRowMatcher::new(3, 1, ".", false)), vec![
-            ColumnDefinition::new(1, -1, ExpectedType::String), // Complies with the standard.
+            ColumnDefinition::new(1, -1, ExpectedType::String),
         ]),
     ]);
 

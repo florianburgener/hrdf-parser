@@ -1,3 +1,5 @@
+// File(s) read by the parser:
+// BITFELD => Format does not match the standard (this is not explicitly stated in the SBB document).
 use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{
@@ -14,8 +16,8 @@ pub fn load_bit_fields() -> Result<(Vec<Rc<BitField>>, HashMap<i32, Rc<BitField>
     let row_parser = RowParser::new(vec![
         // This row is used to create a BitField instance.
         RowDefinition::from(vec![
-            ColumnDefinition::new(1, 6, ExpectedType::Integer32), //
-            ColumnDefinition::new(8, 103, ExpectedType::String),  //
+            ColumnDefinition::new(1, 6, ExpectedType::Integer32),
+            ColumnDefinition::new(8, 103, ExpectedType::String),
         ]),
     ]);
     let file_parser = FileParser::new("data/BITFELD", row_parser)?;

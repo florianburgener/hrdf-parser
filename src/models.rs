@@ -331,6 +331,7 @@ pub struct Stop {
     synonyms: Option<Vec<String>>,
     lv95_coordinate: RefCell<Option<Coordinate>>,
     wgs84_coordinate: RefCell<Option<Coordinate>>,
+    changing_priority: RefCell<i16>,
 }
 
 #[allow(unused)]
@@ -350,6 +351,7 @@ impl Stop {
             synonyms,
             lv95_coordinate: RefCell::new(None),
             wgs84_coordinate: RefCell::new(None),
+            changing_priority: RefCell::new(0),
         }
     }
 
@@ -387,6 +389,14 @@ impl Stop {
 
     pub fn set_wgs84_coordinate(&self, value: Coordinate) {
         *self.wgs84_coordinate.borrow_mut() = Some(value);
+    }
+
+    pub fn changing_priority(&self) -> i16 {
+        *self.changing_priority.borrow()
+    }
+
+    pub fn set_changing_priority(&self, value: i16) {
+        *self.changing_priority.borrow_mut() = value;
     }
 }
 
