@@ -401,6 +401,46 @@ impl Stop {
 }
 
 // ------------------------------------------------------------------------------------------------
+// --- ThroughService
+// ------------------------------------------------------------------------------------------------
+
+#[allow(unused)]
+#[derive(Debug)]
+pub struct ThroughService {
+    journey_1_id: i32,
+    journey_1_unknown: String,       // "Verwaltung für Fahrt 1"
+    journey_1_stop_id: i32, // Last stop of journey 1.
+    journey_2_id: i32,
+    journey_2_unknown: String,               // "Verwaltung für Fahrt 2"
+    journey_2_stop_id: Option<i32>, // First stop of journey 2.
+    bit_field_id: i32,
+    // TODO : "Attribut zur Markierung der Durchbindung (optional)"
+}
+
+#[allow(unused)]
+impl ThroughService {
+    pub fn new(
+        journey_1_id: i32,
+        journey_1_unknown: String,
+        journey_1_stop_id: i32,
+        journey_2_id: i32,
+        journey_2_unknown: String,
+        journey_2_stop_id: Option<i32>,
+        bit_field_id: i32,
+    ) -> Self {
+        Self {
+            journey_1_id,
+            journey_1_unknown,
+            journey_1_stop_id,
+            journey_2_id,
+            journey_2_unknown,
+            journey_2_stop_id,
+            bit_field_id,
+        }
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
 // --- TimetableKeyData
 // ------------------------------------------------------------------------------------------------
 

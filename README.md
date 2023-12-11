@@ -1,4 +1,4 @@
-Progression (16/38) :
+Progression (17/38) :
 * ATTRIBUT
 * ATTRIBUT_DE
 * ATTRIBUT_EN
@@ -9,6 +9,7 @@ Progression (16/38) :
 * BFKOORD_WGS
 * BFPRIOS
 * BITFELD
+* DURCHBI
 * ECKDATEN
 * FEIERTAG
 * GLEIS

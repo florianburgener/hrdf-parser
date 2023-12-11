@@ -3,6 +3,7 @@ mod bit_fields_parser;
 mod holidays_parser;
 mod platforms_parser;
 mod stops_parser;
+mod through_services_parser;
 mod timetable_key_data_parser;
 
 pub use attributes_parser::load_attributes;
@@ -10,6 +11,7 @@ pub use bit_fields_parser::load_bit_fields;
 pub use holidays_parser::load_holidays;
 pub use platforms_parser::load_journey_platform_and_platforms;
 pub use stops_parser::load_stops;
+pub use through_services_parser::load_through_services;
 pub use timetable_key_data_parser::load_timetable_key_data;
 
 use std::{
