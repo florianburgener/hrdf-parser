@@ -2,6 +2,7 @@
 // BAHNHOF => Format matches the standard.
 // BFKOORD_LV95 (BF = BAHNHOF) => Format matches the standard.
 // BFKOORD_WGS (BF = BAHNHOF) => Format matches the standard.
+// BFPRIOS => Format matches the standard.
 use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::models::{Coordinate, CoordinateType, Stop, StopCollection, StopsPrimaryIndex};
@@ -33,6 +34,8 @@ pub fn load_stops() -> Result<(StopCollection, StopsPrimaryIndex), Box<dyn Error
     load_coordinates(CoordinateType::WGS84, &stops_primary_index)?;
     println!("Parsing BFPRIOS...");
     load_changing_priorities(&stops_primary_index)?;
+    println!("Parsing KMINFO...");
+    load_changing_flags(&stops_primary_index)?;
 
     Ok((stops, stops_primary_index))
 }
@@ -80,6 +83,25 @@ fn load_changing_priorities(stops_primary_index: &StopsPrimaryIndex) -> Result<(
     file_parser
         .parse()
         .for_each(|(_, _, values)| set_changing_priority(values, stops_primary_index));
+
+    Ok(())
+}
+
+fn load_changing_flags(stops_primary_index: &StopsPrimaryIndex) -> Result<(), Box<dyn Error>> {
+    #[rustfmt::skip]
+    let row_parser = RowParser::new(vec![
+        // This row contains the changing flag.
+        RowDefinition::from(vec![
+            ColumnDefinition::new(1, 7, ExpectedType::Integer32),
+            ColumnDefinition::new(9, 13, ExpectedType::Integer16),
+        ]),
+    ]);
+    let file_path = "data/KMINFO";
+    let file_parser = FileParser::new(&file_path, row_parser)?;
+
+    file_parser
+        .parse()
+        .for_each(|(_, _, values)| set_changing_flag(values, stops_primary_index));
 
     Ok(())
 }
@@ -164,4 +186,12 @@ fn set_changing_priority(mut values: Vec<ParsedValue>, stops_primary_index: &Sto
 
     let stop = stops_primary_index.get(&stop_id).unwrap();
     stop.set_changing_priority(changing_priority);
+}
+
+fn set_changing_flag(mut values: Vec<ParsedValue>, stops_primary_index: &StopsPrimaryIndex) {
+    let stop_id: i32 = values.remove(0).into();
+    let changing_flag: i16 = values.remove(0).into();
+
+    let stop = stops_primary_index.get(&stop_id).unwrap();
+    stop.set_changing_flag(changing_flag);
 }

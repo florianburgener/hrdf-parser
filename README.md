@@ -1,4 +1,4 @@
-Progression (17/38) :
+Progression (18/38) :
 * ATTRIBUT
 * ATTRIBUT_DE
 * ATTRIBUT_EN
@@ -16,6 +16,7 @@ Progression (17/38) :
 * GLEIS_LV95
 * GLEIS_WGS
 * GRENZHLT (the file is empty)
+* KMINFO
 
 TODO :
 

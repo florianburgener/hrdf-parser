@@ -347,6 +347,7 @@ pub struct Stop {
     lv95_coordinate: RefCell<Option<Coordinate>>,
     wgs84_coordinate: RefCell<Option<Coordinate>>,
     changing_priority: RefCell<i16>,
+    changing_flag: RefCell<Option<i16>>,
 }
 
 pub type StopCollection = Vec<Rc<Stop>>;
@@ -369,7 +370,8 @@ impl Stop {
             synonyms,
             lv95_coordinate: RefCell::new(None),
             wgs84_coordinate: RefCell::new(None),
-            changing_priority: RefCell::new(0),
+            changing_priority: RefCell::new(8), // 8 is the default priority.
+            changing_flag: RefCell::new(None),
         }
     }
 
@@ -415,6 +417,14 @@ impl Stop {
 
     pub fn set_changing_priority(&self, value: i16) {
         *self.changing_priority.borrow_mut() = value;
+    }
+
+    pub fn changing_flag(&self) -> Option<i16> {
+        *self.changing_flag.borrow()
+    }
+
+    pub fn set_changing_flag(&self, value: i16) {
+        *self.changing_flag.borrow_mut() = Some(value);
     }
 }
 
