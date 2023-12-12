@@ -5,11 +5,11 @@
 // BFPRIOS => Format matches the standard.
 use std::{collections::HashMap, error::Error, rc::Rc};
 
-use crate::models::{Coordinate, CoordinateType, Stop, StopCollection, StopsPrimaryIndex};
+use crate::models::{Coordinate, CoordinateType, Stop, StopCollection, StopPrimaryIndex};
 
 use super::{ColumnDefinition, ExpectedType, FileParser, ParsedValue, RowDefinition, RowParser};
 
-pub fn load_stops() -> Result<(StopCollection, StopsPrimaryIndex), Box<dyn Error>> {
+pub fn load_stops() -> Result<(StopCollection, StopPrimaryIndex), Box<dyn Error>> {
     println!("Parsing BAHNHOF...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -42,7 +42,7 @@ pub fn load_stops() -> Result<(StopCollection, StopsPrimaryIndex), Box<dyn Error
 
 fn load_coordinates(
     coordinate_type: CoordinateType,
-    stops_primary_index: &StopsPrimaryIndex,
+    stops_primary_index: &StopPrimaryIndex,
 ) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -68,7 +68,7 @@ fn load_coordinates(
     Ok(())
 }
 
-fn load_changing_priorities(stops_primary_index: &StopsPrimaryIndex) -> Result<(), Box<dyn Error>> {
+fn load_changing_priorities(stops_primary_index: &StopPrimaryIndex) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row contains the changing priority.
@@ -87,7 +87,7 @@ fn load_changing_priorities(stops_primary_index: &StopsPrimaryIndex) -> Result<(
     Ok(())
 }
 
-fn load_changing_flags(stops_primary_index: &StopsPrimaryIndex) -> Result<(), Box<dyn Error>> {
+fn load_changing_flags(stops_primary_index: &StopPrimaryIndex) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row contains the changing flag.
@@ -110,7 +110,7 @@ fn load_changing_flags(stops_primary_index: &StopsPrimaryIndex) -> Result<(), Bo
 // --- Indexes Creation
 // ------------------------------------------------------------------------------------------------
 
-fn create_stops_primary_index(stops: &StopCollection) -> StopsPrimaryIndex {
+fn create_stops_primary_index(stops: &StopCollection) -> StopPrimaryIndex {
     stops.iter().fold(HashMap::new(), |mut acc, item| {
         acc.insert(item.id(), Rc::clone(item));
         acc
@@ -159,7 +159,7 @@ fn create_stop(mut values: Vec<ParsedValue>) -> Rc<Stop> {
 fn set_coordinate(
     mut values: Vec<ParsedValue>,
     coordinate_type: CoordinateType,
-    stops_primary_index: &StopsPrimaryIndex,
+    stops_primary_index: &StopPrimaryIndex,
 ) {
     let stop_id: i32 = values.remove(0).into();
     let mut xy1: f64 = values.remove(0).into();
@@ -180,7 +180,7 @@ fn set_coordinate(
     }
 }
 
-fn set_changing_priority(mut values: Vec<ParsedValue>, stops_primary_index: &StopsPrimaryIndex) {
+fn set_changing_priority(mut values: Vec<ParsedValue>, stops_primary_index: &StopPrimaryIndex) {
     let stop_id: i32 = values.remove(0).into();
     let changing_priority: i16 = values.remove(0).into();
 
@@ -188,7 +188,7 @@ fn set_changing_priority(mut values: Vec<ParsedValue>, stops_primary_index: &Sto
     stop.set_changing_priority(changing_priority);
 }
 
-fn set_changing_flag(mut values: Vec<ParsedValue>, stops_primary_index: &StopsPrimaryIndex) {
+fn set_changing_flag(mut values: Vec<ParsedValue>, stops_primary_index: &StopPrimaryIndex) {
     let stop_id: i32 = values.remove(0).into();
     let changing_flag: i16 = values.remove(0).into();
 

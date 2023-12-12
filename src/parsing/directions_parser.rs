@@ -3,13 +3,13 @@
 use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{
-    models::{Direction, DirectionCollection, DirectionsPrimaryIndex},
+    models::{Direction, DirectionCollection, DirectionPrimaryIndex},
     parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
 };
 
 use super::ParsedValue;
 
-pub fn load_directions() -> Result<(DirectionCollection, DirectionsPrimaryIndex), Box<dyn Error>> {
+pub fn load_directions() -> Result<(DirectionCollection, DirectionPrimaryIndex), Box<dyn Error>> {
     println!("Parsing RICHTUNG...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -35,7 +35,7 @@ pub fn load_directions() -> Result<(DirectionCollection, DirectionsPrimaryIndex)
 // --- Indexes Creation
 // ------------------------------------------------------------------------------------------------
 
-fn create_directions_primary_index(directions: &DirectionCollection) -> DirectionsPrimaryIndex {
+fn create_directions_primary_index(directions: &DirectionCollection) -> DirectionPrimaryIndex {
     directions.iter().fold(HashMap::new(), |mut acc, item| {
         acc.insert(item.id().to_owned(), Rc::clone(item));
         acc

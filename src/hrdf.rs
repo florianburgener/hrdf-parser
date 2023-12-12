@@ -1,7 +1,7 @@
 use std::{error::Error, rc::Rc};
 
 use crate::{
-    models::{TimetableKeyData, AttributeCollection, AttributesPrimaryIndex, BitFieldCollection, BitFieldsPrimaryIndex, HolidayCollection, JourneyPlatformCollection, JourneyPlatformPrimaryIndex, PlatformCollection, PlatformsPrimaryIndex, StopCollection, StopsPrimaryIndex, ThroughServiceCollection, DirectionsPrimaryIndex, DirectionCollection},
+    models::{TimetableKeyData, AttributeCollection, AttributePrimaryIndex, BitFieldCollection, BitFieldPrimaryIndex, HolidayCollection, JourneyPlatformCollection, JourneyPlatformPrimaryIndex, PlatformCollection, PlatformPrimaryIndex, StopCollection, StopPrimaryIndex, ThroughServiceCollection, DirectionPrimaryIndex, DirectionCollection},
     parsing,
 };
 
@@ -9,13 +9,13 @@ use crate::{
 #[derive(Debug)]
 pub struct Hrdf {
     attributes: AttributeCollection,
-    attributes_primary_index: AttributesPrimaryIndex, // Key = Attribute.id
+    attributes_primary_index: AttributePrimaryIndex, // Key = Attribute.id
 
     bit_fields: BitFieldCollection,
-    bit_fields_primary_index: BitFieldsPrimaryIndex, // Key = BitField.id
+    bit_fields_primary_index: BitFieldPrimaryIndex, // Key = BitField.id
 
     directions: DirectionCollection,
-    directions_primary_index: DirectionsPrimaryIndex, // Key Direction.id
+    directions_primary_index: DirectionPrimaryIndex, // Key Direction.id
 
     holidays: HolidayCollection,
 
@@ -23,10 +23,10 @@ pub struct Hrdf {
     journey_platform_primary_index: JourneyPlatformPrimaryIndex, // Key = (Stop.id, Platform.id)
 
     platforms: PlatformCollection,
-    platforms_primary_index: PlatformsPrimaryIndex, // Key = Platform.id
+    platforms_primary_index: PlatformPrimaryIndex, // Key = Platform.id
 
     stops: StopCollection,
-    stops_primary_index: StopsPrimaryIndex, // Key = Stop.id
+    stops_primary_index: StopPrimaryIndex, // Key = Stop.id
 
     through_services: ThroughServiceCollection,
 
@@ -82,7 +82,7 @@ impl Hrdf {
         &self.stops
     }
 
-    pub fn stops_primary_index(&self) -> &StopsPrimaryIndex {
+    pub fn stops_primary_index(&self) -> &StopPrimaryIndex {
         &self.stops_primary_index
     }
 }

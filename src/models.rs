@@ -22,7 +22,7 @@ pub struct Attribute {
 }
 
 pub type AttributeCollection = Vec<Rc<Attribute>>;
-pub type AttributesPrimaryIndex = HashMap<String, Rc<Attribute>>;
+pub type AttributePrimaryIndex = HashMap<String, Rc<Attribute>>;
 
 #[allow(unused)]
 impl Attribute {
@@ -81,7 +81,7 @@ pub struct BitField {
 }
 
 pub type BitFieldCollection = Vec<Rc<BitField>>;
-pub type BitFieldsPrimaryIndex = HashMap<i32, Rc<BitField>>;
+pub type BitFieldPrimaryIndex = HashMap<i32, Rc<BitField>>;
 
 #[allow(unused)]
 impl BitField {
@@ -167,7 +167,7 @@ pub struct Direction {
 }
 
 pub type DirectionCollection = Vec<Rc<Direction>>;
-pub type DirectionsPrimaryIndex = HashMap<String, Rc<Direction>>;
+pub type DirectionPrimaryIndex = HashMap<String, Rc<Direction>>;
 
 #[allow(unused)]
 impl Direction {
@@ -305,7 +305,7 @@ pub struct Platform {
 }
 
 pub type PlatformCollection = Vec<Rc<Platform>>;
-pub type PlatformsPrimaryIndex = HashMap<i64, Rc<Platform>>;
+pub type PlatformPrimaryIndex = HashMap<i64, Rc<Platform>>;
 
 #[allow(unused)]
 impl Platform {
@@ -380,7 +380,7 @@ pub struct Stop {
 }
 
 pub type StopCollection = Vec<Rc<Stop>>;
-pub type StopsPrimaryIndex = HashMap<i32, Rc<Stop>>;
+pub type StopPrimaryIndex = HashMap<i32, Rc<Stop>>;
 
 #[allow(unused)]
 impl Stop {

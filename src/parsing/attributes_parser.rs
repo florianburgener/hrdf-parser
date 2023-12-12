@@ -6,7 +6,7 @@
 use std::{collections::HashMap, error::Error, rc::Rc, str::FromStr};
 
 use crate::{
-    models::{Attribute, AttributeCollection, AttributesPrimaryIndex, Language},
+    models::{Attribute, AttributeCollection, AttributePrimaryIndex, Language},
     parsing::{
         AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser,
         RowDefinition, RowParser,
@@ -15,7 +15,7 @@ use crate::{
 
 use super::ParsedValue;
 
-pub fn load_attributes() -> Result<(AttributeCollection, AttributesPrimaryIndex), Box<dyn Error>> {
+pub fn load_attributes() -> Result<(AttributeCollection, AttributePrimaryIndex), Box<dyn Error>> {
     println!("Parsing ATTRIBUT...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -75,7 +75,7 @@ pub fn load_attributes() -> Result<(AttributeCollection, AttributesPrimaryIndex)
 // --- Indexes Creation
 // ------------------------------------------------------------------------------------------------
 
-fn create_attributes_primary_index(attributes: &AttributeCollection) -> AttributesPrimaryIndex {
+fn create_attributes_primary_index(attributes: &AttributeCollection) -> AttributePrimaryIndex {
     attributes.iter().fold(HashMap::new(), |mut acc, item| {
         acc.insert(item.id().to_owned(), Rc::clone(item));
         acc
@@ -111,7 +111,7 @@ fn update_current_language(mut values: Vec<ParsedValue>, current_language: &mut 
 
 fn set_description(
     mut values: Vec<ParsedValue>,
-    attributes_primary_index: &Option<AttributesPrimaryIndex>,
+    attributes_primary_index: &Option<AttributePrimaryIndex>,
     language: Language,
 ) {
     let id: String = values.remove(0).into();
