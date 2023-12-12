@@ -156,6 +156,35 @@ impl Coordinate {
 }
 
 // ------------------------------------------------------------------------------------------------
+// --- Direction
+// ------------------------------------------------------------------------------------------------
+
+#[allow(unused)]
+#[derive(Debug)]
+pub struct Direction {
+    id: String,
+    name: String,
+}
+
+pub type DirectionCollection = Vec<Rc<Direction>>;
+pub type DirectionsPrimaryIndex = HashMap<String, Rc<Direction>>;
+
+#[allow(unused)]
+impl Direction {
+    pub fn new(id: String, name: String) -> Self {
+        Self {id, name}
+    }
+
+    pub fn id(&self) -> &str {
+        &self.id
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
 // --- Holiday
 // ------------------------------------------------------------------------------------------------
 

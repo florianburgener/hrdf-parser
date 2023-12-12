@@ -1,4 +1,4 @@
-Progression (18/38) :
+Progression (19/38) :
 * ATTRIBUT
 * ATTRIBUT_DE
 * ATTRIBUT_EN
@@ -17,6 +17,7 @@ Progression (18/38) :
 * GLEIS_WGS
 * GRENZHLT (the file is empty)
 * KMINFO
+* RICHTUNG
 
 TODO :
 

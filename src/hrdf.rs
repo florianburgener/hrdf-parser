@@ -1,7 +1,7 @@
 use std::{error::Error, rc::Rc};
 
 use crate::{
-    models::{TimetableKeyData, AttributeCollection, AttributesPrimaryIndex, BitFieldCollection, BitFieldsPrimaryIndex, HolidayCollection, JourneyPlatformCollection, JourneyPlatformPrimaryIndex, PlatformCollection, PlatformsPrimaryIndex, StopCollection, StopsPrimaryIndex, ThroughServiceCollection},
+    models::{TimetableKeyData, AttributeCollection, AttributesPrimaryIndex, BitFieldCollection, BitFieldsPrimaryIndex, HolidayCollection, JourneyPlatformCollection, JourneyPlatformPrimaryIndex, PlatformCollection, PlatformsPrimaryIndex, StopCollection, StopsPrimaryIndex, ThroughServiceCollection, DirectionsPrimaryIndex, DirectionCollection},
     parsing,
 };
 
@@ -13,6 +13,9 @@ pub struct Hrdf {
 
     bit_fields: BitFieldCollection,
     bit_fields_primary_index: BitFieldsPrimaryIndex, // Key = BitField.id
+
+    directions: DirectionCollection,
+    directions_primary_index: DirectionsPrimaryIndex, // Key Direction.id
 
     holidays: HolidayCollection,
 
@@ -35,6 +38,7 @@ impl Hrdf {
     pub fn new() -> Result<Rc<Self>, Box<dyn Error>> {
         let (attributes, attributes_primary_index) = parsing::load_attributes()?;
         let (bit_fields, bit_fields_primary_index) = parsing::load_bit_fields()?;
+        let (directions, directions_primary_index) = parsing::load_directions()?;
         let holidays = parsing::load_holidays()?;
         let (journey_platform, journey_platform_primary_index, platforms, platforms_primary_index) =
             parsing::load_journey_platform_and_platforms()?;
@@ -46,6 +50,8 @@ impl Hrdf {
             attributes,
             bit_fields,
             bit_fields_primary_index,
+            directions,
+            directions_primary_index,
             holidays,
             attributes_primary_index,
             journey_platform,

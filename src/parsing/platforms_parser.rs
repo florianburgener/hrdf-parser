@@ -155,6 +155,23 @@ fn create_platforms_primary_index(platforms: &PlatformCollection) -> PlatformsPr
 // --- Helper Functions
 // ------------------------------------------------------------------------------------------------
 
+fn create_journey_platform(mut values: Vec<ParsedValue>) -> Rc<JourneyPlatform> {
+    let stop_id: i32 = values.remove(0).into();
+    let journey_id: i32 = values.remove(0).into();
+    let unknown1: String = values.remove(0).into();
+    let stop_id_index: i32 = values.remove(0).into();
+    let hour: Option<i16> = values.remove(0).into();
+    let bit_field_id: Option<i32> = values.remove(0).into();
+
+    Rc::new(JourneyPlatform::new(
+        journey_id,
+        Platform::create_id(stop_id, stop_id_index),
+        unknown1,
+        hour,
+        bit_field_id,
+    ))
+}
+
 fn parse_platform_data(mut raw_platform_data: String) -> (String, Option<String>) {
     raw_platform_data = format!("{} ", raw_platform_data);
     let data = raw_platform_data
@@ -171,23 +188,6 @@ fn parse_platform_data(mut raw_platform_data: String) -> (String, Option<String>
     let sectors = data.get("A").map(|s| s.to_string());
 
     (code, sectors)
-}
-
-fn create_journey_platform(mut values: Vec<ParsedValue>) -> Rc<JourneyPlatform> {
-    let stop_id: i32 = values.remove(0).into();
-    let journey_id: i32 = values.remove(0).into();
-    let unknown1: String = values.remove(0).into();
-    let stop_id_index: i32 = values.remove(0).into();
-    let hour: Option<i16> = values.remove(0).into();
-    let bit_field_id: Option<i32> = values.remove(0).into();
-
-    Rc::new(JourneyPlatform::new(
-        journey_id,
-        Platform::create_id(stop_id, stop_id_index),
-        unknown1,
-        hour,
-        bit_field_id,
-    ))
 }
 
 fn create_platform(mut values: Vec<ParsedValue>) -> Rc<Platform> {
