@@ -18,13 +18,13 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     println!("{} platforms", hrdf.platforms().len());
     println!("{} stops", hrdf.stops().len());
 
-    println!();
+    // println!();
 
-    if let Some(stop) = hrdf.stops_primary_index().get(&8587387) {
-        println!("{:?}", stop);
-        println!("{:?}", stop.lv95_coordinate().as_ref().unwrap());
-        println!("{:?}", stop.wgs84_coordinate().as_ref().unwrap());
-    }
+    // if let Some(stop) = hrdf.stops_primary_index().get(&8587387) {
+    //     println!("{:?}", stop);
+    //     println!("{:?}", stop.lv95_coordinate().as_ref().unwrap());
+    //     println!("{:?}", stop.wgs84_coordinate().as_ref().unwrap());
+    // }
 
     Ok(())
 }

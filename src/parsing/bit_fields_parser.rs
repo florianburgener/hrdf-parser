@@ -3,14 +3,13 @@
 use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{
-    models::BitField,
+    models::{BitField, BitFieldCollection, BitFieldsPrimaryIndex},
     parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
 };
 
 use super::ParsedValue;
 
-pub fn load_bit_fields() -> Result<(Vec<Rc<BitField>>, HashMap<i32, Rc<BitField>>), Box<dyn Error>>
-{
+pub fn load_bit_fields() -> Result<(BitFieldCollection, BitFieldsPrimaryIndex), Box<dyn Error>> {
     println!("Parsing BITFIELD...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -36,7 +35,7 @@ pub fn load_bit_fields() -> Result<(Vec<Rc<BitField>>, HashMap<i32, Rc<BitField>
 // --- Indexes Creation
 // ------------------------------------------------------------------------------------------------
 
-fn create_bit_fields_primary_index(bit_fields: &Vec<Rc<BitField>>) -> HashMap<i32, Rc<BitField>> {
+fn create_bit_fields_primary_index(bit_fields: &BitFieldCollection) -> BitFieldsPrimaryIndex {
     bit_fields.iter().fold(HashMap::new(), |mut acc, item| {
         acc.insert(item.id(), Rc::clone(item));
         acc

@@ -5,13 +5,13 @@ use std::{collections::HashMap, error::Error, rc::Rc};
 use chrono::NaiveDate;
 
 use crate::{
-    models::Holiday,
+    models::{Holiday, HolidayCollection},
     parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
 };
 
 use super::ParsedValue;
 
-pub fn load_holidays() -> Result<Vec<Rc<Holiday>>, Box<dyn Error>> {
+pub fn load_holidays() -> Result<HolidayCollection, Box<dyn Error>> {
     println!("Parsing FEIERTAG...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![

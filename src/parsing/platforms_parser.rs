@@ -5,7 +5,10 @@
 use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{
-    models::{Coordinate, CoordinateType, JourneyPlatform, Platform},
+    models::{
+        Coordinate, CoordinateType, JourneyPlatform, JourneyPlatformCollection,
+        JourneyPlatformPrimaryIndex, Platform, PlatformCollection, PlatformsPrimaryIndex,
+    },
     parsing::{
         ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, RowDefinition, RowParser,
     },
@@ -15,10 +18,10 @@ use super::ParsedValue;
 
 pub fn load_journey_platform_and_platforms() -> Result<
     (
-        Vec<Rc<JourneyPlatform>>,
-        HashMap<(i32, i64), Vec<Rc<JourneyPlatform>>>,
-        Vec<Rc<Platform>>,
-        HashMap<i64, Rc<Platform>>,
+        JourneyPlatformCollection,
+        JourneyPlatformPrimaryIndex,
+        PlatformCollection,
+        PlatformsPrimaryIndex,
     ),
     Box<dyn Error>,
 > {
@@ -85,7 +88,7 @@ pub fn load_journey_platform_and_platforms() -> Result<
 fn load_coordinates_for_platforms(
     coordinate_type: CoordinateType,
     bytes_offset: u64,
-    platforms_primary_index: &HashMap<i64, Rc<Platform>>,
+    platforms_primary_index: &PlatformsPrimaryIndex,
 ) -> Result<(), Box<dyn Error>> {
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -131,19 +134,17 @@ fn load_coordinates_for_platforms(
 // ------------------------------------------------------------------------------------------------
 
 fn create_journey_platform_primary_index(
-    journey_platform: &Vec<Rc<JourneyPlatform>>,
-) -> HashMap<(i32, i64), Vec<Rc<JourneyPlatform>>> {
+    journey_platform: &JourneyPlatformCollection,
+) -> JourneyPlatformPrimaryIndex {
     journey_platform
         .iter()
         .fold(HashMap::new(), |mut acc, item| {
-            acc.entry((item.journey_id(), item.platform_id()))
-                .or_insert(Vec::new())
-                .push(Rc::clone(item));
+            acc.insert((item.journey_id(), item.platform_id()), Rc::clone(item));
             acc
         })
 }
 
-fn create_platforms_primary_index(platforms: &Vec<Rc<Platform>>) -> HashMap<i64, Rc<Platform>> {
+fn create_platforms_primary_index(platforms: &PlatformCollection) -> PlatformsPrimaryIndex {
     platforms.iter().fold(HashMap::new(), |mut acc, item| {
         acc.insert(item.id(), Rc::clone(item));
         acc
@@ -206,7 +207,7 @@ fn create_platform(mut values: Vec<ParsedValue>) -> Rc<Platform> {
 fn set_sloid_of_platform(
     mut values: Vec<ParsedValue>,
     coordinate_type: CoordinateType,
-    platforms_primary_index: &HashMap<i64, Rc<Platform>>,
+    platforms_primary_index: &PlatformsPrimaryIndex,
 ) {
     // The SLOID is processed only when loading LV95 coordinates.
     if coordinate_type == CoordinateType::LV95 {
@@ -224,7 +225,7 @@ fn set_sloid_of_platform(
 fn set_coordinate_of_platform(
     mut values: Vec<ParsedValue>,
     coordinate_type: CoordinateType,
-    platforms_primary_index: &HashMap<i64, Rc<Platform>>,
+    platforms_primary_index: &PlatformsPrimaryIndex,
 ) {
     let stop_id: i32 = values.remove(0).into();
     let stop_id_index: i32 = values.remove(0).into();

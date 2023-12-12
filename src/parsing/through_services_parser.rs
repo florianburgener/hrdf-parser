@@ -3,13 +3,13 @@
 use std::{error::Error, rc::Rc};
 
 use crate::{
-    models::ThroughService,
+    models::{ThroughService, ThroughServiceCollection},
     parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
 };
 
 use super::ParsedValue;
 
-pub fn load_through_services() -> Result<Vec<Rc<ThroughService>>, Box<dyn Error>> {
+pub fn load_through_services() -> Result<ThroughServiceCollection, Box<dyn Error>> {
     println!("Parsing DURCHBI...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![

@@ -1,35 +1,36 @@
-use std::{collections::HashMap, error::Error, rc::Rc};
+use std::{error::Error, rc::Rc};
 
 use crate::{
-    models::{Attribute, BitField, Holiday, JourneyPlatform, Platform, Stop, TimetableKeyData, ThroughService},
+    models::{TimetableKeyData, AttributeCollection, AttributesPrimaryIndex, BitFieldCollection, BitFieldsPrimaryIndex, HolidayCollection, JourneyPlatformCollection, JourneyPlatformPrimaryIndex, PlatformCollection, PlatformsPrimaryIndex, StopCollection, StopsPrimaryIndex, ThroughServiceCollection},
     parsing,
 };
 
 #[allow(unused)]
 #[derive(Debug)]
 pub struct Hrdf {
-    attributes: Vec<Rc<Attribute>>,
-    attributes_primary_index: HashMap<String, Rc<Attribute>>, // Key = Attribute.id
+    attributes: AttributeCollection,
+    attributes_primary_index: AttributesPrimaryIndex, // Key = Attribute.id
 
-    bit_fields: Vec<Rc<BitField>>,
-    bit_fields_primary_index: HashMap<i32, Rc<BitField>>, // Key = BitField.id
+    bit_fields: BitFieldCollection,
+    bit_fields_primary_index: BitFieldsPrimaryIndex, // Key = BitField.id
 
-    holidays: Vec<Rc<Holiday>>,
+    holidays: HolidayCollection,
 
-    journey_platform: Vec<Rc<JourneyPlatform>>,
-    journey_platform_primary_index: HashMap<(i32, i64), Vec<Rc<JourneyPlatform>>>, // Key = (Stop.id, Platform.id)
+    journey_platform: JourneyPlatformCollection,
+    journey_platform_primary_index: JourneyPlatformPrimaryIndex, // Key = (Stop.id, Platform.id)
 
-    platforms: Vec<Rc<Platform>>,
-    platforms_primary_index: HashMap<i64, Rc<Platform>>, // Key = Platform.id
+    platforms: PlatformCollection,
+    platforms_primary_index: PlatformsPrimaryIndex, // Key = Platform.id
 
-    stops: Vec<Rc<Stop>>,
-    stops_primary_index: HashMap<i32, Rc<Stop>>, // Key = Stop.id
+    stops: StopCollection,
+    stops_primary_index: StopsPrimaryIndex, // Key = Stop.id
 
-    through_services: Vec<Rc<ThroughService>>,
+    through_services: ThroughServiceCollection,
 
     timetable_key_data: TimetableKeyData,
 }
 
+#[allow(unused)]
 impl Hrdf {
     pub fn new() -> Result<Rc<Self>, Box<dyn Error>> {
         let (attributes, attributes_primary_index) = parsing::load_attributes()?;
@@ -67,15 +68,15 @@ impl Hrdf {
     //     }
     // }
 
-    pub fn platforms(&self) -> &Vec<Rc<Platform>> {
+    pub fn platforms(&self) -> &PlatformCollection {
         return &self.platforms;
     }
 
-    pub fn stops(&self) -> &Vec<Rc<Stop>> {
+    pub fn stops(&self) -> &StopCollection {
         &self.stops
     }
 
-    pub fn stops_primary_index(&self) -> &HashMap<i32, Rc<Stop>> {
+    pub fn stops_primary_index(&self) -> &StopsPrimaryIndex {
         &self.stops_primary_index
     }
 }

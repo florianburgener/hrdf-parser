@@ -1,6 +1,7 @@
 use std::{
     cell::{Ref, RefCell},
     collections::HashMap,
+    rc::Rc,
 };
 
 use chrono::NaiveDate;
@@ -19,6 +20,9 @@ pub struct Attribute {
     secondary_sorting_priority: i16,
     description: RefCell<HashMap<String, String>>, // Key: deu, fra, ita or eng.
 }
+
+pub type AttributeCollection = Vec<Rc<Attribute>>;
+pub type AttributesPrimaryIndex = HashMap<String, Rc<Attribute>>;
 
 #[allow(unused)]
 impl Attribute {
@@ -75,6 +79,9 @@ pub struct BitField {
     // TODO : find a better name, perhaps?
     values: Vec<u8>,
 }
+
+pub type BitFieldCollection = Vec<Rc<BitField>>;
+pub type BitFieldsPrimaryIndex = HashMap<i32, Rc<BitField>>;
 
 #[allow(unused)]
 impl BitField {
@@ -159,6 +166,8 @@ pub struct Holiday {
     name: HashMap<String, String>, // Key: deu, fra, ita or eng.
 }
 
+pub type HolidayCollection = Vec<Rc<Holiday>>;
+
 #[allow(unused)]
 impl Holiday {
     pub fn new(date: NaiveDate, name: HashMap<String, String>) -> Self {
@@ -208,6 +217,9 @@ pub struct JourneyPlatform {
     hour: Option<i16>,
     bit_field_id: Option<i32>,
 }
+
+pub type JourneyPlatformCollection = Vec<Rc<JourneyPlatform>>;
+pub type JourneyPlatformPrimaryIndex = HashMap<(i32, i64), Rc<JourneyPlatform>>;
 
 #[allow(unused)]
 impl JourneyPlatform {
@@ -262,6 +274,9 @@ pub struct Platform {
     lv95_coordinate: RefCell<Coordinate>,
     wgs84_coordinate: RefCell<Coordinate>,
 }
+
+pub type PlatformCollection = Vec<Rc<Platform>>;
+pub type PlatformsPrimaryIndex = HashMap<i64, Rc<Platform>>;
 
 #[allow(unused)]
 impl Platform {
@@ -333,6 +348,9 @@ pub struct Stop {
     wgs84_coordinate: RefCell<Option<Coordinate>>,
     changing_priority: RefCell<i16>,
 }
+
+pub type StopCollection = Vec<Rc<Stop>>;
+pub type StopsPrimaryIndex = HashMap<i32, Rc<Stop>>;
 
 #[allow(unused)]
 impl Stop {
@@ -408,14 +426,17 @@ impl Stop {
 #[derive(Debug)]
 pub struct ThroughService {
     journey_1_id: i32,
-    journey_1_unknown: String,       // "Verwaltung für Fahrt 1"
-    journey_1_stop_id: i32, // Last stop of journey 1.
+    journey_1_unknown: String, // "Verwaltung für Fahrt 1"
+    journey_1_stop_id: i32,    // Last stop of journey 1.
     journey_2_id: i32,
-    journey_2_unknown: String,               // "Verwaltung für Fahrt 2"
+    journey_2_unknown: String,      // "Verwaltung für Fahrt 2"
     journey_2_stop_id: Option<i32>, // First stop of journey 2.
     bit_field_id: i32,
     // TODO : "Attribut zur Markierung der Durchbindung (optional)"
 }
+
+pub type ThroughServiceCollection = Vec<Rc<ThroughService>>;
+// TODO : primary index
 
 #[allow(unused)]
 impl ThroughService {
