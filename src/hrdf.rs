@@ -1,7 +1,7 @@
 use std::{error::Error, rc::Rc};
 
 use crate::{
-    models::{TimetableKeyData, AttributeCollection, AttributePrimaryIndex, BitFieldCollection, BitFieldPrimaryIndex, HolidayCollection, JourneyPlatformCollection, JourneyPlatformPrimaryIndex, PlatformCollection, PlatformPrimaryIndex, StopCollection, StopPrimaryIndex, ThroughServiceCollection, DirectionPrimaryIndex, DirectionCollection},
+    models::{TimetableKeyData, AttributeCollection, AttributePrimaryIndex, BitFieldCollection, BitFieldPrimaryIndex, HolidayCollection, JourneyPlatformCollection, JourneyPlatformPrimaryIndex, PlatformCollection, PlatformPrimaryIndex, StopCollection, StopPrimaryIndex, ThroughServiceCollection, DirectionPrimaryIndex, DirectionCollection, InformationTextCollection, InformationTextPrimaryIndex},
     parsing,
 };
 
@@ -18,6 +18,9 @@ pub struct Hrdf {
     directions_primary_index: DirectionPrimaryIndex, // Key Direction.id
 
     holidays: HolidayCollection,
+
+    information_texts: InformationTextCollection,
+    information_texts_primary_index: InformationTextPrimaryIndex, // Key InformationText.id
 
     journey_platform: JourneyPlatformCollection,
     journey_platform_primary_index: JourneyPlatformPrimaryIndex, // Key = (Stop.id, Platform.id)
@@ -40,7 +43,7 @@ impl Hrdf {
         let (bit_fields, bit_fields_primary_index) = parsing::load_bit_fields()?;
         let (directions, directions_primary_index) = parsing::load_directions()?;
         let holidays = parsing::load_holidays()?;
-        let information_texts = parsing::load_information_texts();
+        let (information_texts, information_texts_primary_index) = parsing::load_information_texts()?;
         let (journey_platform, journey_platform_primary_index, platforms, platforms_primary_index) =
             parsing::load_journey_platform_and_platforms()?;
         let (stops, stops_primary_index) = parsing::load_stops()?;
@@ -49,12 +52,14 @@ impl Hrdf {
 
         let instance = Rc::new(Self {
             attributes,
+            attributes_primary_index,
             bit_fields,
             bit_fields_primary_index,
             directions,
             directions_primary_index,
             holidays,
-            attributes_primary_index,
+            information_texts,
+            information_texts_primary_index,
             journey_platform,
             journey_platform_primary_index,
             platforms,

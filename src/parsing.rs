@@ -8,7 +8,7 @@ mod stops_parser;
 mod through_services_parser;
 mod timetable_key_data_parser;
 
-pub use attributes_parser::load_attributes;
+pub use attributes_parser::parse as load_attributes;
 pub use bit_fields_parser::load_bit_fields;
 pub use directions_parser::load_directions;
 pub use information_texts_parser::load_information_texts;

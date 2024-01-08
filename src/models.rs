@@ -232,10 +232,10 @@ pub type InformationTextPrimaryIndex = HashMap<i32, Rc<InformationText>>;
 
 #[allow(unused)]
 impl InformationText {
-    pub fn new(id: i32, content: HashMap<String, String>) -> Self {
+    pub fn new(id: i32) -> Self {
         Self {
             id,
-            content: RefCell::new(content),
+            content: RefCell::new(HashMap::new()),
         }
     }
 

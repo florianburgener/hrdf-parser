@@ -15,7 +15,7 @@ use crate::{
 
 use super::ParsedValue;
 
-pub fn load_attributes() -> Result<(AttributeCollection, AttributePrimaryIndex), Box<dyn Error>> {
+pub fn parse() -> Result<(AttributeCollection, AttributePrimaryIndex), Box<dyn Error>> {
     println!("Parsing ATTRIBUT...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -64,7 +64,11 @@ pub fn load_attributes() -> Result<(AttributeCollection, AttributePrimaryIndex),
             }
         }
         ROW_C => update_current_language(values, &mut current_language),
-        ROW_D => set_description(values, &attributes_primary_index, current_language),
+        ROW_D => set_description(
+            values,
+            attributes_primary_index.as_ref().unwrap(),
+            current_language,
+        ),
         _ => unreachable!(),
     });
 
@@ -111,15 +115,13 @@ fn update_current_language(mut values: Vec<ParsedValue>, current_language: &mut 
 
 fn set_description(
     mut values: Vec<ParsedValue>,
-    attributes_primary_index: &Option<AttributePrimaryIndex>,
+    attributes_primary_index: &AttributePrimaryIndex,
     language: Language,
 ) {
     let id: String = values.remove(0).into();
     let description: String = values.remove(0).into();
 
     attributes_primary_index
-        .as_ref()
-        .unwrap()
         .get(&id)
         .unwrap()
         .set_description(language, &description);
