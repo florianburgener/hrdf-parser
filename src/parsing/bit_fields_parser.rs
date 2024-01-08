@@ -9,7 +9,7 @@ use crate::{
 
 use super::ParsedValue;
 
-pub fn load_bit_fields() -> Result<(BitFieldCollection, BitFieldPrimaryIndex), Box<dyn Error>> {
+pub fn parse() -> Result<(BitFieldCollection, BitFieldPrimaryIndex), Box<dyn Error>> {
     println!("Parsing BITFIELD...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![

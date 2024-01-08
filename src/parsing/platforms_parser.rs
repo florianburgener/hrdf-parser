@@ -16,7 +16,7 @@ use crate::{
 
 use super::ParsedValue;
 
-pub fn load_journey_platform_and_platforms() -> Result<
+pub fn parse() -> Result<
     (
         JourneyPlatformCollection,
         JourneyPlatformPrimaryIndex,

@@ -11,10 +11,10 @@ use crate::{
 
 use super::{ColumnDefinition, ExpectedType, FileParser};
 
-pub fn load_timetable_key_data() -> Result<TimetableKeyData, Box<dyn Error>> {
+pub fn parse() -> Result<TimetableKeyData, Box<dyn Error>> {
     println!("Parsing ECKDATEN...");
     const ROW_A: i32 = 1;
-    const ROW_B: i32 = 1;
+    const ROW_B: i32 = 2;
 
     // TODO : If there is a "." in column 3 for ROW_B, this code will not work.
     #[rustfmt::skip]

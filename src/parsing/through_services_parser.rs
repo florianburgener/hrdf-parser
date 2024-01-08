@@ -9,7 +9,7 @@ use crate::{
 
 use super::ParsedValue;
 
-pub fn load_through_services() -> Result<ThroughServiceCollection, Box<dyn Error>> {
+pub fn parse() -> Result<ThroughServiceCollection, Box<dyn Error>> {
     println!("Parsing DURCHBI...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![

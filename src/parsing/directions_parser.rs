@@ -9,7 +9,7 @@ use crate::{
 
 use super::ParsedValue;
 
-pub fn load_directions() -> Result<(DirectionCollection, DirectionPrimaryIndex), Box<dyn Error>> {
+pub fn parse() -> Result<(DirectionCollection, DirectionPrimaryIndex), Box<dyn Error>> {
     println!("Parsing RICHTUNG...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![

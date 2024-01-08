@@ -11,7 +11,7 @@ use crate::{
 
 use super::ParsedValue;
 
-pub fn load_holidays() -> Result<HolidayCollection, Box<dyn Error>> {
+pub fn parse() -> Result<HolidayCollection, Box<dyn Error>> {
     println!("Parsing FEIERTAG...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![

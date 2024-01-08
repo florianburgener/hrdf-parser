@@ -12,7 +12,7 @@ use crate::{
 
 use super::ParsedValue;
 
-pub fn load_information_texts(
+pub fn parse(
 ) -> Result<(InformationTextCollection, InformationTextPrimaryIndex), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![

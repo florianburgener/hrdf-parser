@@ -9,7 +9,7 @@ use crate::models::{Coordinate, CoordinateType, Stop, StopCollection, StopPrimar
 
 use super::{ColumnDefinition, ExpectedType, FileParser, ParsedValue, RowDefinition, RowParser};
 
-pub fn load_stops() -> Result<(StopCollection, StopPrimaryIndex), Box<dyn Error>> {
+pub fn parse() -> Result<(StopCollection, StopPrimaryIndex), Box<dyn Error>> {
     println!("Parsing BAHNHOF...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
