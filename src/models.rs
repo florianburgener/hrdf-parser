@@ -65,7 +65,11 @@ impl Attribute {
             .unwrap()
     }
 
-    pub fn set_description(&self, language: Language, value: &str) {}
+    pub fn set_description(&self, language: Language, value: &str) {
+        self.description
+            .borrow_mut()
+            .insert(language.to_string(), value.to_string());
+    }
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -172,7 +176,7 @@ pub type DirectionPrimaryIndex = HashMap<String, Rc<Direction>>;
 #[allow(unused)]
 impl Direction {
     pub fn new(id: String, name: String) -> Self {
-        Self {id, name}
+        Self { id, name }
     }
 
     pub fn id(&self) -> &str {
@@ -209,6 +213,48 @@ impl Holiday {
 
     pub fn name(&self, language: Language) -> String {
         self.name.get(&language.to_string()).cloned().unwrap()
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
+// --- InformationText
+// ------------------------------------------------------------------------------------------------
+
+#[allow(unused)]
+#[derive(Debug)]
+pub struct InformationText {
+    id: i32,
+    content: RefCell<HashMap<String, String>>, // Key: deu, fra, ita or eng.
+}
+
+pub type InformationTextCollection = Vec<Rc<InformationText>>;
+pub type InformationTextPrimaryIndex = HashMap<i32, Rc<InformationText>>;
+
+#[allow(unused)]
+impl InformationText {
+    pub fn new(id: i32, content: HashMap<String, String>) -> Self {
+        Self {
+            id,
+            content: RefCell::new(content),
+        }
+    }
+
+    pub fn id(&self) -> i32 {
+        return self.id;
+    }
+
+    pub fn content(&self, language: Language) -> String {
+        self.content
+            .borrow()
+            .get(&language.to_string())
+            .cloned()
+            .unwrap()
+    }
+
+    pub fn set_content(&self, language: Language, value: &str) {
+        self.content
+            .borrow_mut()
+            .insert(language.to_string(), value.to_string());
     }
 }
 

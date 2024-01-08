@@ -40,6 +40,7 @@ impl Hrdf {
         let (bit_fields, bit_fields_primary_index) = parsing::load_bit_fields()?;
         let (directions, directions_primary_index) = parsing::load_directions()?;
         let holidays = parsing::load_holidays()?;
+        let information_texts = parsing::load_information_texts();
         let (journey_platform, journey_platform_primary_index, platforms, platforms_primary_index) =
             parsing::load_journey_platform_and_platforms()?;
         let (stops, stops_primary_index) = parsing::load_stops()?;
