@@ -4,13 +4,14 @@
 use std::{error::Error, rc::Rc};
 
 use crate::{
-    models::{ThroughService, ThroughServiceCollection},
+    models::ThroughService,
     parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
+    storage::ThroughServiceData,
 };
 
 use super::ParsedValue;
 
-pub fn parse() -> Result<ThroughServiceCollection, Box<dyn Error>> {
+pub fn parse() -> Result<ThroughServiceData, Box<dyn Error>> {
     println!("Parsing DURCHBI...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -28,19 +29,19 @@ pub fn parse() -> Result<ThroughServiceCollection, Box<dyn Error>> {
     ]);
     let file_parser = FileParser::new("data/DURCHBI", row_parser)?;
 
-    let through_services = file_parser
+    let rows = file_parser
         .parse()
-        .map(|(_, _, values)| create_through_service(values))
+        .map(|(_, _, values)| create_instance(values))
         .collect();
 
-    Ok(through_services)
+    Ok(ThroughServiceData::new(rows))
 }
 
 // ------------------------------------------------------------------------------------------------
-// --- Helper Functions
+// --- Data Processing Functions
 // ------------------------------------------------------------------------------------------------
 
-fn create_through_service(mut values: Vec<ParsedValue>) -> Rc<ThroughService> {
+fn create_instance(mut values: Vec<ParsedValue>) -> Rc<ThroughService> {
     let journey_1_id: i32 = values.remove(0).into();
     let journey_1_unknown: String = values.remove(0).into();
     let journey_1_stop_id: i32 = values.remove(0).into();

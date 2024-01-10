@@ -9,16 +9,16 @@ mod through_service_parser;
 mod timetable_key_data_parser;
 mod transport_company_parser;
 
-pub use attribute_parser::parse as load_attributes;
-pub use bit_field_parser::parse as load_bit_fields;
-pub use direction_parser::parse as load_directions;
-pub use information_text_parser::parse as load_information_texts;
-pub use holiday_parser::parse as load_holidays;
-pub use platform_parser::parse as load_journey_platform_and_platforms;
-pub use stop_parser::parse as load_stops;
-pub use through_service_parser::parse as load_through_services;
+pub use attribute_parser::parse as load_attribute_data;
+pub use bit_field_parser::parse as load_bit_field_data;
+pub use direction_parser::parse as load_direcation_data;
+pub use information_text_parser::parse as load_information_text_data;
+pub use holiday_parser::parse as load_holiday_data;
+pub use platform_parser::parse as load_platform_data;
+pub use stop_parser::parse as load_stop_data;
+pub use through_service_parser::parse as load_through_service_data;
 pub use timetable_key_data_parser::parse as load_timetable_key_data;
-pub use transport_company_parser::parse as load_transport_companies;
+pub use transport_company_parser::parse as load_transport_company_data;
 
 use std::{
     error::Error,

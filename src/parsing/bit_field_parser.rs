@@ -6,11 +6,12 @@ use std::{collections::HashMap, error::Error, rc::Rc};
 use crate::{
     models::{BitField, BitFieldCollection, BitFieldPrimaryIndex},
     parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
+    storage::BitFieldData,
 };
 
 use super::ParsedValue;
 
-pub fn parse() -> Result<(BitFieldCollection, BitFieldPrimaryIndex), Box<dyn Error>> {
+pub fn parse() -> Result<BitFieldData, Box<dyn Error>> {
     println!("Parsing BITFELD...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -22,25 +23,38 @@ pub fn parse() -> Result<(BitFieldCollection, BitFieldPrimaryIndex), Box<dyn Err
     ]);
     let file_parser = FileParser::new("data/BITFELD", row_parser)?;
 
-    let bit_fields = file_parser
+    let rows = file_parser
         .parse()
-        .map(|(_, _, values)| create_bit_field(values))
+        .map(|(_, _, values)| create_instance(values))
         .collect();
 
-    let bit_fields_primary_index = create_bit_fields_primary_index(&bit_fields);
+    let primary_index = create_instances_primary_index(&rows);
 
-    Ok((bit_fields, bit_fields_primary_index))
+    Ok(BitFieldData::new(rows, primary_index))
 }
 
 // ------------------------------------------------------------------------------------------------
 // --- Indexes Creation
 // ------------------------------------------------------------------------------------------------
 
-fn create_bit_fields_primary_index(bit_fields: &BitFieldCollection) -> BitFieldPrimaryIndex {
-    bit_fields.iter().fold(HashMap::new(), |mut acc, item| {
+fn create_instances_primary_index(rows: &BitFieldCollection) -> BitFieldPrimaryIndex {
+    rows.iter().fold(HashMap::new(), |mut acc, item| {
         acc.insert(item.id(), Rc::clone(item));
         acc
     })
+}
+
+// ------------------------------------------------------------------------------------------------
+// --- Data Processing Functions
+// ------------------------------------------------------------------------------------------------
+
+fn create_instance(mut values: Vec<ParsedValue>) -> Rc<BitField> {
+    let id: i32 = values.remove(0).into();
+    let raw_values: String = values.remove(0).into();
+
+    let values = parse_values(raw_values);
+
+    Rc::new(BitField::new(id, values))
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -56,13 +70,4 @@ fn parse_values(raw_values: String) -> Vec<u8> {
                 .map(move |i| ((hex_char.to_digit(16).unwrap() >> i) & 0x1) as u8)
         })
         .collect()
-}
-
-fn create_bit_field(mut values: Vec<ParsedValue>) -> Rc<BitField> {
-    let id: i32 = values.remove(0).into();
-    let raw_values: String = values.remove(0).into();
-
-    let values = parse_values(raw_values);
-
-    Rc::new(BitField::new(id, values))
 }

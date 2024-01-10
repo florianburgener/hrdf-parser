@@ -7,7 +7,7 @@ use chrono::NaiveDate;
 
 use crate::{
     models::TimetableKeyData,
-    parsing::{ParsedValue, RowDefinition, FastRowMatcher, RowParser},
+    parsing::{FastRowMatcher, ParsedValue, RowDefinition, RowParser},
 };
 
 use super::{ColumnDefinition, ExpectedType, FileParser};
@@ -32,7 +32,10 @@ pub fn parse() -> Result<TimetableKeyData, Box<dyn Error>> {
 
     let file_parser = FileParser::new("data/ECKDATEN", row_parser)?;
 
-    let mut data: Vec<ParsedValue> = file_parser.parse().map(|(_, _, mut values)| values.remove(0)).collect();
+    let mut data: Vec<ParsedValue> = file_parser
+        .parse()
+        .map(|(_, _, mut values)| values.remove(0))
+        .collect();
     let raw_start_date: String = data.remove(0).into();
     let raw_end_date: String = data.remove(0).into();
     let raw_metadata: String = data.remove(0).into();

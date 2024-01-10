@@ -9,12 +9,12 @@ use std::{collections::HashMap, error::Error, rc::Rc};
 use crate::{
     models::{InformationText, InformationTextCollection, InformationTextPrimaryIndex, Language},
     parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
+    storage::InformationTextData,
 };
 
 use super::ParsedValue;
 
-pub fn parse(
-) -> Result<(InformationTextCollection, InformationTextPrimaryIndex), Box<dyn Error>> {
+pub fn parse() -> Result<InformationTextData, Box<dyn Error>> {
     println!("Parsing INFOTEXT_DE...");
     println!("Parsing INFOTEXT_EN...");
     println!("Parsing INFOTEXT_FR...");
@@ -29,24 +29,23 @@ pub fn parse(
     ]);
     let file_parser = FileParser::new("data/INFOTEXT_DE", row_parser)?;
 
-    let information_texts = file_parser
+    let rows = file_parser
         .parse()
-        .map(|(_, _, values)| create_information_text(values))
+        .map(|(_, _, values)| create_instance(values))
         .collect();
 
-    let information_texts_primary_index =
-        create_information_texts_primary_index(&information_texts);
+    let primary_index = create_primary_index(&rows);
 
-    load_content_translation(&information_texts_primary_index, Language::German)?;
-    load_content_translation(&information_texts_primary_index, Language::English)?;
-    load_content_translation(&information_texts_primary_index, Language::French)?;
-    load_content_translation(&information_texts_primary_index, Language::Italian)?;
+    load_content_translation(&primary_index, Language::German)?;
+    load_content_translation(&primary_index, Language::English)?;
+    load_content_translation(&primary_index, Language::French)?;
+    load_content_translation(&primary_index, Language::Italian)?;
 
-    Ok((information_texts, information_texts_primary_index))
+    Ok(InformationTextData::new(rows, primary_index))
 }
 
 fn load_content_translation(
-    information_texts_primary_index: &InformationTextPrimaryIndex,
+    primary_index: &InformationTextPrimaryIndex,
     language: Language,
 ) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
@@ -68,7 +67,7 @@ fn load_content_translation(
 
     file_parser
         .parse()
-        .for_each(|(_, _, values)| set_content(values, information_texts_primary_index, language));
+        .for_each(|(_, _, values)| set_content(values, primary_index, language));
 
     Ok(())
 }
@@ -77,22 +76,18 @@ fn load_content_translation(
 // --- Indexes Creation
 // ------------------------------------------------------------------------------------------------
 
-fn create_information_texts_primary_index(
-    information_texts: &InformationTextCollection,
-) -> InformationTextPrimaryIndex {
-    information_texts
-        .iter()
-        .fold(HashMap::new(), |mut acc, item| {
-            acc.insert(item.id(), Rc::clone(item));
-            acc
-        })
+fn create_primary_index(rows: &InformationTextCollection) -> InformationTextPrimaryIndex {
+    rows.iter().fold(HashMap::new(), |mut acc, item| {
+        acc.insert(item.id(), Rc::clone(item));
+        acc
+    })
 }
 
 // ------------------------------------------------------------------------------------------------
-// --- Helper Functions
+// --- Data Processing Functions
 // ------------------------------------------------------------------------------------------------
 
-fn create_information_text(mut values: Vec<ParsedValue>) -> Rc<InformationText> {
+fn create_instance(mut values: Vec<ParsedValue>) -> Rc<InformationText> {
     let id: i32 = values.remove(0).into();
 
     Rc::new(InformationText::new(id))
@@ -100,13 +95,13 @@ fn create_information_text(mut values: Vec<ParsedValue>) -> Rc<InformationText> 
 
 fn set_content(
     mut values: Vec<ParsedValue>,
-    information_texts_primary_index: &InformationTextPrimaryIndex,
+    primary_index: &InformationTextPrimaryIndex,
     language: Language,
 ) {
     let id: i32 = values.remove(0).into();
     let description: String = values.remove(0).into();
 
-    information_texts_primary_index
+    primary_index
         .get(&id)
         .unwrap()
         .set_content(language, &description);

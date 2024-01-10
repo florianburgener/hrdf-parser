@@ -3,6 +3,8 @@
 // GLEIS => Format matches the standard (this is questionable, as the file should be called GLEISE).
 // GLEIS_LV95 => Format does not match the standard (this is not explicitly stated in the SBB document).
 // GLEIS_WGS => Format does not match the standard (this is not explicitly stated in the SBB document).
+// ---
+// Note: this parser collects both the Platform and JourneyPlatform resources.
 use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{
@@ -13,19 +15,12 @@ use crate::{
     parsing::{
         ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, RowDefinition, RowParser,
     },
+    storage::{JourneyPlatformData, PlatformData},
 };
 
 use super::ParsedValue;
 
-pub fn parse() -> Result<
-    (
-        JourneyPlatformCollection,
-        JourneyPlatformPrimaryIndex,
-        PlatformCollection,
-        PlatformPrimaryIndex,
-    ),
-    Box<dyn Error>,
-> {
+pub fn parse() -> Result<(JourneyPlatformData, PlatformData), Box<dyn Error>> {
     println!("Parsing GLEIS...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -79,10 +74,8 @@ pub fn parse() -> Result<
     parse_platform_data("G '5' A 'AB'".to_string());
 
     Ok((
-        journey_platform,
-        journey_platform_primary_index,
-        platforms,
-        platforms_primary_index,
+        JourneyPlatformData::new(journey_platform, journey_platform_primary_index),
+        PlatformData::new(platforms, platforms_primary_index),
     ))
 }
 

@@ -6,11 +6,12 @@ use std::{collections::HashMap, error::Error, rc::Rc};
 use crate::{
     models::{Direction, DirectionCollection, DirectionPrimaryIndex},
     parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
+    storage::DirectionData,
 };
 
 use super::ParsedValue;
 
-pub fn parse() -> Result<(DirectionCollection, DirectionPrimaryIndex), Box<dyn Error>> {
+pub fn parse() -> Result<DirectionData, Box<dyn Error>> {
     println!("Parsing RICHTUNG...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -22,32 +23,32 @@ pub fn parse() -> Result<(DirectionCollection, DirectionPrimaryIndex), Box<dyn E
     ]);
     let file_parser = FileParser::new("data/RICHTUNG", row_parser)?;
 
-    let directions: Vec<Rc<Direction>> = file_parser
+    let rows: Vec<Rc<Direction>> = file_parser
         .parse()
-        .map(|(_, _, values)| create_direction(values))
+        .map(|(_, _, values)| create_instance(values))
         .collect();
 
-    let directions_primary_index = create_directions_primary_index(&directions);
+    let primary_index = create_instances_primary_index(&rows);
 
-    Ok((directions, directions_primary_index))
+    Ok(DirectionData::new(rows, primary_index))
 }
 
 // ------------------------------------------------------------------------------------------------
 // --- Indexes Creation
 // ------------------------------------------------------------------------------------------------
 
-fn create_directions_primary_index(directions: &DirectionCollection) -> DirectionPrimaryIndex {
-    directions.iter().fold(HashMap::new(), |mut acc, item| {
+fn create_instances_primary_index(rows: &DirectionCollection) -> DirectionPrimaryIndex {
+    rows.iter().fold(HashMap::new(), |mut acc, item| {
         acc.insert(item.id().to_owned(), Rc::clone(item));
         acc
     })
 }
 
 // ------------------------------------------------------------------------------------------------
-// --- Helper Functions
+// --- Data Processing Functions
 // ------------------------------------------------------------------------------------------------
 
-fn create_direction(mut values: Vec<ParsedValue>) -> Rc<Direction> {
+fn create_instance(mut values: Vec<ParsedValue>) -> Rc<Direction> {
     let id: String = values.remove(0).into();
     let name: String = values.remove(0).into();
 

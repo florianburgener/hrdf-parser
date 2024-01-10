@@ -1,6 +1,7 @@
 mod hrdf;
 mod models;
 mod parsing;
+mod storage;
 
 use std::error::Error;
 
@@ -15,8 +16,8 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     println!("------------------------------------------------------------------------------------------------");
     println!();
 
-    println!("{} platforms", hrdf.platforms().len());
-    println!("{} stops", hrdf.stops().len());
+    println!("{} platforms", hrdf.platform_data().rows().len());
+    println!("{} stops", hrdf.stop_data().rows().len());
 
     // println!();
 

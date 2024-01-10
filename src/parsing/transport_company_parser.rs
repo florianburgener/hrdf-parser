@@ -11,11 +11,12 @@ use crate::{
         Language, TransportCompany, TransportCompanyCollection, TransportCompanyPrimaryIndex,
     },
     parsing::{ColumnDefinition, ExpectedType, FastRowMatcher, RowDefinition, RowParser},
+    storage::TransportCompanyData,
 };
 
 use super::{FileParser, ParsedValue};
 
-pub fn parse() -> Result<(TransportCompanyCollection, TransportCompanyPrimaryIndex), Box<dyn Error>> {
+pub fn parse() -> Result<TransportCompanyData, Box<dyn Error>> {
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
 
@@ -31,38 +32,25 @@ pub fn parse() -> Result<(TransportCompanyCollection, TransportCompanyPrimaryInd
     ]);
     let file_parser = FileParser::new("data/BETRIEB_DE", row_parser)?;
 
-    let mut transport_companies: Vec<Rc<TransportCompany>> = Vec::new();
+    let mut rows: Vec<Rc<TransportCompany>> = Vec::new();
 
     file_parser.parse().for_each(|(id, _, values)| match id {
-        ROW_B => transport_companies.push(create_transport_company(values)),
+        ROW_B => rows.push(create_instance(values)),
         _ => return,
     });
 
-    let transport_companies_primary_index =
-        create_transport_companies_primary_index(&transport_companies);
+    let primary_index = create_primary_index(&rows);
 
-    load_short_name_long_name_full_name_translations(
-        &transport_companies_primary_index,
-        Language::German,
-    )?;
-    load_short_name_long_name_full_name_translations(
-        &transport_companies_primary_index,
-        Language::English,
-    )?;
-    load_short_name_long_name_full_name_translations(
-        &transport_companies_primary_index,
-        Language::French,
-    )?;
-    load_short_name_long_name_full_name_translations(
-        &transport_companies_primary_index,
-        Language::Italian,
-    )?;
+    load_short_name_long_name_full_name_translations(&primary_index, Language::German)?;
+    load_short_name_long_name_full_name_translations(&primary_index, Language::English)?;
+    load_short_name_long_name_full_name_translations(&primary_index, Language::French)?;
+    load_short_name_long_name_full_name_translations(&primary_index, Language::Italian)?;
 
-    Ok((transport_companies, transport_companies_primary_index))
+    Ok(TransportCompanyData::new(rows, primary_index))
 }
 
 fn load_short_name_long_name_full_name_translations(
-    transport_companies_primary_index: &TransportCompanyPrimaryIndex,
+    primary_index: &TransportCompanyPrimaryIndex,
     language: Language,
 ) -> Result<(), Box<dyn Error>> {
     const ROW_A: i32 = 1;
@@ -88,9 +76,7 @@ fn load_short_name_long_name_full_name_translations(
     let file_parser = FileParser::new(&file_path, row_parser)?;
 
     file_parser.parse().for_each(|(id, _, values)| match id {
-        ROW_A => {
-            set_short_name_long_name_full_name(values, transport_companies_primary_index, language)
-        }
+        ROW_A => set_short_name_long_name_full_name(values, primary_index, language),
         _ => return,
     });
 
@@ -101,22 +87,18 @@ fn load_short_name_long_name_full_name_translations(
 // --- Indexes Creation
 // ------------------------------------------------------------------------------------------------
 
-fn create_transport_companies_primary_index(
-    transport_companies: &TransportCompanyCollection,
-) -> TransportCompanyPrimaryIndex {
-    transport_companies
-        .iter()
-        .fold(HashMap::new(), |mut acc, item| {
-            acc.insert(item.id(), Rc::clone(item));
-            acc
-        })
+fn create_primary_index(rows: &TransportCompanyCollection) -> TransportCompanyPrimaryIndex {
+    rows.iter().fold(HashMap::new(), |mut acc, item| {
+        acc.insert(item.id(), Rc::clone(item));
+        acc
+    })
 }
 
 // ------------------------------------------------------------------------------------------------
-// --- Helper Functions
+// --- Data Processing Functions
 // ------------------------------------------------------------------------------------------------
 
-fn create_transport_company(mut values: Vec<ParsedValue>) -> Rc<TransportCompany> {
+fn create_instance(mut values: Vec<ParsedValue>) -> Rc<TransportCompany> {
     let id: i32 = values.remove(0).into();
     let administration: String = values.remove(0).into();
 
@@ -125,14 +107,14 @@ fn create_transport_company(mut values: Vec<ParsedValue>) -> Rc<TransportCompany
 
 fn set_short_name_long_name_full_name(
     mut values: Vec<ParsedValue>,
-    transport_companies_primary_index: &TransportCompanyPrimaryIndex,
+    primary_index: &TransportCompanyPrimaryIndex,
     language: Language,
 ) {
     let id: i32 = values.remove(0).into();
     // // TODO : parse that.
     // let raw_data: String = values.remove(0).into();
 
-    let transport_company = transport_companies_primary_index.get(&id).unwrap();
+    let transport_company = primary_index.get(&id).unwrap();
     transport_company.set_short_name(language, "");
     transport_company.set_long_name(language, "");
     transport_company.set_full_name(language, "");

@@ -11,7 +11,6 @@ use strum_macros::{self, Display, EnumString};
 // --- Attribute
 // ------------------------------------------------------------------------------------------------
 
-#[allow(unused)]
 #[derive(Debug)]
 pub struct Attribute {
     id: String,
@@ -76,7 +75,6 @@ impl Attribute {
 // --- BitField
 // ------------------------------------------------------------------------------------------------
 
-#[allow(unused)]
 #[derive(Debug)]
 pub struct BitField {
     id: i32,
@@ -113,7 +111,6 @@ pub enum CoordinateType {
     WGS84,
 }
 
-#[allow(unused)]
 #[derive(Debug, Default)]
 pub struct Coordinate {
     // TODO : should I add a getter for the field?
@@ -163,7 +160,6 @@ impl Coordinate {
 // --- Direction
 // ------------------------------------------------------------------------------------------------
 
-#[allow(unused)]
 #[derive(Debug)]
 pub struct Direction {
     id: String,
@@ -192,7 +188,6 @@ impl Direction {
 // --- Holiday
 // ------------------------------------------------------------------------------------------------
 
-#[allow(unused)]
 #[derive(Debug)]
 pub struct Holiday {
     date: NaiveDate,
@@ -220,7 +215,6 @@ impl Holiday {
 // --- InformationText
 // ------------------------------------------------------------------------------------------------
 
-#[allow(unused)]
 #[derive(Debug)]
 pub struct InformationText {
     id: i32,
@@ -262,7 +256,6 @@ impl InformationText {
 // --- Language
 // ------------------------------------------------------------------------------------------------
 
-#[allow(unused)]
 #[derive(Clone, Copy, Debug, Default, Display, EnumString)]
 pub enum Language {
     #[default]
@@ -283,7 +276,6 @@ pub enum Language {
 // --- JourneyPlatform
 // ------------------------------------------------------------------------------------------------
 
-#[allow(unused)]
 #[derive(Debug)]
 pub struct JourneyPlatform {
     journey_id: i32,
@@ -339,7 +331,6 @@ impl JourneyPlatform {
 // --- Platform
 // ------------------------------------------------------------------------------------------------
 
-#[allow(unused)]
 #[derive(Debug, Default)]
 pub struct Platform {
     id: i64, // Haltestellennummer << 32 + "Index der Gleistextinformation"
@@ -411,7 +402,6 @@ impl Platform {
 // --- Stop
 // ------------------------------------------------------------------------------------------------
 
-#[allow(unused)]
 #[derive(Debug)]
 pub struct Stop {
     id: i32,
@@ -507,7 +497,6 @@ impl Stop {
 // --- ThroughService
 // ------------------------------------------------------------------------------------------------
 
-#[allow(unused)]
 #[derive(Debug)]
 pub struct ThroughService {
     journey_1_id: i32,
@@ -578,7 +567,6 @@ impl ThroughService {
 // --- TimetableKeyData
 // ------------------------------------------------------------------------------------------------
 
-#[allow(unused)]
 #[derive(Debug)]
 pub struct TimetableKeyData {
     start_date: NaiveDate, // The date is included.
@@ -613,7 +601,6 @@ impl TimetableKeyData {
 // --- TransportCompany
 // ------------------------------------------------------------------------------------------------
 
-#[allow(unused)]
 #[derive(Debug)]
 pub struct TransportCompany {
     id: i32,
@@ -657,7 +644,7 @@ impl TransportCompany {
     }
 
     pub fn long_name(&self, language: Language) -> String {
-        self.short_name
+        self.long_name
             .borrow()
             .get(&language.to_string())
             .cloned()
@@ -665,13 +652,13 @@ impl TransportCompany {
     }
 
     pub fn set_long_name(&self, language: Language, value: &str) {
-        self.short_name
+        self.long_name
             .borrow_mut()
             .insert(language.to_string(), value.to_string());
     }
 
     pub fn full_name(&self, language: Language) -> String {
-        self.short_name
+        self.full_name
             .borrow()
             .get(&language.to_string())
             .cloned()
@@ -679,7 +666,7 @@ impl TransportCompany {
     }
 
     pub fn set_full_name(&self, language: Language, value: &str) {
-        self.short_name
+        self.full_name
             .borrow_mut()
             .insert(language.to_string(), value.to_string());
     }

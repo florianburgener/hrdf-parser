@@ -11,12 +11,12 @@ use crate::{
     parsing::{
         AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser,
         RowDefinition, RowParser,
-    },
+    }, storage::AttributeData,
 };
 
 use super::ParsedValue;
 
-pub fn parse() -> Result<(AttributeCollection, AttributePrimaryIndex), Box<dyn Error>> {
+pub fn parse() -> Result<AttributeData, Box<dyn Error>> {
     println!("Parsing ATTRIBUT...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -51,47 +51,43 @@ pub fn parse() -> Result<(AttributeCollection, AttributePrimaryIndex), Box<dyn E
     // The ATTRIBUT file is used instead of ATTRIBUT_* for simplicity's sake.
     let file_parser = FileParser::new("data/ATTRIBUT", row_parser)?;
 
-    let mut attributes = Vec::new();
-    let mut attributes_primary_index = None;
+    let mut rows = Vec::new();
+    let mut primary_index = None;
     let mut current_language = Language::default();
 
     file_parser.parse().for_each(|(id, _, values)| match id {
-        ROW_A => attributes.push(create_attribute(values)),
+        ROW_A => rows.push(create_instance(values)),
         ROW_B => {
-            if attributes_primary_index.is_none() {
+            if primary_index.is_none() {
                 // When ROW_B is reached, all instances have already been created.
                 // The primary index is then created only once.
-                attributes_primary_index = Some(create_attributes_primary_index(&attributes));
+                primary_index = Some(create_primary_index(&rows));
             }
         }
         ROW_C => update_current_language(values, &mut current_language),
-        ROW_D => set_description(
-            values,
-            attributes_primary_index.as_ref().unwrap(),
-            current_language,
-        ),
+        ROW_D => set_description(values, primary_index.as_ref().unwrap(), current_language),
         _ => unreachable!(),
     });
 
-    Ok((attributes, attributes_primary_index.unwrap()))
+    Ok(AttributeData::new(rows, primary_index.unwrap()))
 }
 
 // ------------------------------------------------------------------------------------------------
 // --- Indexes Creation
 // ------------------------------------------------------------------------------------------------
 
-fn create_attributes_primary_index(attributes: &AttributeCollection) -> AttributePrimaryIndex {
-    attributes.iter().fold(HashMap::new(), |mut acc, item| {
+fn create_primary_index(rows: &AttributeCollection) -> AttributePrimaryIndex {
+    rows.iter().fold(HashMap::new(), |mut acc, item| {
         acc.insert(item.id().to_owned(), Rc::clone(item));
         acc
     })
 }
 
 // ------------------------------------------------------------------------------------------------
-// --- Helper Functions
+// --- Data Processing Functions
 // ------------------------------------------------------------------------------------------------
 
-fn create_attribute(mut values: Vec<ParsedValue>) -> Rc<Attribute> {
+fn create_instance(mut values: Vec<ParsedValue>) -> Rc<Attribute> {
     let id: String = values.remove(0).into();
     let stop_scope: i16 = values.remove(0).into();
     let main_sorting_priority: i16 = values.remove(0).into();
@@ -105,6 +101,24 @@ fn create_attribute(mut values: Vec<ParsedValue>) -> Rc<Attribute> {
     ))
 }
 
+fn set_description(
+    mut values: Vec<ParsedValue>,
+    primary_index: &AttributePrimaryIndex,
+    language: Language,
+) {
+    let id: String = values.remove(0).into();
+    let description: String = values.remove(0).into();
+
+    primary_index
+        .get(&id)
+        .unwrap()
+        .set_description(language, &description);
+}
+
+// ------------------------------------------------------------------------------------------------
+// --- Helper Functions
+// ------------------------------------------------------------------------------------------------
+
 fn update_current_language(mut values: Vec<ParsedValue>, current_language: &mut Language) {
     let language: String = values.remove(0).into();
     let language = &language[1..&language.len() - 1];
@@ -112,18 +126,4 @@ fn update_current_language(mut values: Vec<ParsedValue>, current_language: &mut 
     if language != "text" {
         *current_language = Language::from_str(language).unwrap();
     }
-}
-
-fn set_description(
-    mut values: Vec<ParsedValue>,
-    attributes_primary_index: &AttributePrimaryIndex,
-    language: Language,
-) {
-    let id: String = values.remove(0).into();
-    let description: String = values.remove(0).into();
-
-    attributes_primary_index
-        .get(&id)
-        .unwrap()
-        .set_description(language, &description);
 }

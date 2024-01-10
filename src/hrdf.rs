@@ -1,88 +1,56 @@
 use std::{error::Error, rc::Rc};
 
 use crate::{
-    models::{
-        AttributeCollection, AttributePrimaryIndex, BitFieldCollection, BitFieldPrimaryIndex,
-        DirectionCollection, DirectionPrimaryIndex, HolidayCollection, InformationTextCollection,
-        InformationTextPrimaryIndex, JourneyPlatformCollection, JourneyPlatformPrimaryIndex,
-        PlatformCollection, PlatformPrimaryIndex, StopCollection, StopPrimaryIndex,
-        ThroughServiceCollection, TimetableKeyData, TransportCompanyCollection,
-        TransportCompanyPrimaryIndex,
-    },
+    models::TimetableKeyData,
     parsing,
+    storage::{
+        AttributeData, BitFieldData, DirectionData, HolidayData, InformationTextData,
+        JourneyPlatformData, PlatformData, StopData, ThroughServiceData, TransportCompanyData,
+    },
 };
 
 #[allow(unused)]
 #[derive(Debug)]
 pub struct Hrdf {
-    attributes: AttributeCollection,
-    attributes_primary_index: AttributePrimaryIndex, // Key = Attribute.id
-
-    bit_fields: BitFieldCollection,
-    bit_fields_primary_index: BitFieldPrimaryIndex, // Key = BitField.id
-
-    directions: DirectionCollection,
-    directions_primary_index: DirectionPrimaryIndex, // Key Direction.id
-
-    holidays: HolidayCollection,
-
-    information_texts: InformationTextCollection,
-    information_texts_primary_index: InformationTextPrimaryIndex, // Key InformationText.id
-
-    journey_platform: JourneyPlatformCollection,
-    journey_platform_primary_index: JourneyPlatformPrimaryIndex, // Key = (Stop.id, Platform.id)
-
-    platforms: PlatformCollection,
-    platforms_primary_index: PlatformPrimaryIndex, // Key = Platform.id
-
-    stops: StopCollection,
-    stops_primary_index: StopPrimaryIndex, // Key = Stop.id
-
-    through_services: ThroughServiceCollection,
-
+    attribute_data: AttributeData,
+    bit_field_data: BitFieldData,
+    direction_data: DirectionData,
+    holiday_data: HolidayData,
+    information_text_data: InformationTextData,
+    journey_platform_data: JourneyPlatformData,
+    platform_data: PlatformData,
+    stop_data: StopData,
+    through_service_data: ThroughServiceData,
     timetable_key_data: TimetableKeyData,
-
-    transport_companies: TransportCompanyCollection,
-    transport_companies_primary_index: TransportCompanyPrimaryIndex,
+    transport_company_data: TransportCompanyData,
 }
 
 #[allow(unused)]
 impl Hrdf {
     pub fn new() -> Result<Rc<Self>, Box<dyn Error>> {
-        let (attributes, attributes_primary_index) = parsing::load_attributes()?;
-        let (bit_fields, bit_fields_primary_index) = parsing::load_bit_fields()?;
-        let (directions, directions_primary_index) = parsing::load_directions()?;
-        let holidays = parsing::load_holidays()?;
-        let (information_texts, information_texts_primary_index) =
-            parsing::load_information_texts()?;
-        let (journey_platform, journey_platform_primary_index, platforms, platforms_primary_index) =
-            parsing::load_journey_platform_and_platforms()?;
-        let (stops, stops_primary_index) = parsing::load_stops()?;
-        let through_services = parsing::load_through_services()?;
+        let attribute_data = parsing::load_attribute_data()?;
+        let bit_field_data = parsing::load_bit_field_data()?;
+        let direction_data = parsing::load_direcation_data()?;
+        let holiday_data = parsing::load_holiday_data()?;
+        let information_text_data = parsing::load_information_text_data()?;
+        let (journey_platform_data, platform_data) = parsing::load_platform_data()?;
+        let stop_data = parsing::load_stop_data()?;
+        let through_service_data = parsing::load_through_service_data()?;
         let timetable_key_data = parsing::load_timetable_key_data()?;
-        let (transport_companies, transport_companies_primary_index) =
-            parsing::load_transport_companies()?;
+        let transport_company_data = parsing::load_transport_company_data()?;
 
         let instance = Rc::new(Self {
-            attributes,
-            attributes_primary_index,
-            bit_fields,
-            bit_fields_primary_index,
-            directions,
-            directions_primary_index,
-            holidays,
-            information_texts,
-            information_texts_primary_index,
-            journey_platform,
-            journey_platform_primary_index,
-            platforms,
-            platforms_primary_index,
-            stops,
-            stops_primary_index,
-            through_services,
+            attribute_data,
+            bit_field_data,
+            direction_data,
+            holiday_data,
+            information_text_data,
+            journey_platform_data,
+            platform_data,
+            stop_data,
+            through_service_data,
             timetable_key_data,
-            transport_companies,
-            transport_companies_primary_index,
+            transport_company_data,
         });
 
         // Self::set_parent_references(&instance);
@@ -95,15 +63,11 @@ impl Hrdf {
     //     }
     // }
 
-    pub fn platforms(&self) -> &PlatformCollection {
-        return &self.platforms;
+    pub fn platform_data(&self) -> &PlatformData {
+        return &self.platform_data;
     }
 
-    pub fn stops(&self) -> &StopCollection {
-        &self.stops
-    }
-
-    pub fn stops_primary_index(&self) -> &StopPrimaryIndex {
-        &self.stops_primary_index
+    pub fn stop_data(&self) -> &StopData {
+        &self.stop_data
     }
 }
