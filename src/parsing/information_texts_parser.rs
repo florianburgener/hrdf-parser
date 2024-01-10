@@ -14,6 +14,11 @@ use super::ParsedValue;
 
 pub fn parse(
 ) -> Result<(InformationTextCollection, InformationTextPrimaryIndex), Box<dyn Error>> {
+    println!("Parsing INFOTEXT_DE...");
+    println!("Parsing INFOTEXT_EN...");
+    println!("Parsing INFOTEXT_FR...");
+    println!("Parsing INFOTEXT_IT...");
+
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row is used to create a InformationText instance.
@@ -43,14 +48,6 @@ fn load_content_translation(
     information_texts_primary_index: &InformationTextPrimaryIndex,
     language: Language,
 ) -> Result<(), Box<dyn Error>> {
-    let filename = match language {
-        Language::German => "INFOTEXT_DE",
-        Language::English => "INFOTEXT_EN",
-        Language::French => "INFOTEXT_FR",
-        Language::Italian => "INFOTEXT_IT",
-    };
-    println!("Parsing {}...", filename);
-
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row is used to create a InformationText instance.
@@ -59,6 +56,12 @@ fn load_content_translation(
             ColumnDefinition::new(11, -1, ExpectedType::String),
         ]),
     ]);
+    let filename = match language {
+        Language::German => "INFOTEXT_DE",
+        Language::English => "INFOTEXT_EN",
+        Language::French => "INFOTEXT_FR",
+        Language::Italian => "INFOTEXT_IT",
+    };
     let file_path = format!("data/{}", filename);
     let file_parser = FileParser::new(&file_path, row_parser)?;
 

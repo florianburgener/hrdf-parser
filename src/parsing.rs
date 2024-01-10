@@ -7,6 +7,7 @@ mod platforms_parser;
 mod stops_parser;
 mod through_services_parser;
 mod timetable_key_data_parser;
+mod transport_company_parser;
 
 pub use attributes_parser::parse as load_attributes;
 pub use bit_fields_parser::parse as load_bit_fields;
@@ -17,6 +18,7 @@ pub use platforms_parser::parse as load_journey_platform_and_platforms;
 pub use stops_parser::parse as load_stops;
 pub use through_services_parser::parse as load_through_services;
 pub use timetable_key_data_parser::parse as load_timetable_key_data;
+pub use transport_company_parser::parse as load_transport_companies;
 
 use std::{
     error::Error,

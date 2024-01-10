@@ -544,6 +544,34 @@ impl ThroughService {
             bit_field_id,
         }
     }
+
+    pub fn journey_1_id(&self) -> i32 {
+        self.journey_1_id
+    }
+
+    pub fn journey_1_unknown(&self) -> &str {
+        &self.journey_1_unknown
+    }
+
+    pub fn journey_1_stop_id(&self) -> i32 {
+        self.journey_1_stop_id
+    }
+
+    pub fn journey_2_id(&self) -> i32 {
+        self.journey_2_id
+    }
+
+    pub fn journey_2_unknown(&self) -> &str {
+        &self.journey_2_unknown
+    }
+
+    pub fn journey_2_stop_id(&self) -> &Option<i32> {
+        &self.journey_2_stop_id
+    }
+
+    pub fn bit_field_id(&self) -> i32 {
+        self.bit_field_id
+    }
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -578,5 +606,85 @@ impl TimetableKeyData {
 
     pub fn metadata(&self) -> &Vec<String> {
         &self.metadata
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
+// --- TransportCompany
+// ------------------------------------------------------------------------------------------------
+
+#[allow(unused)]
+#[derive(Debug)]
+pub struct TransportCompany {
+    id: i32,
+    short_name: RefCell<HashMap<String, String>>, // Key: deu, fra, ita or eng.
+    long_name: RefCell<HashMap<String, String>>,  // Key: deu, fra, ita or eng.
+    full_name: RefCell<HashMap<String, String>>,  // Key: deu, fra, ita or eng.
+    administrations: Vec<String>,
+}
+
+pub type TransportCompanyCollection = Vec<Rc<TransportCompany>>;
+pub type TransportCompanyPrimaryIndex = HashMap<i32, Rc<TransportCompany>>;
+
+#[allow(unused)]
+impl TransportCompany {
+    pub fn new(id: i32, administrations: Vec<String>) -> Self {
+        Self {
+            id,
+            short_name: RefCell::new(HashMap::new()),
+            long_name: RefCell::new(HashMap::new()),
+            full_name: RefCell::new(HashMap::new()),
+            administrations,
+        }
+    }
+
+    pub fn id(&self) -> i32 {
+        self.id
+    }
+
+    pub fn short_name(&self, language: Language) -> String {
+        self.short_name
+            .borrow()
+            .get(&language.to_string())
+            .cloned()
+            .unwrap()
+    }
+
+    pub fn set_short_name(&self, language: Language, value: &str) {
+        self.short_name
+            .borrow_mut()
+            .insert(language.to_string(), value.to_string());
+    }
+
+    pub fn long_name(&self, language: Language) -> String {
+        self.short_name
+            .borrow()
+            .get(&language.to_string())
+            .cloned()
+            .unwrap()
+    }
+
+    pub fn set_long_name(&self, language: Language, value: &str) {
+        self.short_name
+            .borrow_mut()
+            .insert(language.to_string(), value.to_string());
+    }
+
+    pub fn full_name(&self, language: Language) -> String {
+        self.short_name
+            .borrow()
+            .get(&language.to_string())
+            .cloned()
+            .unwrap()
+    }
+
+    pub fn set_full_name(&self, language: Language, value: &str) {
+        self.short_name
+            .borrow_mut()
+            .insert(language.to_string(), value.to_string());
+    }
+
+    pub fn administrations(&self) -> &Vec<String> {
+        &self.administrations
     }
 }

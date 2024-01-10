@@ -1,7 +1,14 @@
 use std::{error::Error, rc::Rc};
 
 use crate::{
-    models::{TimetableKeyData, AttributeCollection, AttributePrimaryIndex, BitFieldCollection, BitFieldPrimaryIndex, HolidayCollection, JourneyPlatformCollection, JourneyPlatformPrimaryIndex, PlatformCollection, PlatformPrimaryIndex, StopCollection, StopPrimaryIndex, ThroughServiceCollection, DirectionPrimaryIndex, DirectionCollection, InformationTextCollection, InformationTextPrimaryIndex},
+    models::{
+        AttributeCollection, AttributePrimaryIndex, BitFieldCollection, BitFieldPrimaryIndex,
+        DirectionCollection, DirectionPrimaryIndex, HolidayCollection, InformationTextCollection,
+        InformationTextPrimaryIndex, JourneyPlatformCollection, JourneyPlatformPrimaryIndex,
+        PlatformCollection, PlatformPrimaryIndex, StopCollection, StopPrimaryIndex,
+        ThroughServiceCollection, TimetableKeyData, TransportCompanyCollection,
+        TransportCompanyPrimaryIndex,
+    },
     parsing,
 };
 
@@ -34,6 +41,9 @@ pub struct Hrdf {
     through_services: ThroughServiceCollection,
 
     timetable_key_data: TimetableKeyData,
+
+    transport_companies: TransportCompanyCollection,
+    transport_companies_primary_index: TransportCompanyPrimaryIndex,
 }
 
 #[allow(unused)]
@@ -43,12 +53,15 @@ impl Hrdf {
         let (bit_fields, bit_fields_primary_index) = parsing::load_bit_fields()?;
         let (directions, directions_primary_index) = parsing::load_directions()?;
         let holidays = parsing::load_holidays()?;
-        let (information_texts, information_texts_primary_index) = parsing::load_information_texts()?;
+        let (information_texts, information_texts_primary_index) =
+            parsing::load_information_texts()?;
         let (journey_platform, journey_platform_primary_index, platforms, platforms_primary_index) =
             parsing::load_journey_platform_and_platforms()?;
         let (stops, stops_primary_index) = parsing::load_stops()?;
         let through_services = parsing::load_through_services()?;
         let timetable_key_data = parsing::load_timetable_key_data()?;
+        let (transport_companies, transport_companies_primary_index) =
+            parsing::load_transport_companies()?;
 
         let instance = Rc::new(Self {
             attributes,
@@ -68,6 +81,8 @@ impl Hrdf {
             stops_primary_index,
             through_services,
             timetable_key_data,
+            transport_companies,
+            transport_companies_primary_index,
         });
 
         // Self::set_parent_references(&instance);
