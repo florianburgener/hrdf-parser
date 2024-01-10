@@ -1,3 +1,4 @@
+// 4 file(s).
 // File(s) read by the parser:
 // BETRIEB_DE => Format matches the standard.
 // BETRIEB_EN => Format matches the standard.
@@ -128,9 +129,8 @@ fn set_short_name_long_name_full_name(
     language: Language,
 ) {
     let id: i32 = values.remove(0).into();
-    // TODO : parse that.
-    let raw_data: String = values.remove(0).into();
-
+    // // TODO : parse that.
+    // let raw_data: String = values.remove(0).into();
 
     let transport_company = transport_companies_primary_index.get(&id).unwrap();
     transport_company.set_short_name(language, "");

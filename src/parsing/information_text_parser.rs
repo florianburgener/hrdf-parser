@@ -1,3 +1,4 @@
+// 4 file(s).
 // File(s) read by the parser:
 // INFOTEXT_DE => Format matches the standard.
 // INFOTEXT_EN => Format matches the standard.

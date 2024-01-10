@@ -1,22 +1,22 @@
-mod attributes_parser;
-mod bit_fields_parser;
-mod directions_parser;
-mod information_texts_parser;
-mod holidays_parser;
-mod platforms_parser;
-mod stops_parser;
-mod through_services_parser;
+mod attribute_parser;
+mod bit_field_parser;
+mod direction_parser;
+mod information_text_parser;
+mod holiday_parser;
+mod platform_parser;
+mod stop_parser;
+mod through_service_parser;
 mod timetable_key_data_parser;
 mod transport_company_parser;
 
-pub use attributes_parser::parse as load_attributes;
-pub use bit_fields_parser::parse as load_bit_fields;
-pub use directions_parser::parse as load_directions;
-pub use information_texts_parser::parse as load_information_texts;
-pub use holidays_parser::parse as load_holidays;
-pub use platforms_parser::parse as load_journey_platform_and_platforms;
-pub use stops_parser::parse as load_stops;
-pub use through_services_parser::parse as load_through_services;
+pub use attribute_parser::parse as load_attributes;
+pub use bit_field_parser::parse as load_bit_fields;
+pub use direction_parser::parse as load_directions;
+pub use information_text_parser::parse as load_information_texts;
+pub use holiday_parser::parse as load_holidays;
+pub use platform_parser::parse as load_journey_platform_and_platforms;
+pub use stop_parser::parse as load_stops;
+pub use through_service_parser::parse as load_through_services;
 pub use timetable_key_data_parser::parse as load_timetable_key_data;
 pub use transport_company_parser::parse as load_transport_companies;
 

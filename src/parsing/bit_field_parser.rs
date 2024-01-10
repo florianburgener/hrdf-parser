@@ -1,3 +1,4 @@
+// 1 file(s).
 // File(s) read by the parser:
 // BITFELD => Format does not match the standard (this is not explicitly stated in the SBB document).
 use std::{collections::HashMap, error::Error, rc::Rc};
@@ -10,7 +11,7 @@ use crate::{
 use super::ParsedValue;
 
 pub fn parse() -> Result<(BitFieldCollection, BitFieldPrimaryIndex), Box<dyn Error>> {
-    println!("Parsing BITFIELD...");
+    println!("Parsing BITFELD...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row is used to create a BitField instance.

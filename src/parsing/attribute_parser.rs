@@ -1,3 +1,4 @@
+// 5 file(s).
 // File(s) read by the parser:
 // ATTRIBUT => it's unclear whether the format matches the standard or not.
 // ---

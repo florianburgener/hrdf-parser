@@ -1,3 +1,4 @@
+// 1 file(s).
 // File(s) read by the parser:
 // RICHTUNG => it's unclear whether the format matches the standard or not.
 use std::{collections::HashMap, error::Error, rc::Rc};

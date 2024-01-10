@@ -1,3 +1,4 @@
+// 3 file(s).
 // File(s) read by the parser:
 // GLEIS => Format matches the standard (this is questionable, as the file should be called GLEISE).
 // GLEIS_LV95 => Format does not match the standard (this is not explicitly stated in the SBB document).

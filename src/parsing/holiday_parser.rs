@@ -1,3 +1,4 @@
+// 1 file(s).
 // File(s) read by the parser:
 // FEIERTAG => Format does not match the standard.
 use std::{collections::HashMap, error::Error, rc::Rc};

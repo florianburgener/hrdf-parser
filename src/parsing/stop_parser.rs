@@ -1,8 +1,10 @@
+// 5 file(s).
 // File(s) read by the parser:
 // BAHNHOF => Format matches the standard.
-// BFKOORD_LV95 (BF = BAHNHOF) => Format matches the standard.
-// BFKOORD_WGS (BF = BAHNHOF) => Format matches the standard.
+// BFKOORD_LV95 => Format matches the standard.
+// BFKOORD_WGS => Format matches the standard.
 // BFPRIOS => Format matches the standard.
+// KMINFO =>
 use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::models::{Coordinate, CoordinateType, Stop, StopCollection, StopPrimaryIndex};
