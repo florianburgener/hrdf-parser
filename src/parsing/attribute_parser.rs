@@ -36,7 +36,7 @@ pub fn parse() -> Result<AttributeData, Box<dyn Error>> {
         ]),
         // This row is ignored. TODO : should i take care of this row?, e.g. # 1  1  1
         RowDefinition::new(ROW_B, Box::new(FastRowMatcher::new(1, 1, "#", true)), Vec::new()),
-        // This row indicates the language of the description.
+        // This row indicates the language for translations in the section that follows it.
         RowDefinition::new(ROW_C, Box::new(FastRowMatcher::new(1, 1, "<", true)), vec![
             ColumnDefinition::new(1, -1, ExpectedType::String), // This column has not been explicitly defined in the standard.
         ]),

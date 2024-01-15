@@ -675,3 +675,104 @@ impl TransportCompany {
         &self.administrations
     }
 }
+
+// ------------------------------------------------------------------------------------------------
+// --- TransportType
+// ------------------------------------------------------------------------------------------------
+
+#[derive(Debug)]
+pub struct TransportType {
+    id: String,
+    product_class_id: i16,
+    tarrif_group: String,
+    output_control: i16,
+    short_name: String,
+    surchage: i16,
+    flag: String,
+    product_class_name: RefCell<HashMap<String, String>>,
+    long_name: RefCell<HashMap<String, String>>, // TODO : option10, option11, option12, ...
+}
+
+pub type TransportTypeCollection = Vec<Rc<TransportType>>;
+pub type TransportTypePrimaryIndex = HashMap<String, Rc<TransportType>>;
+
+#[allow(unused)]
+impl TransportType {
+    pub fn new(
+        id: String,
+        product_class_id: i16,
+        tarrif_group: String,
+        output_control: i16,
+        short_name: String,
+        surchage: i16,
+        flag: String,
+    ) -> Self {
+        Self {
+            id,
+            product_class_id,
+            tarrif_group,
+            output_control,
+            short_name,
+            surchage,
+            flag,
+            product_class_name: RefCell::new(HashMap::new()),
+            long_name: RefCell::new(HashMap::new()),
+        }
+    }
+
+    pub fn id(&self) -> &str {
+        &self.id
+    }
+
+    pub fn product_class_id(&self) -> i16 {
+        self.product_class_id
+    }
+
+    pub fn tarrif_group(&self) -> &str {
+        &self.tarrif_group
+    }
+
+    pub fn output_control(&self) -> i16 {
+        self.output_control
+    }
+
+    pub fn short_name(&self) -> &str {
+        &self.short_name
+    }
+
+    pub fn surchage(&self) -> i16 {
+        self.surchage
+    }
+
+    pub fn flag(&self) -> &str {
+        &self.flag
+    }
+
+    pub fn product_class_name(&self, language: Language) -> String {
+        self.product_class_name
+            .borrow()
+            .get(&language.to_string())
+            .cloned()
+            .unwrap()
+    }
+
+    pub fn set_product_class_name(&self, language: Language, value: &str) {
+        self.product_class_name
+            .borrow_mut()
+            .insert(language.to_string(), value.to_string());
+    }
+
+    pub fn long_name(&self, language: Language) -> String {
+        self.long_name
+            .borrow()
+            .get(&language.to_string())
+            .cloned()
+            .unwrap()
+    }
+
+    pub fn set_long_name(&self, language: Language, value: &str) {
+        self.long_name
+            .borrow_mut()
+            .insert(language.to_string(), value.to_string());
+    }
+}

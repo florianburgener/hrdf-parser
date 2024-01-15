@@ -8,6 +8,7 @@ mod stop_parser;
 mod through_service_parser;
 mod timetable_key_data_parser;
 mod transport_company_parser;
+mod transport_type_parser;
 
 pub use attribute_parser::parse as load_attribute_data;
 pub use bit_field_parser::parse as load_bit_field_data;
@@ -19,6 +20,7 @@ pub use stop_parser::parse as load_stop_data;
 pub use through_service_parser::parse as load_through_service_data;
 pub use timetable_key_data_parser::parse as load_timetable_key_data;
 pub use transport_company_parser::parse as load_transport_company_data;
+pub use transport_type_parser::parse as load_transport_type_data;
 
 use std::{
     error::Error,

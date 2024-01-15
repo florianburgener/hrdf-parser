@@ -1,4 +1,4 @@
-Progression (27/38) :
+Progression (28/38) :
 * ATTRIBUT
 * ATTRIBUT_DE
 * ATTRIBUT_EN
@@ -26,6 +26,7 @@ Progression (27/38) :
 * INFOTEXT_IT
 * KMINFO
 * RICHTUNG
+* ZUGART
 
 TODO :
 

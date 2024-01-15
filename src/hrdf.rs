@@ -5,7 +5,7 @@ use crate::{
     parsing,
     storage::{
         AttributeData, BitFieldData, DirectionData, HolidayData, InformationTextData,
-        JourneyPlatformData, PlatformData, StopData, ThroughServiceData, TransportCompanyData,
+        JourneyPlatformData, PlatformData, StopData, ThroughServiceData, TransportCompanyData, TransportTypeData,
     },
 };
 
@@ -23,6 +23,7 @@ pub struct Hrdf {
     through_service_data: ThroughServiceData,
     timetable_key_data: TimetableKeyData,
     transport_company_data: TransportCompanyData,
+    transport_type_data: TransportTypeData,
 }
 
 #[allow(unused)]
@@ -38,6 +39,7 @@ impl Hrdf {
         let through_service_data = parsing::load_through_service_data()?;
         let timetable_key_data = parsing::load_timetable_key_data()?;
         let transport_company_data = parsing::load_transport_company_data()?;
+        let transport_type_data = parsing::load_transport_type_data()?;
 
         let instance = Rc::new(Self {
             attribute_data,
@@ -51,6 +53,7 @@ impl Hrdf {
             through_service_data,
             timetable_key_data,
             transport_company_data,
+            transport_type_data,
         });
 
         // Self::set_parent_references(&instance);
