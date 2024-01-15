@@ -101,6 +101,36 @@ impl BitField {
 }
 
 // ------------------------------------------------------------------------------------------------
+// --- Color
+// ------------------------------------------------------------------------------------------------
+
+#[derive(Debug, Default)]
+pub struct Color {
+    r: i16,
+    g: i16,
+    b: i16,
+}
+
+#[allow(unused)]
+impl Color {
+    pub fn new(r: i16, g: i16, b: i16) -> Self {
+        Self { r, g, b }
+    }
+
+    pub fn r(&self) -> i16 {
+        self.r
+    }
+
+    pub fn g(&self) -> i16 {
+        self.g
+    }
+
+    pub fn b(&self) -> i16 {
+        self.b
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
 // --- Coordinate
 // ------------------------------------------------------------------------------------------------
 
@@ -328,10 +358,65 @@ impl JourneyPlatform {
 }
 
 // ------------------------------------------------------------------------------------------------
+// --- Line
+// ------------------------------------------------------------------------------------------------
+
+#[derive(Debug)]
+pub struct Line {
+    id: i32,
+    name: String,
+    short_name: RefCell<String>,
+    text_color: RefCell<Color>,
+    background_color: RefCell<Color>,
+}
+
+pub type LineCollection = Vec<Rc<Line>>;
+pub type LinePrimaryIndex = HashMap<i32, Rc<Line>>;
+
+#[allow(unused)]
+impl Line {
+    pub fn new(id: i32, name: String) -> Self {
+        Self {id, name, short_name: RefCell::new(String::new()), text_color: RefCell::new(Color::default()), background_color: RefCell::new(Color::default())}
+    }
+
+    pub fn id(&self) -> i32 {
+        self.id
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn short_name(&self) -> Ref<'_, String> {
+        self.short_name.borrow()
+    }
+
+    pub fn set_short_name(&self, value: String) {
+        *self.short_name.borrow_mut() = value;
+    }
+
+    pub fn text_color(&self) -> Ref<'_, Color> {
+        self.text_color.borrow()
+    }
+
+    pub fn set_text_color(&self, value: Color) {
+        *self.text_color.borrow_mut() = value;
+    }
+
+    pub fn background_color(&self) -> Ref<'_, Color> {
+        self.background_color.borrow()
+    }
+
+    pub fn set_background_color(&self, value: Color) {
+        *self.background_color.borrow_mut() = value;
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
 // --- Platform
 // ------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Platform {
     id: i64, // Haltestellennummer << 32 + "Index der Gleistextinformation"
     code: String,

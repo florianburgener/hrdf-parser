@@ -34,6 +34,7 @@ impl Hrdf {
         let direction_data = parsing::load_direcation_data()?;
         let holiday_data = parsing::load_holiday_data()?;
         let information_text_data = parsing::load_information_text_data()?;
+        let line_data = parsing::load_line_data()?;
         let (journey_platform_data, platform_data) = parsing::load_platform_data()?;
         let stop_data = parsing::load_stop_data()?;
         let through_service_data = parsing::load_through_service_data()?;

@@ -24,7 +24,7 @@ pub fn parse() -> Result<TransportTypeData, Box<dyn Error>> {
 
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
-        // This row is used to create an Attribute instance.
+        // This row is used to create a TransportType instance.
         RowDefinition::new(ROW_A, Box::new(
             AdvancedRowMatcher::new("^.{3} [ 0-9]{2}")?
         ), vec![

@@ -4,7 +4,7 @@ use crate::models::{
     InformationTextPrimaryIndex, JourneyPlatformCollection, JourneyPlatformPrimaryIndex,
     PlatformCollection, PlatformPrimaryIndex, StopCollection, StopPrimaryIndex,
     ThroughServiceCollection, TransportCompanyCollection, TransportCompanyPrimaryIndex,
-    TransportTypeCollection, TransportTypePrimaryIndex,
+    TransportTypeCollection, TransportTypePrimaryIndex, LineCollection, LinePrimaryIndex,
 };
 
 // ------------------------------------------------------------------------------------------------
@@ -176,6 +176,34 @@ impl JourneyPlatformData {
     }
 
     pub fn primary_index(&self) -> &JourneyPlatformPrimaryIndex {
+        &self.primary_index
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
+// --- LineData
+// ------------------------------------------------------------------------------------------------
+
+#[derive(Debug)]
+pub struct LineData {
+    rows: LineCollection,
+    primary_index: LinePrimaryIndex,
+}
+
+#[allow(unused)]
+impl LineData {
+    pub fn new(rows: LineCollection, primary_index: LinePrimaryIndex) -> Self {
+        Self {
+            rows,
+            primary_index,
+        }
+    }
+
+    pub fn rows(&self) -> &LineCollection {
+        &self.rows
+    }
+
+    pub fn primary_index(&self) -> &LinePrimaryIndex {
         &self.primary_index
     }
 }
