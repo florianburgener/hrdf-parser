@@ -10,6 +10,7 @@ use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{
     models::{Coordinate, CoordinateType, Stop, StopCollection, StopPrimaryIndex},
+    parsing::{AdvancedRowMatcher, FastRowMatcher},
     storage::StopData,
 };
 
@@ -44,6 +45,8 @@ pub fn parse() -> Result<StopData, Box<dyn Error>> {
     load_changing_flags(&primary_index)?;
     println!("Parsing UMSTEIGB...");
     load_changing_times(&primary_index)?;
+    println!("Parsing METABHF 2/2...");
+    load_connections(&primary_index)?;
 
     Ok(StopData::new(rows, primary_index))
 }
@@ -134,6 +137,34 @@ fn load_changing_times(primary_index: &StopPrimaryIndex) -> Result<(), Box<dyn E
     Ok(())
 }
 
+fn load_connections(primary_index: &StopPrimaryIndex) -> Result<(), Box<dyn Error>> {
+    const ROW_A: i32 = 1;
+    const ROW_B: i32 = 2;
+    const ROW_C: i32 = 3;
+
+    #[rustfmt::skip]
+    let row_parser = RowParser::new(vec![
+        // This row is ignored.
+        RowDefinition::new(ROW_A, Box::new(AdvancedRowMatcher::new("[0-9]{7} [0-9]{7} [0-9]{3}")?), Vec::new()),
+        // This row is ignored.
+        RowDefinition::new(ROW_B, Box::new(FastRowMatcher::new(1, 1, "*", true)), Vec::new()),
+        // This row is ignored.
+        RowDefinition::new(ROW_C, Box::new(FastRowMatcher::new(8, 1, ":", true)), vec![
+            ColumnDefinition::new(1, 7, ExpectedType::Integer32),
+            ColumnDefinition::new(11, -1, ExpectedType::String),
+        ]),
+    ]);
+    let file_parser = FileParser::new("data/METABHF", row_parser)?;
+
+    file_parser.parse().for_each(|(id, _, values)| match id {
+        ROW_A | ROW_B => return,
+        ROW_C => set_connections(values, primary_index),
+        _ => unreachable!(),
+    });
+
+    Ok(())
+}
+
 // ------------------------------------------------------------------------------------------------
 // --- Indexes Creation
 // ------------------------------------------------------------------------------------------------
@@ -216,6 +247,15 @@ fn set_changing_time(mut values: Vec<ParsedValue>, primary_index: &StopPrimaryIn
     }
 }
 
+fn set_connections(mut values: Vec<ParsedValue>, primary_index: &StopPrimaryIndex) {
+    let stop_id: i32 = values.remove(0).into();
+    let connections: String = values.remove(0).into();
+    let connections = parse_connections(connections);
+
+    let stop = primary_index.get(&stop_id).unwrap();
+    stop.set_connections(connections);
+}
+
 // ------------------------------------------------------------------------------------------------
 // --- Helper Functions
 // ------------------------------------------------------------------------------------------------
@@ -244,4 +284,11 @@ fn parse_name(raw_name: String) -> (String, Option<String>, Option<String>, Opti
     let synonyms = data.get(&4).cloned();
 
     (name, long_name, abbreviation, synonyms)
+}
+
+fn parse_connections(raw_connections: String) -> Vec<i32> {
+    raw_connections
+        .split_whitespace()
+        .filter_map(|s| s.parse().ok())
+        .collect()
 }

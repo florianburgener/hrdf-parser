@@ -5,7 +5,8 @@ use crate::{
     parsing,
     storage::{
         AttributeData, BitFieldData, DirectionData, HolidayData, InformationTextData,
-        JourneyPlatformData, PlatformData, StopData, ThroughServiceData, TransportCompanyData, TransportTypeData,
+        JourneyPlatformData, PlatformData, StopData, ThroughServiceData, TransportCompanyData,
+        TransportTypeData, StopConnectionData,
     },
 };
 
@@ -19,6 +20,7 @@ pub struct Hrdf {
     information_text_data: InformationTextData,
     journey_platform_data: JourneyPlatformData,
     platform_data: PlatformData,
+    stop_connection_data: StopConnectionData,
     stop_data: StopData,
     through_service_data: ThroughServiceData,
     timetable_key_data: TimetableKeyData,
@@ -36,6 +38,7 @@ impl Hrdf {
         let information_text_data = parsing::load_information_text_data()?;
         let line_data = parsing::load_line_data()?;
         let (journey_platform_data, platform_data) = parsing::load_platform_data()?;
+        let stop_connection_data = parsing::load_stop_connection_data()?;
         let stop_data = parsing::load_stop_data()?;
         let through_service_data = parsing::load_through_service_data()?;
         let timetable_key_data = parsing::load_timetable_key_data()?;
@@ -50,6 +53,7 @@ impl Hrdf {
             information_text_data,
             journey_platform_data,
             platform_data,
+            stop_connection_data,
             stop_data,
             through_service_data,
             timetable_key_data,

@@ -376,7 +376,13 @@ pub type LinePrimaryIndex = HashMap<i32, Rc<Line>>;
 #[allow(unused)]
 impl Line {
     pub fn new(id: i32, name: String) -> Self {
-        Self {id, name, short_name: RefCell::new(String::new()), text_color: RefCell::new(Color::default()), background_color: RefCell::new(Color::default())}
+        Self {
+            id,
+            name,
+            short_name: RefCell::new(String::new()),
+            text_color: RefCell::new(Color::default()),
+            background_color: RefCell::new(Color::default()),
+        }
     }
 
     pub fn id(&self) -> i32 {
@@ -500,6 +506,7 @@ pub struct Stop {
     changing_flag: RefCell<Option<i16>>,
     changing_time_inter_city: RefCell<i16>,
     changing_time_other: RefCell<i16>,
+    connections: RefCell<Vec<i32>>,
 }
 
 pub type StopCollection = Vec<Rc<Stop>>;
@@ -526,6 +533,7 @@ impl Stop {
             changing_flag: RefCell::new(None),
             changing_time_inter_city: RefCell::new(0),
             changing_time_other: RefCell::new(0),
+            connections: RefCell::new(Vec::new())
         }
     }
 
@@ -595,6 +603,61 @@ impl Stop {
 
     pub fn set_changing_time_other(&self, value: i16) {
         *self.changing_time_other.borrow_mut() = value;
+    }
+
+    pub fn connections(&self) -> Ref<'_, Vec<i32>> {
+        self.connections.borrow()
+    }
+
+    pub fn set_connections(&self, value: Vec<i32>) {
+        *self.connections.borrow_mut() = value;
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
+// --- StopConnection
+// ------------------------------------------------------------------------------------------------
+
+#[derive(Debug)]
+pub struct StopConnection {
+    stop_id_1: i32,
+    stop_id_2: i32,
+    duration: i16, // Transfer time from stop 1 to stop 2 is in minutes.
+    attributes: RefCell<Vec<String>>,
+}
+
+pub type StopConnectionCollection = Vec<Rc<StopConnection>>;
+// TODO : primary index
+
+#[allow(unused)]
+impl StopConnection {
+    pub fn new(stop_id_1: i32, stop_id_2: i32, duration: i16) -> Self {
+        Self {
+            stop_id_1,
+            stop_id_2,
+            duration,
+            attributes: RefCell::new(Vec::new()),
+        }
+    }
+
+    pub fn stop_id_1(&self) -> i32 {
+        self.stop_id_1
+    }
+
+    pub fn stop_id_2(&self) -> i32 {
+        self.stop_id_2
+    }
+
+    pub fn duration(&self) -> i16 {
+        self.duration
+    }
+
+    pub fn attributes(&self) -> Ref<'_, Vec<String>> {
+        self.attributes.borrow()
+    }
+
+    pub fn add_attribute(&self, value: String) {
+        self.attributes.borrow_mut().push(value);
     }
 }
 
