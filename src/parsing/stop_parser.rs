@@ -1,4 +1,4 @@
-// 5 file(s).
+// 6.5 file(s).
 // File(s) read by the parser:
 // BAHNHOF => Format matches the standard.
 // BFKOORD_LV95 => Format matches the standard.
@@ -6,6 +6,7 @@
 // BFPRIOS => Format matches the standard.
 // KMINFO =>
 // UMSTEIGB =>
+// METABHF =>
 use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{
