@@ -498,6 +498,8 @@ pub struct Stop {
     wgs84_coordinate: RefCell<Option<Coordinate>>,
     changing_priority: RefCell<i16>,
     changing_flag: RefCell<Option<i16>>,
+    changing_time_inter_city: RefCell<i16>,
+    changing_time_other: RefCell<i16>,
 }
 
 pub type StopCollection = Vec<Rc<Stop>>;
@@ -522,6 +524,8 @@ impl Stop {
             wgs84_coordinate: RefCell::new(None),
             changing_priority: RefCell::new(8), // 8 is the default priority.
             changing_flag: RefCell::new(None),
+            changing_time_inter_city: RefCell::new(0),
+            changing_time_other: RefCell::new(0),
         }
     }
 
@@ -575,6 +579,22 @@ impl Stop {
 
     pub fn set_changing_flag(&self, value: i16) {
         *self.changing_flag.borrow_mut() = Some(value);
+    }
+
+    pub fn changing_time_inter_city(&self) -> i16 {
+        *self.changing_time_inter_city.borrow()
+    }
+
+    pub fn set_changing_time_inter_city(&self, value: i16) {
+        *self.changing_time_inter_city.borrow_mut() = value;
+    }
+
+    pub fn changing_time_other(&self) -> i16 {
+        *self.changing_time_other.borrow()
+    }
+
+    pub fn set_changing_time_other(&self, value: i16) {
+        *self.changing_time_other.borrow_mut() = value;
     }
 }
 

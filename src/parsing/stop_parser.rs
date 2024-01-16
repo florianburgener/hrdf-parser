@@ -5,6 +5,7 @@
 // BFKOORD_WGS => Format matches the standard.
 // BFPRIOS => Format matches the standard.
 // KMINFO =>
+// UMSTEIGB =>
 use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{
@@ -41,6 +42,8 @@ pub fn parse() -> Result<StopData, Box<dyn Error>> {
     load_changing_priorities(&primary_index)?;
     println!("Parsing KMINFO...");
     load_changing_flags(&primary_index)?;
+    println!("Parsing UMSTEIGB...");
+    load_changing_times(&primary_index)?;
 
     Ok(StopData::new(rows, primary_index))
 }
@@ -111,6 +114,26 @@ fn load_changing_flags(primary_index: &StopPrimaryIndex) -> Result<(), Box<dyn E
     Ok(())
 }
 
+fn load_changing_times(primary_index: &StopPrimaryIndex) -> Result<(), Box<dyn Error>> {
+    #[rustfmt::skip]
+    let row_parser = RowParser::new(vec![
+        // This row contains the changing time.
+        RowDefinition::from(vec![
+            ColumnDefinition::new(1, 7, ExpectedType::Integer32),
+            ColumnDefinition::new(9, 10, ExpectedType::Integer16),
+            ColumnDefinition::new(12, 13, ExpectedType::Integer16),
+        ]),
+    ]);
+    let file_path = "data/UMSTEIGB";
+    let file_parser = FileParser::new(&file_path, row_parser)?;
+
+    file_parser
+        .parse()
+        .for_each(|(_, _, values)| set_changing_time(values, primary_index));
+
+    Ok(())
+}
+
 // ------------------------------------------------------------------------------------------------
 // --- Indexes Creation
 // ------------------------------------------------------------------------------------------------
@@ -173,6 +196,24 @@ fn set_changing_flag(mut values: Vec<ParsedValue>, primary_index: &StopPrimaryIn
 
     let stop = primary_index.get(&stop_id).unwrap();
     stop.set_changing_flag(changing_flag);
+}
+
+fn set_changing_time(mut values: Vec<ParsedValue>, primary_index: &StopPrimaryIndex) {
+    let stop_id: i32 = values.remove(0).into();
+    let changing_time_inter_city: i16 = values.remove(0).into();
+    let changing_time_other: i16 = values.remove(0).into();
+
+    if stop_id == 9999999 {
+        // The first row of the file has the stop ID number 9999999. It contains the default values for all stops.
+        for (_, stop) in primary_index.iter() {
+            stop.set_changing_time_inter_city(changing_time_inter_city);
+            stop.set_changing_time_other(changing_time_other);
+        }
+    } else {
+        let stop = primary_index.get(&stop_id).unwrap();
+        stop.set_changing_time_inter_city(changing_time_inter_city);
+        stop.set_changing_time_other(changing_time_other);
+    }
 }
 
 // ------------------------------------------------------------------------------------------------
