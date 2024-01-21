@@ -6,7 +6,7 @@ use crate::{
     storage::{
         AttributeData, BitFieldData, DirectionData, HolidayData, InformationTextData,
         JourneyPlatformData, PlatformData, StopData, ThroughServiceData, TransportCompanyData,
-        TransportTypeData, StopConnectionData,
+        TransportTypeData, StopConnectionData, TimeDifferenceData,
     },
 };
 
@@ -23,6 +23,7 @@ pub struct Hrdf {
     stop_connection_data: StopConnectionData,
     stop_data: StopData,
     through_service_data: ThroughServiceData,
+    time_difference_data: TimeDifferenceData,
     timetable_key_data: TimetableKeyData,
     transport_company_data: TransportCompanyData,
     transport_type_data: TransportTypeData,
@@ -31,6 +32,8 @@ pub struct Hrdf {
 #[allow(unused)]
 impl Hrdf {
     pub fn new() -> Result<Rc<Self>, Box<dyn Error>> {
+        let time_difference_data = parsing::load_time_difference_data()?;
+
         let attribute_data = parsing::load_attribute_data()?;
         let bit_field_data = parsing::load_bit_field_data()?;
         let direction_data = parsing::load_direcation_data()?;
@@ -56,6 +59,7 @@ impl Hrdf {
             stop_connection_data,
             stop_data,
             through_service_data,
+            time_difference_data,
             timetable_key_data,
             transport_company_data,
             transport_type_data,

@@ -1,4 +1,4 @@
-Progression (31/38) :
+Progression (32/38) :
 * ATTRIBUT
 * ATTRIBUT_DE
 * ATTRIBUT_EN
@@ -30,6 +30,7 @@ Progression (31/38) :
 * RICHTUNG
 * UMSTEIGB
 * ZUGART
+* ZEITVS
 
 TODO :
 

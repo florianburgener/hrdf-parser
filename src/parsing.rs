@@ -8,6 +8,7 @@ mod platform_parser;
 mod stop_connection_parser;
 mod stop_parser;
 mod through_service_parser;
+mod time_difference_parser;
 mod timetable_key_data_parser;
 mod transport_company_parser;
 mod transport_type_parser;
@@ -22,6 +23,7 @@ pub use platform_parser::parse as load_platform_data;
 pub use stop_connection_parser::parse as load_stop_connection_data;
 pub use stop_parser::parse as load_stop_data;
 pub use through_service_parser::parse as load_through_service_data;
+pub use time_difference_parser::parse as load_time_difference_data;
 pub use timetable_key_data_parser::parse as load_timetable_key_data;
 pub use transport_company_parser::parse as load_transport_company_data;
 pub use transport_type_parser::parse as load_transport_type_data;
@@ -135,6 +137,10 @@ impl FastRowMatcher {
             value: value.to_string(),
             should_equal_value,
         }
+    }
+
+    pub fn any() -> Self {
+        Self::new(1, 0, "", true)
     }
 }
 

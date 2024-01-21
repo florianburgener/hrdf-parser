@@ -4,7 +4,7 @@ use crate::models::{
     InformationTextPrimaryIndex, JourneyPlatformCollection, JourneyPlatformPrimaryIndex,
     PlatformCollection, PlatformPrimaryIndex, StopCollection, StopPrimaryIndex,
     ThroughServiceCollection, TransportCompanyCollection, TransportCompanyPrimaryIndex,
-    TransportTypeCollection, TransportTypePrimaryIndex, LineCollection, LinePrimaryIndex, StopConnectionCollection,
+    TransportTypeCollection, TransportTypePrimaryIndex, LineCollection, LinePrimaryIndex, StopConnectionCollection, TimeDifferenceCollection,
 };
 
 // ------------------------------------------------------------------------------------------------
@@ -282,6 +282,28 @@ impl StopConnectionData {
     }
 
     pub fn rows(&self) -> &StopConnectionCollection {
+        &self.rows
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
+// --- TimeDifferenceData
+// ------------------------------------------------------------------------------------------------
+
+#[derive(Debug)]
+pub struct TimeDifferenceData {
+    rows: TimeDifferenceCollection,
+}
+
+#[allow(unused)]
+impl TimeDifferenceData {
+    pub fn new(rows: TimeDifferenceCollection) -> Self {
+        Self {
+            rows,
+        }
+    }
+
+    pub fn rows(&self) -> &TimeDifferenceCollection {
         &self.rows
     }
 }

@@ -4,7 +4,7 @@ use std::{
     rc::Rc,
 };
 
-use chrono::NaiveDate;
+use chrono::{NaiveDate, NaiveDateTime};
 use strum_macros::{self, Display, EnumString};
 
 // ------------------------------------------------------------------------------------------------
@@ -533,7 +533,7 @@ impl Stop {
             changing_flag: RefCell::new(None),
             changing_time_inter_city: RefCell::new(0),
             changing_time_other: RefCell::new(0),
-            connections: RefCell::new(Vec::new())
+            connections: RefCell::new(Vec::new()),
         }
     }
 
@@ -659,6 +659,52 @@ impl StopConnection {
     pub fn add_attribute(&self, value: String) {
         self.attributes.borrow_mut().push(value);
     }
+}
+
+// ------------------------------------------------------------------------------------------------
+// --- TimeDifference
+// ------------------------------------------------------------------------------------------------
+
+#[allow(unused)] // TODO
+#[derive(Debug)]
+pub struct TimeDifference {
+    stop_id: i32,
+    time_zone: i32,
+    time_zone_summer_1: Option<i32>,
+    start_date_1: Option<NaiveDateTime>,
+    end_date_1: Option<NaiveDateTime>,
+    time_zone_summer_2: Option<i32>,
+    start_date_2: Option<NaiveDateTime>,
+    end_date_2: Option<NaiveDateTime>,
+}
+
+pub type TimeDifferenceCollection = Vec<Rc<TimeDifference>>;
+
+#[allow(unused)]
+impl TimeDifference {
+    pub fn new(
+        stop_id: i32,
+        time_zone: i32,
+        time_zone_summer_1: Option<i32>,
+        start_date_1: Option<NaiveDateTime>,
+        end_date_1: Option<NaiveDateTime>,
+        time_zone_summer_2: Option<i32>,
+        start_date_2: Option<NaiveDateTime>,
+        end_date_2: Option<NaiveDateTime>,
+    ) -> Self {
+        Self {
+            stop_id,
+            time_zone,
+            time_zone_summer_1,
+            start_date_1,
+            end_date_1,
+            time_zone_summer_2,
+            start_date_2,
+            end_date_2,
+        }
+    }
+
+    // TODO
 }
 
 // ------------------------------------------------------------------------------------------------
