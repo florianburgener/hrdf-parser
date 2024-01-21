@@ -1,4 +1,4 @@
-// 6.5 file(s).
+// 8.5 file(s).
 // File(s) read by the parser:
 // BAHNHOF => Format matches the standard.
 // BFKOORD_LV95 => Format matches the standard.
