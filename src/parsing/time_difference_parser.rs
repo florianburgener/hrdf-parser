@@ -48,9 +48,6 @@ pub fn parse() -> Result<TimeDifferenceData, Box<dyn Error>> {
             ColumnDefinition::new(1, 7, ExpectedType::Integer32),
             ColumnDefinition::new(9, 13, ExpectedType::Integer32),
         ]),
-        // This row is ignored.
-        RowDefinition::new(ROW_D, Box::new(FastRowMatcher::any()), Vec::new()),
-        // TODO : Fix the problem of excess space at the end of the file.
     ]);
     let file_parser = FileParser::new("data/ZEITVS", row_parser)?;
 
@@ -64,8 +61,6 @@ pub fn parse() -> Result<TimeDifferenceData, Box<dyn Error>> {
             _ => unreachable!(),
         }
     }
-
-    println!("{:?}", rows[0]);
 
     Ok(TimeDifferenceData::new(rows))
 }

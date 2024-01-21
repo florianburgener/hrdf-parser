@@ -32,7 +32,7 @@ pub struct Hrdf {
 #[allow(unused)]
 impl Hrdf {
     pub fn new() -> Result<Rc<Self>, Box<dyn Error>> {
-        let time_difference_data = parsing::load_time_difference_data()?;
+        parsing::load_stop_data()?;
 
         let attribute_data = parsing::load_attribute_data()?;
         let bit_field_data = parsing::load_bit_field_data()?;
@@ -44,6 +44,7 @@ impl Hrdf {
         let stop_connection_data = parsing::load_stop_connection_data()?;
         let stop_data = parsing::load_stop_data()?;
         let through_service_data = parsing::load_through_service_data()?;
+        let time_difference_data = parsing::load_time_difference_data()?;
         let timetable_key_data = parsing::load_timetable_key_data()?;
         let transport_company_data = parsing::load_transport_company_data()?;
         let transport_type_data = parsing::load_transport_type_data()?;

@@ -507,6 +507,9 @@ pub struct Stop {
     changing_time_inter_city: RefCell<i16>,
     changing_time_other: RefCell<i16>,
     connections: RefCell<Vec<i32>>,
+    restrictions: RefCell<i16>,
+    sloid: RefCell<String>,
+    boarding_areas: RefCell<Vec<String>>,
 }
 
 pub type StopCollection = Vec<Rc<Stop>>;
@@ -534,6 +537,9 @@ impl Stop {
             changing_time_inter_city: RefCell::new(0),
             changing_time_other: RefCell::new(0),
             connections: RefCell::new(Vec::new()),
+            restrictions: RefCell::new(0),
+            sloid: RefCell::new(String::new()),
+            boarding_areas: RefCell::new(Vec::new()),
         }
     }
 
@@ -611,6 +617,30 @@ impl Stop {
 
     pub fn set_connections(&self, value: Vec<i32>) {
         *self.connections.borrow_mut() = value;
+    }
+
+    pub fn restrictions(&self) -> Ref<'_, i16> {
+        self.restrictions.borrow()
+    }
+
+    pub fn set_restrictions(&self, value: i16) {
+        *self.restrictions.borrow_mut() = value;
+    }
+
+    pub fn sloid(&self) -> Ref<'_, String> {
+        self.sloid.borrow()
+    }
+
+    pub fn set_sloid(&self, value: String) {
+        *self.sloid.borrow_mut() = value;
+    }
+
+    pub fn boarding_areas(&self) -> Ref<'_, Vec<String>> {
+        self.boarding_areas.borrow()
+    }
+
+    pub fn add_boarding_area(&self, value: String) {
+        self.boarding_areas.borrow_mut().push(value);
     }
 }
 

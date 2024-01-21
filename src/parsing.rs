@@ -138,10 +138,6 @@ impl FastRowMatcher {
             should_equal_value,
         }
     }
-
-    pub fn any() -> Self {
-        Self::new(1, 0, "", true)
-    }
 }
 
 impl RowMatcher for FastRowMatcher {
@@ -351,6 +347,10 @@ impl Iterator for ParsedRowIterator<'_> {
     type Item = ParsedRow;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.rows_iter.next().map(|row| self.row_parser.parse(row))
+        self.rows_iter
+            .by_ref()
+            .skip_while(|row| row.trim().is_empty())
+            .next()
+            .map(|row| self.row_parser.parse(row))
     }
 }

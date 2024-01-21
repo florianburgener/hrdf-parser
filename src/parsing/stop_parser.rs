@@ -7,6 +7,10 @@
 // KMINFO =>
 // UMSTEIGB =>
 // METABHF =>
+// BHFART_60 =>
+// ---
+// Files not used by the parser:
+// BHFART
 use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{
@@ -48,6 +52,8 @@ pub fn parse() -> Result<StopData, Box<dyn Error>> {
     load_changing_times(&primary_index)?;
     println!("Parsing METABHF 2/2...");
     load_connections(&primary_index)?;
+    println!("Parsing BHFART_60...");
+    load_descriptions(&primary_index)?;
 
     Ok(StopData::new(rows, primary_index))
 }
@@ -149,7 +155,7 @@ fn load_connections(primary_index: &StopPrimaryIndex) -> Result<(), Box<dyn Erro
         RowDefinition::new(ROW_A, Box::new(AdvancedRowMatcher::new("[0-9]{7} [0-9]{7} [0-9]{3}")?), Vec::new()),
         // This row is ignored.
         RowDefinition::new(ROW_B, Box::new(FastRowMatcher::new(1, 1, "*", true)), Vec::new()),
-        // This row is ignored.
+        //
         RowDefinition::new(ROW_C, Box::new(FastRowMatcher::new(8, 1, ":", true)), vec![
             ColumnDefinition::new(1, 7, ExpectedType::Integer32),
             ColumnDefinition::new(11, -1, ExpectedType::String),
@@ -160,6 +166,45 @@ fn load_connections(primary_index: &StopPrimaryIndex) -> Result<(), Box<dyn Erro
     file_parser.parse().for_each(|(id, _, values)| match id {
         ROW_A | ROW_B => return,
         ROW_C => set_connections(values, primary_index),
+        _ => unreachable!(),
+    });
+
+    Ok(())
+}
+
+fn load_descriptions(primary_index: &StopPrimaryIndex) -> Result<(), Box<dyn Error>> {
+    const ROW_A: i32 = 1;
+    const ROW_B: i32 = 2;
+    const ROW_C: i32 = 3;
+    const ROW_D: i32 = 4;
+
+    #[rustfmt::skip]
+    let row_parser = RowParser::new(vec![
+        // This row is ignored.
+        RowDefinition::new(ROW_A, Box::new(FastRowMatcher::new(1, 1, "%", true)), Vec::new()),
+        // Restrictions.
+        RowDefinition::new(ROW_B, Box::new(FastRowMatcher::new(9, 1, "B", true)), vec![
+            ColumnDefinition::new(1, 7, ExpectedType::Integer32),
+            ColumnDefinition::new(11, 12, ExpectedType::Integer16),
+        ]),
+        // SLOID.
+        RowDefinition::new(ROW_C, Box::new(FastRowMatcher::new(11, 1, "A", true)), vec![
+            ColumnDefinition::new(1, 7, ExpectedType::Integer32),
+            ColumnDefinition::new(13, -1, ExpectedType::String),
+        ]),
+        // Boarding areas.
+        RowDefinition::new(ROW_D, Box::new(FastRowMatcher::new(11, 1, "a", true)), vec![
+            ColumnDefinition::new(1, 7, ExpectedType::Integer32),
+            ColumnDefinition::new(13, -1, ExpectedType::String),
+        ]),
+    ]);
+    let file_parser = FileParser::new("data/BHFART_60", row_parser)?;
+
+    file_parser.parse().for_each(|(id, _, values)| match id {
+        ROW_A => return,
+        ROW_B => set_restrictions(values, primary_index),
+        ROW_C => set_sloid(values, primary_index),
+        ROW_D => add_boarding_area(values, primary_index),
         _ => unreachable!(),
     });
 
@@ -256,6 +301,34 @@ fn set_connections(mut values: Vec<ParsedValue>, primary_index: &StopPrimaryInde
     let stop = primary_index.get(&stop_id).unwrap();
     stop.set_connections(connections);
 }
+
+// ---
+
+fn set_restrictions(mut values: Vec<ParsedValue>, primary_index: &StopPrimaryIndex) {
+    let stop_id: i32 = values.remove(0).into();
+    let restrictions: i16 = values.remove(0).into();
+
+    let stop = primary_index.get(&stop_id).unwrap();
+    stop.set_restrictions(restrictions);
+}
+
+fn set_sloid(mut values: Vec<ParsedValue>, primary_index: &StopPrimaryIndex) {
+    let stop_id: i32 = values.remove(0).into();
+    let sloid: String = values.remove(0).into();
+
+    let stop = primary_index.get(&stop_id).unwrap();
+    stop.set_sloid(sloid);
+}
+
+fn add_boarding_area(mut values: Vec<ParsedValue>, primary_index: &StopPrimaryIndex) {
+    let stop_id: i32 = values.remove(0).into();
+    let sloid: String = values.remove(0).into();
+
+    let stop = primary_index.get(&stop_id).unwrap();
+    stop.add_boarding_area(sloid);
+}
+
+// ---
 
 // ------------------------------------------------------------------------------------------------
 // --- Helper Functions

@@ -1,4 +1,4 @@
-Progression (32/38) :
+Progression (34/38) :
 * ATTRIBUT
 * ATTRIBUT_DE
 * ATTRIBUT_EN
@@ -12,6 +12,8 @@ Progression (32/38) :
 * BFKOORD_LV95
 * BFKOORD_WGS
 * BFPRIOS
+* BHFART
+* BHFART_60
 * BITFELD
 * DURCHBI
 * ECKDATEN
@@ -36,9 +38,4 @@ TODO :
 
 * thiserror
 * Chunk loading des fichiers
-* Normaliser les fichiers parsing/*_parser.rs
 * Changer TimetableKeyData vers key => value
-
-Next :
-LINIE
-ZUGART
