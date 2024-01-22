@@ -32,8 +32,6 @@ pub struct Hrdf {
 #[allow(unused)]
 impl Hrdf {
     pub fn new() -> Result<Rc<Self>, Box<dyn Error>> {
-        parsing::load_stop_data()?;
-
         let attribute_data = parsing::load_attribute_data()?;
         let bit_field_data = parsing::load_bit_field_data()?;
         let direction_data = parsing::load_direcation_data()?;

@@ -8,7 +8,8 @@ use crate::{
     parsing::{
         AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser,
         RowDefinition, RowParser,
-    }, storage::StopConnectionData,
+    },
+    storage::StopConnectionData,
 };
 
 use super::ParsedValue;
@@ -53,8 +54,6 @@ pub fn parse() -> Result<StopConnectionData, Box<dyn Error>> {
             ROW_C => return,
             _ => unreachable!(),
         });
-
-    println!("{:?}", rows[0]);
 
     Ok(StopConnectionData::new(rows))
 }
