@@ -1,6 +1,6 @@
 // 1 file(s).
 // File(s) read by the parser:
-// FEIERTAG => Format does not match the standard.
+// FEIERTAG
 use std::{collections::HashMap, error::Error, rc::Rc};
 
 use chrono::NaiveDate;

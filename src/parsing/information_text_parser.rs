@@ -1,9 +1,6 @@
 // 4 file(s).
 // File(s) read by the parser:
-// INFOTEXT_DE => Format matches the standard.
-// INFOTEXT_EN => Format matches the standard.
-// INFOTEXT_FR => Format matches the standard.
-// INFOTEXT_IT => Format matches the standard.
+// INFOTEXT_DE, INFOTEXT_EN, INFOTEXT_FR, INFOTEXT_IT
 use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{

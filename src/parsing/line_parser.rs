@@ -1,6 +1,6 @@
 // 1 file(s).
 // File(s) read by the parser:
-// LINIE => ???
+// LINIE
 use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{

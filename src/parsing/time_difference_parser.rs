@@ -1,6 +1,6 @@
 // 1 file(s).
 // File(s) read by the parser:
-// ZEITVS =>
+// ZEITVS
 use std::{error::Error, rc::Rc};
 
 use chrono::NaiveDateTime;

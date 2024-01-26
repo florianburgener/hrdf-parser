@@ -1,6 +1,6 @@
 // 1 file(s).
 // File(s) read by the parser:
-// BITFELD => Format does not match the standard (this is not explicitly stated in the SBB document).
+// BITFELD
 use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{

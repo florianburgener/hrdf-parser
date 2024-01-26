@@ -1,13 +1,6 @@
 // 8.5 file(s).
 // File(s) read by the parser:
-// BAHNHOF => Format matches the standard.
-// BFKOORD_LV95 => Format matches the standard.
-// BFKOORD_WGS => Format matches the standard.
-// BFPRIOS => Format matches the standard.
-// KMINFO =>
-// UMSTEIGB =>
-// METABHF =>
-// BHFART_60 =>
+// BAHNHOF, BFKOORD_LV95, BFKOORD_WGS, BFPRIOS, KMINFO, UMSTEIGB, METABHF, BHFART_60
 // ---
 // Files not used by the parser:
 // BHFART
@@ -101,6 +94,7 @@ fn load_changing_priorities(primary_index: &StopPrimaryIndex) -> Result<(), Box<
     file_parser
         .parse()
         .for_each(|(_, _, values)| set_changing_priority(values, primary_index));
+    // TODO : default value should be 8.
 
     Ok(())
 }

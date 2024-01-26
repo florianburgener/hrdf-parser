@@ -1,8 +1,6 @@
 // 3 file(s).
 // File(s) read by the parser:
-// GLEIS => Format matches the standard (this is questionable, as the file should be called GLEISE).
-// GLEIS_LV95 => Format does not match the standard (this is not explicitly stated in the SBB document).
-// GLEIS_WGS => Format does not match the standard (this is not explicitly stated in the SBB document).
+// GLEIS, GLEIS_LV95, GLEIS_WGS
 // ---
 // Note: this parser collects both the Platform and JourneyPlatform resources.
 use std::{collections::HashMap, error::Error, rc::Rc};
@@ -32,7 +30,7 @@ pub fn parse() -> Result<(JourneyPlatformData, PlatformData), Box<dyn Error>> {
             ColumnDefinition::new(1, 7, ExpectedType::Integer32),
             ColumnDefinition::new(9, 14, ExpectedType::Integer32),
             ColumnDefinition::new(16, 21, ExpectedType::String),
-            ColumnDefinition::new(24, 30, ExpectedType::Integer32),       // Should be 23-30, but here the # character is ignored.
+            ColumnDefinition::new(24, 30, ExpectedType::Integer32), // Should be 23-30, but here the # character is ignored.
             ColumnDefinition::new(32, 35, ExpectedType::OptionInteger16),
             ColumnDefinition::new(37, 42, ExpectedType::OptionInteger32),
         ]),

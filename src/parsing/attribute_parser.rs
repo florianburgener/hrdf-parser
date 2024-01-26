@@ -1,6 +1,6 @@
 // 5 file(s).
 // File(s) read by the parser:
-// ATTRIBUT => it's unclear whether the format matches the standard or not.
+// ATTRIBUT
 // ---
 // Files not used by the parser:
 // ATTRIBUT_DE, ATTRIBUT_EN, ATTRIBUT_FR, ATTRIBUT_IT

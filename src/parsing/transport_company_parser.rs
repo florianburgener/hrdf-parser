@@ -1,9 +1,6 @@
 // 4 file(s).
 // File(s) read by the parser:
-// BETRIEB_DE => Format matches the standard.
-// BETRIEB_EN => Format matches the standard.
-// BETRIEB_FR => Format matches the standard.
-// BETRIEB_IT => Format matches the standard.
+// BETRIEB_DE, BETRIEB_EN, BETRIEB_FR, BETRIEB_IT
 use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{

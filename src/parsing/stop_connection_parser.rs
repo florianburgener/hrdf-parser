@@ -1,6 +1,6 @@
 // 0.5 file(s).
 // File(s) read by the parser:
-// METABHF =>
+// METABHF
 use std::{error::Error, rc::Rc};
 
 use crate::{
@@ -29,7 +29,7 @@ pub fn parse() -> Result<StopConnectionData, Box<dyn Error>> {
             ColumnDefinition::new(17, 19, ExpectedType::Integer16),
         ]),
         //
-        RowDefinition::new(ROW_B, Box::new(FastRowMatcher::new(1, 1, "*", true)), vec![
+        RowDefinition::new(ROW_B, Box::new(FastRowMatcher::new(1, 2, "*A", true)), vec![
             ColumnDefinition::new(4, 5, ExpectedType::String),
         ]),
         // This row is ignored.

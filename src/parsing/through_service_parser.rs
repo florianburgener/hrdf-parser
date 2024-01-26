@@ -1,6 +1,6 @@
 // 1 file(s).
 // File(s) read by the parser:
-// DURCHBI => Format matches the standard.
+// DURCHBI
 use std::{error::Error, rc::Rc};
 
 use crate::{
