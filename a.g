@@ -1,43 +1,41 @@
 digraph {
     layout="dot"
-    overlap = false
+    overlap=false
     pad=0.5
-    splines = ortho
-    ranksep=1.5
-    nodesep=1;
+    splines=ortho
+    ranksep=2
+    nodesep=0.2
     rankdir=LR
 
     edge [penwidth=2]
-    node [fontsize=16, shape="box", height=0.8, width=2]
+    node [fontsize=22, shape="box", height=1, penwidth=1, width=3.7, margin=0]
 
-    ATTRIBUT [color="red"]
-    ATTRIBUT_DE [color="red"]
-    ATTRIBUT_EN [color="red"]
-    ATTRIBUT_FR [color="red"]
-    ATTRIBUT_IT [color="red"]
-    BAHNHOF [color="darkgreen"]
-    BETRIEB_DE [color="darkorchid"]
-    BETRIEB_EN [color="darkorchid"]
-    BETRIEB_FR [color="darkorchid"]
-    BETRIEB_IT [color="darkorchid"]
-    BFKOORD_LV95
-    BFKOORD_WGS
+    ATTRIBUT [label=<ATTRIBUT*<BR />
+        <FONT POINT-SIZE="18">*, *_DE, *_FR, *_IT, *_EN</FONT>
+    >]
+    BAHNHOF
+    BETRIEB_ [label=<BETRIEB_*<BR />
+        <FONT POINT-SIZE="18">*DE, *FR, *IT, *EN</FONT>
+    >]
+    BFKOORD_ [label=<BFKOORD_*<BR />
+        <FONT POINT-SIZE="18">*WGS, *LV95</FONT>
+    >]
     BFPRIOS
-    BHFART
-    BHFART_60
-    BITFELD [color="darkgoldenrod1"]
+    BHFART [label=<BHFART<BR />
+        <FONT POINT-SIZE="18">*, *_60</FONT>
+    >]
+    BITFELD
     DURCHBI
     ECKDATEN
     FEIERTAG
-    FPLAN [color="blue"]
-    GLEIS
-    GLEIS_LV95
-    GLEIS_WGS
+    FPLAN
+    GLEIS [label=<GLEIS<BR />
+        <FONT POINT-SIZE="18">*, *_LV95, *_WGS</FONT>
+    >]
     GRENZHLT
-    INFOTEXT_DE [color="cyan3"]
-    INFOTEXT_EN [color="cyan3"]
-    INFOTEXT_FR [color="cyan3"]
-    INFOTEXT_IT [color="cyan3"]
+    INFOTEXT_ [label=<INFOTEXT_*<BR />
+        <FONT POINT-SIZE="18">*DE, *FR, *IT, *EN</FONT>
+    >]
     KMINFO
     LINIE
     METABHF
@@ -49,90 +47,168 @@ digraph {
     ZEITVS
     ZUGART
 
-    # ATTRIBUT, ATTRIBUT_DE, ATTRIBUT_EN, ATTRIBUT_FR, ATTRIBUT_IT
-    ATTRIBUT_NODE [color="red", label=< <i>ATTRIBUT_NODE</i> >]
-    ATTRIBUT_NODE -> ATTRIBUT [color="red"]
-    ATTRIBUT_NODE -> ATTRIBUT_DE [color="red"]
-    ATTRIBUT_NODE -> ATTRIBUT_EN [color="red"]
-    ATTRIBUT_NODE -> ATTRIBUT_FR [color="red"]
-    ATTRIBUT_NODE -> ATTRIBUT_IT [color="red"]
+    # ------------------------------------------------------------------------------------------------
+    # --- Subgraphs
+    # ------------------------------------------------------------------------------------------------
 
-    # BETRIEB_DE, BETRIEB_EN, BETRIEB_FR, BETRIEB_IT
-    BETRIEB_NODE [color="darkorchid", label=< <i>BETRIEB_NODE</i> >]
-    BETRIEB_NODE -> BETRIEB_DE [color="darkorchid"]
-    BETRIEB_NODE -> BETRIEB_EN [color="darkorchid"]
-    BETRIEB_NODE -> BETRIEB_FR [color="darkorchid"]
-    BETRIEB_NODE -> BETRIEB_IT [color="darkorchid"]
+    subgraph cluster_0 {
+        color=black
+        margin=2
+        penwidth=2
 
-    # INFOTEXT_DE, INFOTEXT_EN, INFOTEXT_FR, INFOTEXT_IT
-    INFOTEXT_NODE [color="cyan3", label=< <i>INFOTEXT_NODE</i> >]
-    INFOTEXT_NODE -> INFOTEXT_DE [color="cyan3"]
-    INFOTEXT_NODE -> INFOTEXT_EN [color="cyan3"]
-    INFOTEXT_NODE -> INFOTEXT_FR [color="cyan3"]
-    INFOTEXT_NODE -> INFOTEXT_IT [color="cyan3"]
+        subgraph cluster_0 {
+            color=gray94
+            fontsize=34
+            label=< <B>Transfer times</B> >
+            margin=40
+            style=filled
 
-    { rank=same; BAHNHOF, BITFELD, FPLAN }
-    { rank=same; ATTRIBUT_NODE, INFOTEXT_NODE }
 
-    ZEITVS -> BHFART_60 [style=invis]
-    BETRIEB_NODE -> GRENZHLT [style=invis]
-    { rank=same; FEIERTAG, GRENZHLT, UMSTEIGL, UMSTEIGV, UMSTEIGZ, ZEITVS }
+            UMSTEIGB
+            UMSTEIGL
+            UMSTEIGV
+            UMSTEIGZ
+        }
+    }
+
+    subgraph cluster_1 {
+        color=black
+        margin=2
+        penwidth=2
+
+        subgraph cluster_1 {
+            color=gray94
+            fontsize=34
+            label=< <B>Time-relevant data</B> >
+            margin=40
+            style=filled
+
+            BITFELD
+            ECKDATEN
+            FEIERTAG
+            ZEITVS
+
+            { rank=same; ECKDATEN, ZEITVS }
+        }
+    }
+
+    subgraph cluster_2 {
+        color=black
+        margin=2
+        penwidth=2
+
+        subgraph cluster_2 {
+            color=gray94
+            fontsize=34
+            label=< <B>Timetable data</B> >
+            margin=40
+            style=filled
+
+            DURCHBI
+            FPLAN
+            GLEIS
+        }
+    }
+
+    subgraph cluster_3 {
+        color=black
+        margin=2
+        penwidth=2
+
+        subgraph cluster_3 {
+            color=gray94
+            fontsize=34
+            label=< <B>Master data</B> >
+            margin=40
+            style=filled
+
+            ATTRIBUT
+            BETRIEB_
+            INFOTEXT_
+            LINIE
+            RICHTUNG
+            ZUGART
+        }
+    }
+
+
+    subgraph cluster_4 {
+        color=black
+        margin=2
+        penwidth=2
+
+        subgraph cluster_4 {
+            color=gray94
+            fontsize=34
+            label=< <B>Stop data</B> >
+            margin=40
+            style=filled
+
+            BAHNHOF
+            BFKOORD_
+            BFPRIOS
+            BHFART
+            KMINFO
+            METABHF
+        }
+    }
 
     # ------------------------------------------------------------------------------------------------
     # --- Relationships
     # ------------------------------------------------------------------------------------------------
 
-    # BFKOORD_LV95
-    BFKOORD_LV95 -> BAHNHOF [color="darkgreen"]
-
-    # BFKOORD_WGS
-    BFKOORD_WGS -> BAHNHOF [color="darkgreen"]
+    # BFKOORD_
+    BFKOORD_ -> BAHNHOF
 
     # BFPRIOS
-    BFPRIOS -> BAHNHOF [color="darkgreen"]
+    BFPRIOS -> BAHNHOF
 
     # BHFART
-    BHFART -> BAHNHOF [color="darkgreen"]
-
-    # BHFART_60
-    BHFART_60 -> BAHNHOF [color="darkgreen"]
+    BHFART -> BAHNHOF
 
     # BITFELD
-    BITFELD -> ECKDATEN # The BITFELD file uses the data indirectly.
+    BITFELD -> ECKDATEN  [style=dashed] # The BITFELD file uses the data indirectly.
 
     # DURCHBI
-    DURCHBI -> BAHNHOF [color="darkgreen"]
-    DURCHBI -> BITFELD [color="darkgoldenrod1"]
-    DURCHBI -> FPLAN [color="blue"]
+    DURCHBI -> BAHNHOF   [color="red"]
+    DURCHBI -> BITFELD   [color="red"]
+    DURCHBI -> FPLAN     [color="red"]
 
     # FPLAN
-    FPLAN -> ATTRIBUT_NODE [color="red"]
-    FPLAN -> BAHNHOF [color="darkgreen"]
-    FPLAN -> BITFELD [color="darkgoldenrod1"]
-    FPLAN -> INFOTEXT_NODE [color="cyan3"]
-    FPLAN -> LINIE
-    FPLAN -> RICHTUNG
-    FPLAN -> ZUGART
+    FPLAN -> ATTRIBUT    [color="darkgreen"]
+    FPLAN -> BAHNHOF     [color="darkgreen"]
+    FPLAN -> BETRIEB_    [color="darkgreen"]
+    FPLAN -> BITFELD     [color="darkgreen"]
+    FPLAN -> INFOTEXT_   [color="darkgreen"]
+    FPLAN -> LINIE       [color="darkgreen"]
+    FPLAN -> RICHTUNG    [color="darkgreen"]
+    FPLAN -> ZUGART      [color="darkgreen"]
 
     # GLEIS
-    GLEIS -> BITFELD [color="darkgoldenrod1"]
-    GLEIS -> FPLAN [color="blue"]
-
-    # GLEIS_LV95
-    GLEIS_LV95 -> BITFELD [color="darkgoldenrod1"]
-    GLEIS_LV95 -> FPLAN [color="blue"]
-
-    # GLEIS_WGS
-    GLEIS_WGS -> BITFELD [color="darkgoldenrod1"]
-    GLEIS_WGS -> FPLAN [color="blue"]
+    GLEIS -> BITFELD     [color="darkorchid"]
+    GLEIS -> FPLAN       [color="darkorchid"]
 
     # KMINFO
-    KMINFO -> BAHNHOF [color="darkgreen"]
+    KMINFO -> BAHNHOF
 
     # METABHF
-    METABHF -> ATTRIBUT_NODE [color="red"]
-    METABHF -> BAHNHOF [color="darkgreen"]
+    METABHF -> ATTRIBUT  [color="cyan3"]
+    METABHF -> BAHNHOF   [color="cyan3"]
 
     # UMSTEIGB
-    UMSTEIGB -> BAHNHOF [color="darkgreen"]
+    UMSTEIGB -> BAHNHOF
+
+    # UMSTEIGL
+    UMSTEIGL -> BAHNHOF  [color="magenta"]
+    UMSTEIGL -> BETRIEB_ [color="magenta"]
+    UMSTEIGL -> LINIE [color="magenta"]
+
+    # UMSTEIGV
+    UMSTEIGV -> BAHNHOF  [color="navyblue"]
+    UMSTEIGV -> BETRIEB_ [color="navyblue"]
+
+    # UMSTEIGZ
+    UMSTEIGZ -> BETRIEB_ [color="coral4"]
+    UMSTEIGZ -> BITFELD  [color="coral4"]
+    UMSTEIGZ -> FPLAN    [color="coral4"]
 }

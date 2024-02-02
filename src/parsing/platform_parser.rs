@@ -69,7 +69,6 @@ pub fn parse() -> Result<(JourneyPlatformData, PlatformData), Box<dyn Error>> {
         bytes_offset,
         &platforms_primary_index,
     )?;
-    parse_platform_data("G '5' A 'AB'".to_string());
 
     Ok((
         JourneyPlatformData::new(journey_platform, journey_platform_primary_index),
