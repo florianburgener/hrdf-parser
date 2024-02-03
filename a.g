@@ -1,14 +1,14 @@
 digraph {
     layout="dot"
-    overlap=false
-    pad=0.5
+    #overlap=scalexy
+    pad=0
     splines=ortho
-    ranksep=2
-    nodesep=0.2
+    ranksep=5
+    nodesep=0.5
     rankdir=LR
 
-    edge [penwidth=2]
-    node [fontsize=22, shape="box", height=1, penwidth=1, width=3.7, margin=0]
+    edge [penwidth=3]
+    node [fontsize=22, shape="box", height=1.5, penwidth=1, width=3.8, margin=0]
 
     ATTRIBUT [label=<ATTRIBUT*<BR />
         <FONT POINT-SIZE="18">*, *_DE, *_FR, *_IT, *_EN</FONT>
@@ -60,7 +60,7 @@ digraph {
             color=gray94
             fontsize=34
             label=< <B>Transfer times</B> >
-            margin=40
+            margin=30
             style=filled
 
 
@@ -80,7 +80,7 @@ digraph {
             color=gray94
             fontsize=34
             label=< <B>Time-relevant data</B> >
-            margin=40
+            margin=30
             style=filled
 
             BITFELD
@@ -101,7 +101,7 @@ digraph {
             color=gray94
             fontsize=34
             label=< <B>Timetable data</B> >
-            margin=40
+            margin=30
             style=filled
 
             DURCHBI
@@ -119,7 +119,7 @@ digraph {
             color=gray94
             fontsize=34
             label=< <B>Master data</B> >
-            margin=40
+            margin=30
             style=filled
 
             ATTRIBUT
@@ -141,7 +141,7 @@ digraph {
             color=gray94
             fontsize=34
             label=< <B>Stop data</B> >
-            margin=40
+            margin=30
             style=filled
 
             BAHNHOF
@@ -158,57 +158,57 @@ digraph {
     # ------------------------------------------------------------------------------------------------
 
     # BFKOORD_
-    BFKOORD_ -> BAHNHOF
+    BFKOORD_ -> BAHNHOF  [color="springgreen2"]
 
     # BFPRIOS
-    BFPRIOS -> BAHNHOF
+    BFPRIOS -> BAHNHOF   [color="olivedrab"]
 
     # BHFART
-    BHFART -> BAHNHOF
+    BHFART -> BAHNHOF    [color="forestgreen"]
 
     # BITFELD
     BITFELD -> ECKDATEN  [style=dashed] # The BITFELD file uses the data indirectly.
 
     # DURCHBI
-    DURCHBI -> BAHNHOF   [color="red"]
-    DURCHBI -> BITFELD   [color="red"]
-    DURCHBI -> FPLAN     [color="red"]
+    DURCHBI -> BAHNHOF   [color="turquoise4"]
+    DURCHBI -> BITFELD   [color="turquoise4"]
+    DURCHBI -> FPLAN     [color="turquoise4"]
 
     # FPLAN
-    FPLAN -> ATTRIBUT    [color="darkgreen"]
-    FPLAN -> BAHNHOF     [color="darkgreen"]
-    FPLAN -> BETRIEB_    [color="darkgreen"]
-    FPLAN -> BITFELD     [color="darkgreen"]
-    FPLAN -> INFOTEXT_   [color="darkgreen"]
-    FPLAN -> LINIE       [color="darkgreen"]
-    FPLAN -> RICHTUNG    [color="darkgreen"]
-    FPLAN -> ZUGART      [color="darkgreen"]
+    FPLAN -> ATTRIBUT    [color="mediumblue"]
+    FPLAN -> BAHNHOF     [color="mediumblue"]
+    FPLAN -> BETRIEB_    [color="mediumblue"]
+    FPLAN -> BITFELD     [color="mediumblue"]
+    FPLAN -> INFOTEXT_   [color="mediumblue"]
+    FPLAN -> LINIE       [color="mediumblue"]
+    FPLAN -> RICHTUNG    [color="mediumblue"]
+    FPLAN -> ZUGART      [color="mediumblue"]
 
     # GLEIS
-    GLEIS -> BITFELD     [color="darkorchid"]
-    GLEIS -> FPLAN       [color="darkorchid"]
+    GLEIS -> BITFELD     [color="slateblue1"]
+    GLEIS -> FPLAN       [color="slateblue1"]
 
     # KMINFO
-    KMINFO -> BAHNHOF
+    KMINFO -> BAHNHOF    [color="limegreen"]
 
     # METABHF
-    METABHF -> ATTRIBUT  [color="cyan3"]
-    METABHF -> BAHNHOF   [color="cyan3"]
+    METABHF -> ATTRIBUT  [color="darkgreen"]
+    METABHF -> BAHNHOF   [color="darkgreen"]
 
     # UMSTEIGB
-    UMSTEIGB -> BAHNHOF
+    UMSTEIGB -> BAHNHOF  [color="maroon"]
 
     # UMSTEIGL
-    UMSTEIGL -> BAHNHOF  [color="magenta"]
-    UMSTEIGL -> BETRIEB_ [color="magenta"]
-    UMSTEIGL -> LINIE [color="magenta"]
+    UMSTEIGL -> BAHNHOF  [color="orange"]
+    UMSTEIGL -> BETRIEB_ [color="orange"]
+    UMSTEIGL -> LINIE    [color="orange"]
 
     # UMSTEIGV
-    UMSTEIGV -> BAHNHOF  [color="navyblue"]
-    UMSTEIGV -> BETRIEB_ [color="navyblue"]
+    UMSTEIGV -> BAHNHOF  [color="red"]
+    UMSTEIGV -> BETRIEB_ [color="red", constraint=false]
 
     # UMSTEIGZ
-    UMSTEIGZ -> BETRIEB_ [color="coral4"]
-    UMSTEIGZ -> BITFELD  [color="coral4"]
-    UMSTEIGZ -> FPLAN    [color="coral4"]
+    UMSTEIGZ -> BETRIEB_ [color="violetred"]
+    UMSTEIGZ -> BITFELD  [color="violetred"]
+    UMSTEIGZ -> FPLAN    [color="violetred"]
 }
