@@ -98,8 +98,7 @@ impl Attribute {
 #[derive(Debug)]
 pub struct BitField {
     id: i32,
-    // TODO: find a better name, perhaps?
-    values: Vec<u8>,
+    bits: Vec<u8>,
 }
 
 impl Model<BitField> for BitField {
@@ -110,12 +109,12 @@ impl Model<BitField> for BitField {
 
 #[allow(unused)]
 impl BitField {
-    pub fn new(id: i32, values: Vec<u8>) -> Self {
-        Self { id, values }
+    pub fn new(id: i32, bits: Vec<u8>) -> Self {
+        Self { id, bits }
     }
 
-    pub fn values(&self) -> &Vec<u8> {
-        return &self.values;
+    pub fn bits(&self) -> &Vec<u8> {
+        return &self.bits;
     }
 }
 
@@ -806,37 +805,39 @@ impl ThroughService {
 }
 
 // ------------------------------------------------------------------------------------------------
-// --- TimetableKeyData
+// --- Timetable
 // ------------------------------------------------------------------------------------------------
 
 #[derive(Debug)]
-pub struct TimetableKeyData {
-    // TODO: i32 index
-    start_date: NaiveDate, // The date is included.
-    end_date: NaiveDate,   // The date is included.
-    metadata: Vec<String>,
+pub struct TimetableMetadata {
+    id: i32,
+    key: String,
+    value: String,
+}
+
+impl Model<TimetableMetadata> for TimetableMetadata {
+    fn id(&self) -> i32 {
+        self.id
+    }
 }
 
 #[allow(unused)]
-impl TimetableKeyData {
-    pub fn new(start_date: NaiveDate, end_date: NaiveDate, metadata: Vec<String>) -> Self {
-        Self {
-            start_date,
-            end_date,
-            metadata,
-        }
+impl TimetableMetadata {
+    pub fn new(id: i32, key: String, value: String) -> Self {
+        Self { id, key, value }
     }
 
-    pub fn start_date(&self) -> NaiveDate {
-        self.start_date
+    pub fn key(&self) -> &str {
+        &self.key
     }
 
-    pub fn end_date(&self) -> NaiveDate {
-        self.end_date
+    pub fn value(&self) -> &str {
+        &self.value
     }
 
-    pub fn metadata(&self) -> &Vec<String> {
-        &self.metadata
+    #[allow(non_snake_case)]
+    pub fn value_as_NaiveDate(&self) -> NaiveDate {
+        NaiveDate::parse_from_str(self.value(), "%Y-%m-%d").unwrap()
     }
 }
 
@@ -922,11 +923,10 @@ impl TransportCompany {
 // --- TransportType
 // ------------------------------------------------------------------------------------------------
 
-// TODO: Double check this type.
 #[derive(Debug)]
 pub struct TransportType {
-    // TODO: i32 index
-    id: String,
+    id: i32,
+    legacy_id: String,
     product_class_id: i16,
     tarrif_group: String,
     output_control: i16,
@@ -934,16 +934,21 @@ pub struct TransportType {
     surchage: i16,
     flag: String,
     product_class_name: RefCell<HashMap<String, String>>,
-    category_name: RefCell<HashMap<String, String>>, // TODO: option10, option11, option12, ...
+    category_name: RefCell<HashMap<String, String>>,
+    // TODO: option10, option11, option12, ...
 }
 
-pub type TransportTypeCollection = Vec<Rc<TransportType>>;
-pub type TransportTypePrimaryIndex = HashMap<String, Rc<TransportType>>;
+impl Model<TransportType> for TransportType {
+    fn id(&self) -> i32 {
+        self.id
+    }
+}
 
 #[allow(unused)]
 impl TransportType {
     pub fn new(
-        id: String,
+        id: i32,
+        legacy_id: String,
         product_class_id: i16,
         tarrif_group: String,
         output_control: i16,
@@ -953,6 +958,7 @@ impl TransportType {
     ) -> Self {
         Self {
             id,
+            legacy_id,
             product_class_id,
             tarrif_group,
             output_control,
@@ -964,8 +970,8 @@ impl TransportType {
         }
     }
 
-    pub fn id(&self) -> &str {
-        &self.id
+    pub fn legacy_id(&self) -> &str {
+        &self.legacy_id
     }
 
     pub fn product_class_id(&self) -> i16 {

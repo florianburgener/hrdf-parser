@@ -1,3 +1,4 @@
+// --$--
 // 4 file(s).
 // File(s) read by the parser:
 // BETRIEB_DE, BETRIEB_EN, BETRIEB_FR, BETRIEB_IT
@@ -38,15 +39,15 @@ pub fn parse() -> Result<SimpleDataStorage<TransportCompany>, Box<dyn Error>> {
 
     let primary_index = TransportCompany::create_primary_index(&rows);
 
-    load_short_name_long_name_full_name_translations(&primary_index, Language::German)?;
-    load_short_name_long_name_full_name_translations(&primary_index, Language::English)?;
-    load_short_name_long_name_full_name_translations(&primary_index, Language::French)?;
-    load_short_name_long_name_full_name_translations(&primary_index, Language::Italian)?;
+    load_designations(&primary_index, Language::German)?;
+    load_designations(&primary_index, Language::English)?;
+    load_designations(&primary_index, Language::French)?;
+    load_designations(&primary_index, Language::Italian)?;
 
     Ok(SimpleDataStorage::new(rows))
 }
 
-fn load_short_name_long_name_full_name_translations(
+fn load_designations(
     primary_index: &PrimaryIndex<TransportCompany>,
     language: Language,
 ) -> Result<(), Box<dyn Error>> {
@@ -55,7 +56,7 @@ fn load_short_name_long_name_full_name_translations(
 
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
-        // This row is used to create a TransportCompany instance.
+        // This row contains the short name, long name and full name in a specific language.
         RowDefinition::new(ROW_A, Box::new(FastRowMatcher::new(7, 1, "K", true)), vec![
             ColumnDefinition::new(1, 5, ExpectedType::Integer32),
             ColumnDefinition::new(9, -1, ExpectedType::String),
@@ -73,7 +74,7 @@ fn load_short_name_long_name_full_name_translations(
     let file_parser = FileParser::new(&file_path, row_parser)?;
 
     file_parser.parse().for_each(|(id, _, values)| match id {
-        ROW_A => set_short_name_long_name_full_name(values, primary_index, language),
+        ROW_A => set_designations(values, primary_index, language),
         _ => return,
     });
 
@@ -86,19 +87,22 @@ fn load_short_name_long_name_full_name_translations(
 
 fn create_instance(mut values: Vec<ParsedValue>) -> Rc<TransportCompany> {
     let id: i32 = values.remove(0).into();
-    let administrations = parse_administrations(values.remove(0).into());
+    let administrations = values.remove(0).into();
+
+    let administrations = parse_administrations(administrations);
 
     Rc::new(TransportCompany::new(id, administrations))
 }
 
-fn set_short_name_long_name_full_name(
+fn set_designations(
     mut values: Vec<ParsedValue>,
     primary_index: &PrimaryIndex<TransportCompany>,
     language: Language,
 ) {
     let id: i32 = values.remove(0).into();
-    let (short_name, long_name, full_name) =
-        parse_short_name_long_name_full_name(values.remove(0).into());
+    let designations = values.remove(0).into();
+
+    let (short_name, long_name, full_name) = parse_designations(designations);
 
     let transport_company = primary_index.get(&id).unwrap();
     transport_company.set_short_name(language, &short_name);
@@ -110,23 +114,23 @@ fn set_short_name_long_name_full_name(
 // --- Helper Functions
 // ------------------------------------------------------------------------------------------------
 
-fn parse_administrations(raw_administrations: String) -> Vec<String> {
-    raw_administrations
+fn parse_administrations(administrations: String) -> Vec<String> {
+    administrations
         .split_whitespace()
         .map(|s| s.to_owned())
         .collect()
 }
 
-fn parse_short_name_long_name_full_name(raw_data: String) -> (String, String, String) {
-    let re = Regex::new(r"( )?(K|L|V) ").unwrap();
-    let data: Vec<String> = re
-        .split(&raw_data)
+fn parse_designations(designations: String) -> (String, String, String) {
+    let re = Regex::new(r" ?(K|L|V) ").unwrap();
+    let designations: Vec<String> = re
+        .split(&designations)
         .map(|s| s.chars().filter(|&c| c != '"').collect())
         .collect();
 
-    let short_name = data[0].to_owned();
-    let long_name = data[1].to_owned();
-    let full_name = data[2].to_owned();
+    let short_name = designations[0].to_owned();
+    let long_name = designations[1].to_owned();
+    let full_name = designations[2].to_owned();
 
     (short_name, long_name, full_name)
 }

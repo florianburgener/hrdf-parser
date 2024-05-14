@@ -40,15 +40,14 @@ Fichiers restants :
 * UMSTEIGV
 * UMSTEIGZ
 
-TODO:
+TODO :
 
 * Terminer le parsing
-    * Remap les identifiants primaires composites vers un i32
-    * Remap les clés étrangères vers un i32
     * Simplifier le code de parsing quand cela est possible cf. line_parser + le compléter aussi
+    * Remap les identifiants primaires composites vers un i32
+    * Vérifier les for et for_each
+    * Remap les clés étrangères vers un i32
 * thiserror
 * Chunk loading des fichiers
-* Changer TimetableKeyData vers key => value
 
-
-plateform_parser, stop_parser, timetable_key_parser, transport_type_parser
+plateform_parser, transport_type_parser

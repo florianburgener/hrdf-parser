@@ -1,3 +1,4 @@
+// --$--
 // 0.5 file(s).
 // File(s) read by the parser:
 // METABHF
@@ -23,7 +24,7 @@ pub fn parse() -> Result<SimpleDataStorage<StopConnection>, Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row is used to create a StopConnection instance.
-        RowDefinition::new(ROW_A, Box::new(AdvancedRowMatcher::new("[0-9]{7} [0-9]{7} [0-9]{3}")?), vec![
+        RowDefinition::new(ROW_A, Box::new(AdvancedRowMatcher::new(r"[0-9]{7} [0-9]{7} [0-9]{3}")?), vec![
             ColumnDefinition::new(1, 7, ExpectedType::Integer32),
             ColumnDefinition::new(9, 15, ExpectedType::Integer32),
             ColumnDefinition::new(17, 19, ExpectedType::Integer16),
@@ -39,19 +40,19 @@ pub fn parse() -> Result<SimpleDataStorage<StopConnection>, Box<dyn Error>> {
 
     let mut rows: Vec<Rc<StopConnection>> = Vec::new();
     let mut next_id = 1;
-    let mut current_row = Rc::new(StopConnection::default());
+    let mut current_instance = Rc::new(StopConnection::default());
 
     file_parser
         .parse()
         .for_each(|(id, _, mut values)| match id {
             ROW_A => {
-                current_row = create_instance(values, next_id);
-                rows.push(Rc::clone(&current_row));
+                current_instance = create_instance(values, next_id);
+                rows.push(Rc::clone(&current_instance));
                 next_id += 1;
             }
             ROW_B => {
                 let attribute: String = values.remove(0).into();
-                current_row.add_attribute(attribute);
+                current_instance.add_attribute(attribute);
             }
             ROW_C => return,
             _ => unreachable!(),

@@ -43,11 +43,11 @@ pub fn parse() -> Result<SimpleDataStorage<Holiday>, Box<dyn Error>> {
 // ------------------------------------------------------------------------------------------------
 
 fn create_instance(mut values: Vec<ParsedValue>, id: i32) -> Result<Rc<Holiday>, Box<dyn Error>> {
-    let raw_date: String = values.remove(0).into();
-    let raw_name: String = values.remove(0).into();
+    let date: String = values.remove(0).into();
+    let name_translations: String = values.remove(0).into();
 
-    let date = NaiveDate::parse_from_str(&raw_date, "%d.%m.%Y")?;
-    let name = parse_name(raw_name);
+    let date = NaiveDate::parse_from_str(&date, "%d.%m.%Y")?;
+    let name = parse_name_translations(name_translations);
 
     Ok(Rc::new(Holiday::new(id, date, name)))
 }
@@ -56,9 +56,8 @@ fn create_instance(mut values: Vec<ParsedValue>, id: i32) -> Result<Rc<Holiday>,
 // --- Helper Functions
 // ------------------------------------------------------------------------------------------------
 
-fn parse_name(raw_name: String) -> HashMap<String, String> {
-    raw_name
-        .split('>')
+fn parse_name_translations(name_translations: String) -> HashMap<String, String> {
+    name_translations.split('>')
         .filter(|&s| !s.is_empty())
         .map(|s| {
             let mut parts = s.split('<');

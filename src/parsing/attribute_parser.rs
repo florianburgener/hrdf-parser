@@ -29,7 +29,7 @@ pub fn parse() -> Result<SimpleDataStorage<Attribute>, Box<dyn Error>> {
     let row_parser = RowParser::new(vec![
         // This row is used to create an Attribute instance.
         RowDefinition::new(ROW_A, Box::new(
-            AdvancedRowMatcher::new("^.{2} [0-9] [0-9 ]{3} [0-9 ]{2}$")?
+            AdvancedRowMatcher::new(r"^.{2} [0-9] [0-9 ]{3} [0-9 ]{2}$")?
         ), vec![
             ColumnDefinition::new(1, 2, ExpectedType::String),
             ColumnDefinition::new(4, 4, ExpectedType::Integer16),
@@ -43,9 +43,7 @@ pub fn parse() -> Result<SimpleDataStorage<Attribute>, Box<dyn Error>> {
             ColumnDefinition::new(1, -1, ExpectedType::String),
         ]),
         // This row contains the description in a specific language.
-        RowDefinition::new(ROW_D, Box::new(
-            AdvancedRowMatcher::new("^.{2} .+$")?
-        ), vec![
+        RowDefinition::new(ROW_D, Box::new(AdvancedRowMatcher::new(r"^.{2} .+$")?), vec![
             ColumnDefinition::new(1, 2, ExpectedType::String),
             ColumnDefinition::new(4, -1, ExpectedType::String),
         ]),

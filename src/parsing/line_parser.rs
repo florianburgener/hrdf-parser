@@ -48,17 +48,17 @@ pub fn parse() -> Result<SimpleDataStorage<Line>, Box<dyn Error>> {
     let file_parser = FileParser::new("data/LINIE", row_parser)?;
 
     let mut rows = Vec::new();
-    let mut current_row = Rc::new(Line::default());
+    let mut current_instance = Rc::new(Line::default());
 
     file_parser.parse().for_each(|(id, _, values)| match id {
         ROW_A => {
-            // Using this method, it is assumed that the following lines of types B, C and D are related to current_row.
-            current_row = create_instance(values);
-            rows.push(Rc::clone(&current_row));
+            // Using this method, it is assumed that the following lines of types B, C and D are related to current_instance.
+            current_instance = create_instance(values);
+            rows.push(Rc::clone(&current_instance));
         }
-        ROW_B => set_short_name(values, &current_row),
-        ROW_C => set_text_color(values, &current_row),
-        ROW_D => set_background_color(values, &current_row),
+        ROW_B => set_short_name(values, &current_instance),
+        ROW_C => set_text_color(values, &current_instance),
+        ROW_D => set_background_color(values, &current_instance),
         _ => unreachable!(),
     });
 

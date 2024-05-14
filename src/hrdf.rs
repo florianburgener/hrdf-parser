@@ -3,10 +3,10 @@ use std::{error::Error, rc::Rc};
 use crate::{
     models::{
         Attribute, BitField, Direction, Holiday, InformationText, Line, Stop, StopConnection,
-        ThroughService, TimetableKeyData, TransportCompany,
+        ThroughService, TimetableMetadata, TransportCompany, TransportType,
     },
     parsing,
-    storage::{JourneyPlatformData, PlatformData, SimpleDataStorage, TransportTypeData},
+    storage::{JourneyPlatformData, PlatformData, SimpleDataStorage},
 };
 
 #[allow(unused)]
@@ -23,9 +23,9 @@ pub struct Hrdf {
     stop_connection_data: SimpleDataStorage<StopConnection>,
     stop_data: SimpleDataStorage<Stop>,
     through_service_data: SimpleDataStorage<ThroughService>,
-    timetable_key_data: TimetableKeyData,
+    timetable_metadata: SimpleDataStorage<TimetableMetadata>,
     transport_company_data: SimpleDataStorage<TransportCompany>,
-    transport_type_data: TransportTypeData,
+    transport_type_data: SimpleDataStorage<TransportType>,
 }
 
 #[allow(unused)]
@@ -41,11 +41,9 @@ impl Hrdf {
         let stop_connection_data = parsing::load_stop_connection_data()?;
         let stop_data = parsing::load_stop_data()?;
         let through_service_data = parsing::load_through_service_data()?;
-        let timetable_key_data = parsing::load_timetable_key_data()?;
+        let timetable_metadata = parsing::load_timetable_metadata()?;
         let transport_company_data = parsing::load_transport_company_data()?;
         let transport_type_data = parsing::load_transport_type_data()?;
-
-        // print!("{:?}", direction_data.rows()[0]);
 
         let instance = Rc::new(Self {
             attribute_data,
@@ -59,7 +57,7 @@ impl Hrdf {
             stop_connection_data,
             stop_data,
             through_service_data,
-            timetable_key_data,
+            timetable_metadata,
             transport_company_data,
             transport_type_data,
         });

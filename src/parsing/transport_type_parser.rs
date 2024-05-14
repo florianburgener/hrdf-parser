@@ -1,20 +1,20 @@
 // 1 file(s).
 // File(s) read by the parser:
 // ZUGART
-use std::{collections::HashMap, error::Error, rc::Rc};
+use std::{error::Error, rc::Rc};
 
 use crate::{
-    models::{Language, TransportType, TransportTypeCollection, TransportTypePrimaryIndex},
+    models::{Language, TransportType},
     parsing::{
         AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, RowDefinition,
         RowParser,
     },
-    storage::TransportTypeData,
+    storage::SimpleDataStorage,
 };
 
 use super::{FileParser, ParsedValue};
 
-pub fn parse() -> Result<TransportTypeData, Box<dyn Error>> {
+pub fn parse() -> Result<SimpleDataStorage<TransportType>, Box<dyn Error>> {
     println!("Parsing ZUGART...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -26,7 +26,7 @@ pub fn parse() -> Result<TransportTypeData, Box<dyn Error>> {
     let row_parser = RowParser::new(vec![
         // This row is used to create a TransportType instance.
         RowDefinition::new(ROW_A, Box::new(
-            AdvancedRowMatcher::new("^.{3} [ 0-9]{2}")?
+            AdvancedRowMatcher::new(r"^.{3} [ 0-9]{2}")?
         ), vec![
             ColumnDefinition::new(1, 3, ExpectedType::String),
             ColumnDefinition::new(5, 6, ExpectedType::Integer16),
@@ -42,29 +42,32 @@ pub fn parse() -> Result<TransportTypeData, Box<dyn Error>> {
         ]),
         // This row contains the product class name in a specific language.
         RowDefinition::new(ROW_C, Box::new(
-            AdvancedRowMatcher::new("^class.+$")?
+            AdvancedRowMatcher::new(r"^class.+$")?
         ), vec![
             ColumnDefinition::new(6, 7, ExpectedType::Integer16),
             ColumnDefinition::new(9, -1, ExpectedType::String),
         ]),
         // This row is ignored.
-        RowDefinition::new(ROW_D, Box::new(AdvancedRowMatcher::new("^option.+$")?), Vec::new()),
+        RowDefinition::new(ROW_D, Box::new(AdvancedRowMatcher::new(r"^option.+$")?), Vec::new()),
         // This row contains the category name in a specific language.
         RowDefinition::new(ROW_E, Box::new(
-            AdvancedRowMatcher::new("^category.+$")?
+            AdvancedRowMatcher::new(r"^category.+$")?
         ), vec![
             ColumnDefinition::new(10, 12, ExpectedType::Integer32),
             ColumnDefinition::new(14, -1, ExpectedType::String),
         ]),
     ]);
-    // The ATTRIBUT file is used instead of ATTRIBUT_* for simplicity's sake.
     let file_parser = FileParser::new("data/ZUGART", row_parser)?;
 
     let mut rows = Vec::new();
+    let mut next_id = 1;
     let mut current_language = Language::default();
 
     file_parser.parse().for_each(|(id, _, values)| match id {
-        ROW_A => rows.push(create_instance(values)),
+        ROW_A => {
+            rows.push(create_instance(values, next_id));
+            next_id += 1;
+        }
         ROW_B => update_current_language(values, &mut current_language),
         ROW_C => set_product_class_name(values, &rows, current_language),
         ROW_D => return,
@@ -72,28 +75,15 @@ pub fn parse() -> Result<TransportTypeData, Box<dyn Error>> {
         _ => unreachable!(),
     });
 
-    let primary_index = create_primary_index(&rows);
-
-    Ok(TransportTypeData::new(rows, primary_index))
-}
-
-// ------------------------------------------------------------------------------------------------
-// --- Legacy Primary Index
-// ------------------------------------------------------------------------------------------------
-
-fn create_primary_index(rows: &TransportTypeCollection) -> TransportTypePrimaryIndex {
-    rows.iter().fold(HashMap::new(), |mut acc, item| {
-        acc.insert(item.id().to_owned(), Rc::clone(item));
-        acc
-    })
+    Ok(SimpleDataStorage::new(rows))
 }
 
 // ------------------------------------------------------------------------------------------------
 // --- Data Processing Functions
 // ------------------------------------------------------------------------------------------------
 
-fn create_instance(mut values: Vec<ParsedValue>) -> Rc<TransportType> {
-    let id: String = values.remove(0).into();
+fn create_instance(mut values: Vec<ParsedValue>, id: i32) -> Rc<TransportType> {
+    let legacy_id: String = values.remove(0).into();
     let product_class_id: i16 = values.remove(0).into();
     let tarrif_group: String = values.remove(0).into();
     let output_control: i16 = values.remove(0).into();
@@ -103,6 +93,7 @@ fn create_instance(mut values: Vec<ParsedValue>) -> Rc<TransportType> {
 
     Rc::new(TransportType::new(
         id,
+        legacy_id,
         product_class_id,
         tarrif_group,
         output_control,
@@ -114,7 +105,7 @@ fn create_instance(mut values: Vec<ParsedValue>) -> Rc<TransportType> {
 
 fn set_product_class_name(
     mut values: Vec<ParsedValue>,
-    rows: &TransportTypeCollection,
+    rows: &Vec<Rc<TransportType>>,
     language: Language,
 ) {
     let id: i16 = values.remove(0).into();
@@ -127,7 +118,11 @@ fn set_product_class_name(
     }
 }
 
-fn set_category_name(mut values: Vec<ParsedValue>, rows: &TransportTypeCollection, language: Language) {
+fn set_category_name(
+    mut values: Vec<ParsedValue>,
+    rows: &Vec<Rc<TransportType>>,
+    language: Language,
+) {
     let index: i32 = values.remove(0).into();
     let index = index as usize;
     let category_name: String = values.remove(0).into();

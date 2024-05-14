@@ -1,3 +1,4 @@
+// --$--
 // 8.5 file(s).
 // File(s) read by the parser:
 // BAHNHOF, BFKOORD_LV95, BFKOORD_WGS, BFPRIOS, KMINFO, UMSTEIGB, METABHF, BHFART_60
@@ -8,7 +9,8 @@ use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{
     models::{Coordinate, CoordinateType, Model, PrimaryIndex, Stop},
-    parsing::{AdvancedRowMatcher, FastRowMatcher}, storage::SimpleDataStorage,
+    parsing::{AdvancedRowMatcher, FastRowMatcher},
+    storage::SimpleDataStorage,
 };
 
 use super::{ColumnDefinition, ExpectedType, FileParser, ParsedValue, RowDefinition, RowParser};
@@ -20,7 +22,7 @@ pub fn parse() -> Result<SimpleDataStorage<Stop>, Box<dyn Error>> {
         // This row is used to create a Stop instance.
         RowDefinition::from(vec![
             ColumnDefinition::new(1, 7, ExpectedType::Integer32),
-            ColumnDefinition::new(13, -1, ExpectedType::String),  // Should be 13-62, but some entries go beyond column 62.
+            ColumnDefinition::new(13, -1, ExpectedType::String), // Should be 13-62, but some entries go beyond column 62.
         ]),
     ]);
     let file_parser = FileParser::new("data/BAHNHOF", row_parser)?;
@@ -93,7 +95,6 @@ fn load_changing_priorities(primary_index: &PrimaryIndex<Stop>) -> Result<(), Bo
     file_parser
         .parse()
         .for_each(|(_, _, values)| set_changing_priority(values, primary_index));
-    // TODO: default value should be 8.
 
     Ok(())
 }
@@ -145,10 +146,10 @@ fn load_connections(primary_index: &PrimaryIndex<Stop>) -> Result<(), Box<dyn Er
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row is ignored.
-        RowDefinition::new(ROW_A, Box::new(AdvancedRowMatcher::new("[0-9]{7} [0-9]{7} [0-9]{3}")?), Vec::new()),
+        RowDefinition::new(ROW_A, Box::new(AdvancedRowMatcher::new(r"[0-9]{7} [0-9]{7} [0-9]{3}")?), Vec::new()),
         // This row is ignored.
         RowDefinition::new(ROW_B, Box::new(FastRowMatcher::new(1, 1, "*", true)), Vec::new()),
-        //
+        // This row contains the connections to nearby stops.
         RowDefinition::new(ROW_C, Box::new(FastRowMatcher::new(8, 1, ":", true)), vec![
             ColumnDefinition::new(1, 7, ExpectedType::Integer32),
             ColumnDefinition::new(11, -1, ExpectedType::String),
@@ -175,17 +176,17 @@ fn load_descriptions(primary_index: &PrimaryIndex<Stop>) -> Result<(), Box<dyn E
     let row_parser = RowParser::new(vec![
         // This row is ignored.
         RowDefinition::new(ROW_A, Box::new(FastRowMatcher::new(1, 1, "%", true)), Vec::new()),
-        // Restrictions.
+        // This row contains the restrictions.
         RowDefinition::new(ROW_B, Box::new(FastRowMatcher::new(9, 1, "B", true)), vec![
             ColumnDefinition::new(1, 7, ExpectedType::Integer32),
             ColumnDefinition::new(11, 12, ExpectedType::Integer16),
         ]),
-        // SLOID.
+        // This row contains the SLOID.
         RowDefinition::new(ROW_C, Box::new(FastRowMatcher::new(11, 1, "A", true)), vec![
             ColumnDefinition::new(1, 7, ExpectedType::Integer32),
             ColumnDefinition::new(13, -1, ExpectedType::String),
         ]),
-        // Boarding areas.
+        // This row contains the boarding areas.
         RowDefinition::new(ROW_D, Box::new(FastRowMatcher::new(11, 1, "a", true)), vec![
             ColumnDefinition::new(1, 7, ExpectedType::Integer32),
             ColumnDefinition::new(13, -1, ExpectedType::String),
@@ -210,9 +211,9 @@ fn load_descriptions(primary_index: &PrimaryIndex<Stop>) -> Result<(), Box<dyn E
 
 fn create_instance(mut values: Vec<ParsedValue>) -> Rc<Stop> {
     let id: i32 = values.remove(0).into();
-    let raw_name: String = values.remove(0).into();
+    let designations: String = values.remove(0).into();
 
-    let (name, long_name, abbreviation, synonyms) = parse_name(raw_name);
+    let (name, long_name, abbreviation, synonyms) = parse_designations(designations);
 
     Rc::new(Stop::new(id, name, long_name, abbreviation, synonyms))
 }
@@ -264,7 +265,7 @@ fn set_changing_time(mut values: Vec<ParsedValue>, primary_index: &PrimaryIndex<
 
     if stop_id == 9999999 {
         // The first row of the file has the stop ID number 9999999. It contains the default values for all stops.
-        for (_, stop) in primary_index.iter() {
+        for stop in primary_index.values() {
             stop.set_changing_time_inter_city(changing_time_inter_city);
             stop.set_changing_time_other(changing_time_other);
         }
@@ -278,6 +279,7 @@ fn set_changing_time(mut values: Vec<ParsedValue>, primary_index: &PrimaryIndex<
 fn set_connections(mut values: Vec<ParsedValue>, primary_index: &PrimaryIndex<Stop>) {
     let stop_id: i32 = values.remove(0).into();
     let connections: String = values.remove(0).into();
+
     let connections = parse_connections(connections);
 
     let stop = primary_index.get(&stop_id).unwrap();
@@ -312,8 +314,8 @@ fn add_boarding_area(mut values: Vec<ParsedValue>, primary_index: &PrimaryIndex<
 // --- Helper Functions
 // ------------------------------------------------------------------------------------------------
 
-fn parse_name(raw_name: String) -> (String, Option<String>, Option<String>, Option<Vec<String>>) {
-    let data: HashMap<i32, Vec<String>> = raw_name
+fn parse_designations(designations: String) -> (String, Option<String>, Option<String>, Option<Vec<String>>) {
+    let designations: HashMap<i32, Vec<String>> = designations
         .split('>')
         .filter(|&s| !s.is_empty())
         .map(|s| {
@@ -330,16 +332,16 @@ fn parse_name(raw_name: String) -> (String, Option<String>, Option<String>, Opti
             acc
         });
 
-    let name = data.get(&1).unwrap()[0].clone();
-    let long_name = data.get(&2).map(|x| x[0].clone());
-    let abbreviation = data.get(&3).map(|x| x[0].clone());
-    let synonyms = data.get(&4).cloned();
+    let name = designations.get(&1).unwrap()[0].clone();
+    let long_name = designations.get(&2).map(|x| x[0].clone());
+    let abbreviation = designations.get(&3).map(|x| x[0].clone());
+    let synonyms = designations.get(&4).cloned();
 
     (name, long_name, abbreviation, synonyms)
 }
 
-fn parse_connections(raw_connections: String) -> Vec<i32> {
-    raw_connections
+fn parse_connections(connections: String) -> Vec<i32> {
+    connections
         .split_whitespace()
         .filter_map(|s| s.parse().ok())
         .collect()
