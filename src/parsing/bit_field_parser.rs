@@ -1,17 +1,18 @@
+// --$--
 // 1 file(s).
 // File(s) read by the parser:
 // BITFELD
-use std::{collections::HashMap, error::Error, rc::Rc};
+use std::{error::Error, rc::Rc};
 
 use crate::{
-    models::{BitField, BitFieldCollection, BitFieldPrimaryIndex},
+    models::BitField,
     parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
-    storage::BitFieldData,
+    storage::SimpleDataStorage,
 };
 
 use super::ParsedValue;
 
-pub fn parse() -> Result<BitFieldData, Box<dyn Error>> {
+pub fn parse() -> Result<SimpleDataStorage<BitField>, Box<dyn Error>> {
     println!("Parsing BITFELD...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -28,20 +29,7 @@ pub fn parse() -> Result<BitFieldData, Box<dyn Error>> {
         .map(|(_, _, values)| create_instance(values))
         .collect();
 
-    let primary_index = create_instances_primary_index(&rows);
-
-    Ok(BitFieldData::new(rows, primary_index))
-}
-
-// ------------------------------------------------------------------------------------------------
-// --- Indexes Creation
-// ------------------------------------------------------------------------------------------------
-
-fn create_instances_primary_index(rows: &BitFieldCollection) -> BitFieldPrimaryIndex {
-    rows.iter().fold(HashMap::new(), |mut acc, item| {
-        acc.insert(item.id(), Rc::clone(item));
-        acc
-    })
+    Ok(SimpleDataStorage::new(rows))
 }
 
 // ------------------------------------------------------------------------------------------------

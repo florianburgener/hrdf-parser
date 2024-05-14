@@ -1,19 +1,20 @@
+// --$--
 // 1 file(s).
 // File(s) read by the parser:
 // LINIE
-use std::{collections::HashMap, error::Error, rc::Rc};
+use std::{error::Error, rc::Rc};
 
 use crate::{
-    models::{Color, Line, LinePrimaryIndex},
+    models::{Color, Line},
     parsing::{
         ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, RowDefinition, RowParser,
     },
-    storage::LineData,
+    storage::SimpleDataStorage,
 };
 
 use super::ParsedValue;
 
-pub fn parse() -> Result<LineData, Box<dyn Error>> {
+pub fn parse() -> Result<SimpleDataStorage<Line>, Box<dyn Error>> {
     println!("Parsing LINIE...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -27,18 +28,18 @@ pub fn parse() -> Result<LineData, Box<dyn Error>> {
             ColumnDefinition::new(1, 7, ExpectedType::Integer32),
             ColumnDefinition::new(11, -1, ExpectedType::String),
         ]),
+        // This row contains the short name.
         RowDefinition::new(ROW_B, Box::new(FastRowMatcher::new(9, 3, "N T", true)), vec![
-            ColumnDefinition::new(1, 7, ExpectedType::Integer32),
             ColumnDefinition::new(13, -1, ExpectedType::String),
         ]),
+        // This row contains the text color.
         RowDefinition::new(ROW_C, Box::new(FastRowMatcher::new(9, 1, "F", true)), vec![
-            ColumnDefinition::new(1, 7, ExpectedType::Integer32),
             ColumnDefinition::new(11, 13, ExpectedType::Integer16),
             ColumnDefinition::new(15, 17, ExpectedType::Integer16),
             ColumnDefinition::new(19, 21, ExpectedType::Integer16),
         ]),
+        // This row contains the background color.
         RowDefinition::new(ROW_D, Box::new(FastRowMatcher::new(9, 1, "B", true)), vec![
-            ColumnDefinition::new(1, 7, ExpectedType::Integer32),
             ColumnDefinition::new(11, 13, ExpectedType::Integer16),
             ColumnDefinition::new(15, 17, ExpectedType::Integer16),
             ColumnDefinition::new(19, 21, ExpectedType::Integer16),
@@ -47,21 +48,21 @@ pub fn parse() -> Result<LineData, Box<dyn Error>> {
     let file_parser = FileParser::new("data/LINIE", row_parser)?;
 
     let mut rows = Vec::new();
-    let mut primary_index = HashMap::new();
+    let mut current_row = Rc::new(Line::default());
 
     file_parser.parse().for_each(|(id, _, values)| match id {
         ROW_A => {
-            let row = create_instance(values);
-            primary_index.insert(row.id(), Rc::clone(&row));
-            rows.push(row);
+            // Using this method, it is assumed that the following lines of types B, C and D are related to current_row.
+            current_row = create_instance(values);
+            rows.push(Rc::clone(&current_row));
         }
-        ROW_B => set_short_name(values, &primary_index),
-        ROW_C => set_text_color(values, &primary_index),
-        ROW_D => set_background_color(values, &primary_index),
+        ROW_B => set_short_name(values, &current_row),
+        ROW_C => set_text_color(values, &current_row),
+        ROW_D => set_background_color(values, &current_row),
         _ => unreachable!(),
     });
 
-    Ok(LineData::new(rows, primary_index))
+    Ok(SimpleDataStorage::new(rows))
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -75,33 +76,24 @@ fn create_instance(mut values: Vec<ParsedValue>) -> Rc<Line> {
     Rc::new(Line::new(id, name))
 }
 
-fn set_short_name(mut values: Vec<ParsedValue>, primary_index: &LinePrimaryIndex) {
-    let id: i32 = values.remove(0).into();
+fn set_short_name(mut values: Vec<ParsedValue>, line: &Rc<Line>) {
     let short_name: String = values.remove(0).into();
 
-    primary_index.get(&id).unwrap().set_short_name(short_name);
+    line.set_short_name(short_name);
 }
 
-fn set_text_color(mut values: Vec<ParsedValue>, primary_index: &LinePrimaryIndex) {
-    let id: i32 = values.remove(0).into();
+fn set_text_color(mut values: Vec<ParsedValue>, line: &Rc<Line>) {
     let r: i16 = values.remove(0).into();
     let g: i16 = values.remove(0).into();
     let b: i16 = values.remove(0).into();
 
-    primary_index
-        .get(&id)
-        .unwrap()
-        .set_text_color(Color::new(r, g, b));
+    line.set_text_color(Color::new(r, g, b));
 }
 
-fn set_background_color(mut values: Vec<ParsedValue>, primary_index: &LinePrimaryIndex) {
-    let id: i32 = values.remove(0).into();
+fn set_background_color(mut values: Vec<ParsedValue>, line: &Rc<Line>) {
     let r: i16 = values.remove(0).into();
     let g: i16 = values.remove(0).into();
     let b: i16 = values.remove(0).into();
 
-    primary_index
-        .get(&id)
-        .unwrap()
-        .set_background_color(Color::new(r, g, b));
+    line.set_background_color(Color::new(r, g, b));
 }

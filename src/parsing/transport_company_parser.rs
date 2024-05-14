@@ -1,19 +1,19 @@
 // 4 file(s).
 // File(s) read by the parser:
 // BETRIEB_DE, BETRIEB_EN, BETRIEB_FR, BETRIEB_IT
-use std::{collections::HashMap, error::Error, rc::Rc};
+use std::{error::Error, rc::Rc};
+
+use regex::Regex;
 
 use crate::{
-    models::{
-        Language, TransportCompany, TransportCompanyCollection, TransportCompanyPrimaryIndex,
-    },
+    models::{Language, Model, PrimaryIndex, TransportCompany},
     parsing::{ColumnDefinition, ExpectedType, FastRowMatcher, RowDefinition, RowParser},
-    storage::TransportCompanyData,
+    storage::SimpleDataStorage,
 };
 
 use super::{FileParser, ParsedValue};
 
-pub fn parse() -> Result<TransportCompanyData, Box<dyn Error>> {
+pub fn parse() -> Result<SimpleDataStorage<TransportCompany>, Box<dyn Error>> {
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
 
@@ -36,18 +36,18 @@ pub fn parse() -> Result<TransportCompanyData, Box<dyn Error>> {
         _ => return,
     });
 
-    let primary_index = create_primary_index(&rows);
+    let primary_index = TransportCompany::create_primary_index(&rows);
 
     load_short_name_long_name_full_name_translations(&primary_index, Language::German)?;
     load_short_name_long_name_full_name_translations(&primary_index, Language::English)?;
     load_short_name_long_name_full_name_translations(&primary_index, Language::French)?;
     load_short_name_long_name_full_name_translations(&primary_index, Language::Italian)?;
 
-    Ok(TransportCompanyData::new(rows, primary_index))
+    Ok(SimpleDataStorage::new(rows))
 }
 
 fn load_short_name_long_name_full_name_translations(
-    primary_index: &TransportCompanyPrimaryIndex,
+    primary_index: &PrimaryIndex<TransportCompany>,
     language: Language,
 ) -> Result<(), Box<dyn Error>> {
     const ROW_A: i32 = 1;
@@ -81,38 +81,52 @@ fn load_short_name_long_name_full_name_translations(
 }
 
 // ------------------------------------------------------------------------------------------------
-// --- Indexes Creation
-// ------------------------------------------------------------------------------------------------
-
-fn create_primary_index(rows: &TransportCompanyCollection) -> TransportCompanyPrimaryIndex {
-    rows.iter().fold(HashMap::new(), |mut acc, item| {
-        acc.insert(item.id(), Rc::clone(item));
-        acc
-    })
-}
-
-// ------------------------------------------------------------------------------------------------
 // --- Data Processing Functions
 // ------------------------------------------------------------------------------------------------
 
 fn create_instance(mut values: Vec<ParsedValue>) -> Rc<TransportCompany> {
     let id: i32 = values.remove(0).into();
-    let administration: String = values.remove(0).into();
+    let administrations = parse_administrations(values.remove(0).into());
 
-    Rc::new(TransportCompany::new(id, vec![administration]))
+    Rc::new(TransportCompany::new(id, administrations))
 }
 
 fn set_short_name_long_name_full_name(
     mut values: Vec<ParsedValue>,
-    primary_index: &TransportCompanyPrimaryIndex,
+    primary_index: &PrimaryIndex<TransportCompany>,
     language: Language,
 ) {
     let id: i32 = values.remove(0).into();
-    // // TODO : parse that.
-    // let raw_data: String = values.remove(0).into();
+    let (short_name, long_name, full_name) =
+        parse_short_name_long_name_full_name(values.remove(0).into());
 
     let transport_company = primary_index.get(&id).unwrap();
-    transport_company.set_short_name(language, "");
-    transport_company.set_long_name(language, "");
-    transport_company.set_full_name(language, "");
+    transport_company.set_short_name(language, &short_name);
+    transport_company.set_long_name(language, &long_name);
+    transport_company.set_full_name(language, &full_name);
+}
+
+// ------------------------------------------------------------------------------------------------
+// --- Helper Functions
+// ------------------------------------------------------------------------------------------------
+
+fn parse_administrations(raw_administrations: String) -> Vec<String> {
+    raw_administrations
+        .split_whitespace()
+        .map(|s| s.to_owned())
+        .collect()
+}
+
+fn parse_short_name_long_name_full_name(raw_data: String) -> (String, String, String) {
+    let re = Regex::new(r"( )?(K|L|V) ").unwrap();
+    let data: Vec<String> = re
+        .split(&raw_data)
+        .map(|s| s.chars().filter(|&c| c != '"').collect())
+        .collect();
+
+    let short_name = data[0].to_owned();
+    let long_name = data[1].to_owned();
+    let full_name = data[2].to_owned();
+
+    (short_name, long_name, full_name)
 }

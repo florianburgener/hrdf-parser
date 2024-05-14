@@ -17,7 +17,7 @@ pub fn parse() -> Result<TimetableKeyData, Box<dyn Error>> {
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
 
-    // TODO : If there is a "." in column 3 for ROW_B, this code will not work.
+    // TODO: If there is a "." in column 3 for ROW_B, this code will not work.
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row contains the period start/end date in which timetables are effective.

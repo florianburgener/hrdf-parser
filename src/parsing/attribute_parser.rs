@@ -1,3 +1,4 @@
+// --$--
 // 5 file(s).
 // File(s) read by the parser:
 // ATTRIBUT
@@ -7,16 +8,17 @@
 use std::{collections::HashMap, error::Error, rc::Rc, str::FromStr};
 
 use crate::{
-    models::{Attribute, AttributeCollection, AttributePrimaryIndex, Language},
+    models::{Attribute, Language},
     parsing::{
         AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser,
         RowDefinition, RowParser,
-    }, storage::AttributeData,
+    },
+    storage::SimpleDataStorage,
 };
 
 use super::ParsedValue;
 
-pub fn parse() -> Result<AttributeData, Box<dyn Error>> {
+pub fn parse() -> Result<SimpleDataStorage<Attribute>, Box<dyn Error>> {
     println!("Parsing ATTRIBUT...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -34,11 +36,11 @@ pub fn parse() -> Result<AttributeData, Box<dyn Error>> {
             ColumnDefinition::new(6, 8, ExpectedType::Integer16),
             ColumnDefinition::new(10, 11, ExpectedType::Integer16),
         ]),
-        // This row is ignored. TODO : should i take care of this row?, e.g. # 1  1  1
+        // This row is ignored.
         RowDefinition::new(ROW_B, Box::new(FastRowMatcher::new(1, 1, "#", true)), Vec::new()),
         // This row indicates the language for translations in the section that follows it.
         RowDefinition::new(ROW_C, Box::new(FastRowMatcher::new(1, 1, "<", true)), vec![
-            ColumnDefinition::new(1, -1, ExpectedType::String), // This column has not been explicitly defined in the standard.
+            ColumnDefinition::new(1, -1, ExpectedType::String),
         ]),
         // This row contains the description in a specific language.
         RowDefinition::new(ROW_D, Box::new(
@@ -52,49 +54,40 @@ pub fn parse() -> Result<AttributeData, Box<dyn Error>> {
     let file_parser = FileParser::new("data/ATTRIBUT", row_parser)?;
 
     let mut rows = Vec::new();
-    let mut primary_index = None;
+    let mut legacy_primary_index = HashMap::new();
+
+    let mut next_id = 1;
     let mut current_language = Language::default();
 
     file_parser.parse().for_each(|(id, _, values)| match id {
-        ROW_A => rows.push(create_instance(values)),
-        ROW_B => {
-            if primary_index.is_none() {
-                // When ROW_B is reached, all instances have already been created.
-                // The primary index is then created only once.
-                primary_index = Some(create_primary_index(&rows));
-            }
+        ROW_A => {
+            let instance = create_instance(values, next_id);
+            legacy_primary_index.insert(instance.legacy_id().to_owned(), Rc::clone(&instance));
+            rows.push(instance);
+            next_id += 1;
         }
+        ROW_B => return,
         ROW_C => update_current_language(values, &mut current_language),
-        ROW_D => set_description(values, primary_index.as_ref().unwrap(), current_language),
+        ROW_D => set_description(values, &legacy_primary_index, current_language),
         _ => unreachable!(),
     });
 
-    Ok(AttributeData::new(rows, primary_index.unwrap()))
-}
-
-// ------------------------------------------------------------------------------------------------
-// --- Indexes Creation
-// ------------------------------------------------------------------------------------------------
-
-fn create_primary_index(rows: &AttributeCollection) -> AttributePrimaryIndex {
-    rows.iter().fold(HashMap::new(), |mut acc, item| {
-        acc.insert(item.id().to_owned(), Rc::clone(item));
-        acc
-    })
+    Ok(SimpleDataStorage::new(rows))
 }
 
 // ------------------------------------------------------------------------------------------------
 // --- Data Processing Functions
 // ------------------------------------------------------------------------------------------------
 
-fn create_instance(mut values: Vec<ParsedValue>) -> Rc<Attribute> {
-    let id: String = values.remove(0).into();
+fn create_instance(mut values: Vec<ParsedValue>, id: i32) -> Rc<Attribute> {
+    let legacy_id: String = values.remove(0).into();
     let stop_scope: i16 = values.remove(0).into();
     let main_sorting_priority: i16 = values.remove(0).into();
     let secondary_sorting_priority: i16 = values.remove(0).into();
 
     Rc::new(Attribute::new(
         id,
+        legacy_id,
         stop_scope,
         main_sorting_priority,
         secondary_sorting_priority,
@@ -103,14 +96,14 @@ fn create_instance(mut values: Vec<ParsedValue>) -> Rc<Attribute> {
 
 fn set_description(
     mut values: Vec<ParsedValue>,
-    primary_index: &AttributePrimaryIndex,
+    legacy_primary_index: &HashMap<String, Rc<Attribute>>,
     language: Language,
 ) {
-    let id: String = values.remove(0).into();
+    let legacy_id: String = values.remove(0).into();
     let description: String = values.remove(0).into();
 
-    primary_index
-        .get(&id)
+    legacy_primary_index
+        .get(&legacy_id)
         .unwrap()
         .set_description(language, &description);
 }

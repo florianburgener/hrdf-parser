@@ -4,8 +4,22 @@ use std::{
     rc::Rc,
 };
 
-use chrono::{NaiveDate, NaiveDateTime};
+use chrono::NaiveDate;
 use strum_macros::{self, Display, EnumString};
+
+pub trait Model<T: Model<T>> {
+    fn id(&self) -> i32;
+
+    fn create_primary_index(rows: &Vec<Rc<T>>) -> HashMap<i32, Rc<T>> {
+        rows.iter().fold(HashMap::new(), |mut acc, item| {
+            acc.insert(item.id(), Rc::clone(item));
+            acc
+        })
+    }
+}
+
+// pub type ModelCollection<T> = Vec<Rc<T>>;
+pub type PrimaryIndex<T> = HashMap<i32, Rc<T>>;
 
 // ------------------------------------------------------------------------------------------------
 // --- Attribute
@@ -13,26 +27,32 @@ use strum_macros::{self, Display, EnumString};
 
 #[derive(Debug)]
 pub struct Attribute {
-    id: String,
+    id: i32,
+    legacy_id: String,
     stop_scope: i16,
     main_sorting_priority: i16,
     secondary_sorting_priority: i16,
     description: RefCell<HashMap<String, String>>, // Key: deu, fra, ita or eng.
 }
 
-pub type AttributeCollection = Vec<Rc<Attribute>>;
-pub type AttributePrimaryIndex = HashMap<String, Rc<Attribute>>;
+impl Model<Attribute> for Attribute {
+    fn id(&self) -> i32 {
+        self.id
+    }
+}
 
 #[allow(unused)]
 impl Attribute {
     pub fn new(
-        id: String,
+        id: i32,
+        legacy_id: String,
         stop_scope: i16,
         main_sorting_priority: i16,
         secondary_sorting_priority: i16,
     ) -> Self {
         Self {
             id,
+            legacy_id,
             stop_scope,
             main_sorting_priority,
             secondary_sorting_priority,
@@ -40,8 +60,8 @@ impl Attribute {
         }
     }
 
-    pub fn id(&self) -> &str {
-        &self.id
+    pub fn legacy_id(&self) -> &str {
+        &self.legacy_id
     }
 
     pub fn stop_scope(&self) -> i16 {
@@ -78,21 +98,20 @@ impl Attribute {
 #[derive(Debug)]
 pub struct BitField {
     id: i32,
-    // TODO : find a better name, perhaps?
+    // TODO: find a better name, perhaps?
     values: Vec<u8>,
 }
 
-pub type BitFieldCollection = Vec<Rc<BitField>>;
-pub type BitFieldPrimaryIndex = HashMap<i32, Rc<BitField>>;
+impl Model<BitField> for BitField {
+    fn id(&self) -> i32 {
+        self.id
+    }
+}
 
 #[allow(unused)]
 impl BitField {
     pub fn new(id: i32, values: Vec<u8>) -> Self {
         Self { id, values }
-    }
-
-    pub fn id(&self) -> i32 {
-        return self.id;
     }
 
     pub fn values(&self) -> &Vec<u8> {
@@ -143,7 +162,6 @@ pub enum CoordinateType {
 
 #[derive(Debug, Default)]
 pub struct Coordinate {
-    // TODO : should I add a getter for the field?
     coordinate_type: CoordinateType,
     x: f64,
     y: f64,
@@ -192,21 +210,29 @@ impl Coordinate {
 
 #[derive(Debug)]
 pub struct Direction {
-    id: String,
+    id: i32,
+    legacy_id: String,
     name: String,
 }
 
-pub type DirectionCollection = Vec<Rc<Direction>>;
-pub type DirectionPrimaryIndex = HashMap<String, Rc<Direction>>;
+impl Model<Direction> for Direction {
+    fn id(&self) -> i32 {
+        self.id
+    }
+}
 
 #[allow(unused)]
 impl Direction {
-    pub fn new(id: String, name: String) -> Self {
-        Self { id, name }
+    pub fn new(id: i32, legacy_id: String, name: String) -> Self {
+        Self {
+            id,
+            legacy_id,
+            name,
+        }
     }
 
-    pub fn id(&self) -> &str {
-        &self.id
+    pub fn legacy_id(&self) -> &str {
+        &self.legacy_id
     }
 
     pub fn name(&self) -> &str {
@@ -220,16 +246,21 @@ impl Direction {
 
 #[derive(Debug)]
 pub struct Holiday {
+    id: i32,
     date: NaiveDate,
     name: HashMap<String, String>, // Key: deu, fra, ita or eng.
 }
 
-pub type HolidayCollection = Vec<Rc<Holiday>>;
+impl Model<Holiday> for Holiday {
+    fn id(&self) -> i32 {
+        self.id
+    }
+}
 
 #[allow(unused)]
 impl Holiday {
-    pub fn new(date: NaiveDate, name: HashMap<String, String>) -> Self {
-        Self { date, name }
+    pub fn new(id: i32, date: NaiveDate, name: HashMap<String, String>) -> Self {
+        Self { id, date, name }
     }
 
     pub fn date(&self) -> NaiveDate {
@@ -251,8 +282,11 @@ pub struct InformationText {
     content: RefCell<HashMap<String, String>>, // Key: deu, fra, ita or eng.
 }
 
-pub type InformationTextCollection = Vec<Rc<InformationText>>;
-pub type InformationTextPrimaryIndex = HashMap<i32, Rc<InformationText>>;
+impl Model<InformationText> for InformationText {
+    fn id(&self) -> i32 {
+        self.id
+    }
+}
 
 #[allow(unused)]
 impl InformationText {
@@ -308,9 +342,10 @@ pub enum Language {
 
 #[derive(Debug)]
 pub struct JourneyPlatform {
+    // TODO: i32 index
     journey_id: i32,
     platform_id: i64,
-    unknown1: String, // "Verwaltung für Fahrt"
+    administration: String,
     hour: Option<i16>,
     bit_field_id: Option<i32>,
 }
@@ -323,14 +358,14 @@ impl JourneyPlatform {
     pub fn new(
         journey_id: i32,
         platform_id: i64,
-        unknown1: String,
+        administration: String,
         hour: Option<i16>,
         bit_field_id: Option<i32>,
     ) -> Self {
         Self {
             journey_id,
             platform_id,
-            unknown1,
+            administration,
             hour,
             bit_field_id,
         }
@@ -344,8 +379,8 @@ impl JourneyPlatform {
         self.platform_id
     }
 
-    pub fn unknown1(&self) -> &str {
-        &self.unknown1
+    pub fn administration(&self) -> &str {
+        &self.administration
     }
 
     pub fn hour(&self) -> &Option<i16> {
@@ -361,7 +396,7 @@ impl JourneyPlatform {
 // --- Line
 // ------------------------------------------------------------------------------------------------
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Line {
     id: i32,
     name: String,
@@ -370,8 +405,11 @@ pub struct Line {
     background_color: RefCell<Color>,
 }
 
-pub type LineCollection = Vec<Rc<Line>>;
-pub type LinePrimaryIndex = HashMap<i32, Rc<Line>>;
+impl Model<Line> for Line {
+    fn id(&self) -> i32 {
+        self.id
+    }
+}
 
 #[allow(unused)]
 impl Line {
@@ -383,10 +421,6 @@ impl Line {
             text_color: RefCell::new(Color::default()),
             background_color: RefCell::new(Color::default()),
         }
-    }
-
-    pub fn id(&self) -> i32 {
-        self.id
     }
 
     pub fn name(&self) -> &str {
@@ -424,8 +458,9 @@ impl Line {
 
 #[derive(Debug)]
 pub struct Platform {
+    // TODO: i32 index
     id: i64, // Haltestellennummer << 32 + "Index der Gleistextinformation"
-    code: String,
+    name: String,
     sectors: Option<String>,
     sloid: RefCell<String>,
     lv95_coordinate: RefCell<Coordinate>,
@@ -437,10 +472,10 @@ pub type PlatformPrimaryIndex = HashMap<i64, Rc<Platform>>;
 
 #[allow(unused)]
 impl Platform {
-    pub fn new(id: i64, code: String, sectors: Option<String>) -> Self {
+    pub fn new(id: i64, name: String, sectors: Option<String>) -> Self {
         Self {
             id,
-            code,
+            name,
             sectors,
             sloid: RefCell::new(String::default()),
             lv95_coordinate: RefCell::new(Coordinate::default()),
@@ -456,8 +491,8 @@ impl Platform {
         self.id
     }
 
-    pub fn code(&self) -> &str {
-        &self.code
+    pub fn name(&self) -> &str {
+        &self.name
     }
 
     pub fn sectors(&self) -> &Option<String> {
@@ -506,14 +541,17 @@ pub struct Stop {
     changing_flag: RefCell<Option<i16>>,
     changing_time_inter_city: RefCell<i16>,
     changing_time_other: RefCell<i16>,
-    connections: RefCell<Vec<i32>>,
+    connections: RefCell<Vec<i32>>, // Vec of Stop.id
     restrictions: RefCell<i16>,
     sloid: RefCell<String>,
     boarding_areas: RefCell<Vec<String>>,
 }
 
-pub type StopCollection = Vec<Rc<Stop>>;
-pub type StopPrimaryIndex = HashMap<i32, Rc<Stop>>;
+impl Model<Stop> for Stop {
+    fn id(&self) -> i32 {
+        self.id
+    }
+}
 
 #[allow(unused)]
 impl Stop {
@@ -541,10 +579,6 @@ impl Stop {
             sloid: RefCell::new(String::new()),
             boarding_areas: RefCell::new(Vec::new()),
         }
-    }
-
-    pub fn id(&self) -> i32 {
-        self.id
     }
 
     pub fn name(&self) -> &str {
@@ -648,21 +682,26 @@ impl Stop {
 // --- StopConnection
 // ------------------------------------------------------------------------------------------------
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct StopConnection {
+    id: i32,
     stop_id_1: i32,
     stop_id_2: i32,
     duration: i16, // Transfer time from stop 1 to stop 2 is in minutes.
     attributes: RefCell<Vec<String>>,
 }
 
-pub type StopConnectionCollection = Vec<Rc<StopConnection>>;
-// TODO : primary index
+impl Model<StopConnection> for StopConnection {
+    fn id(&self) -> i32 {
+        self.id
+    }
+}
 
 #[allow(unused)]
 impl StopConnection {
-    pub fn new(stop_id_1: i32, stop_id_2: i32, duration: i16) -> Self {
+    pub fn new(id: i32, stop_id_1: i32, stop_id_2: i32, duration: i16) -> Self {
         Self {
+            id,
             stop_id_1,
             stop_id_2,
             duration,
@@ -692,87 +731,46 @@ impl StopConnection {
 }
 
 // ------------------------------------------------------------------------------------------------
-// --- TimeDifference
-// ------------------------------------------------------------------------------------------------
-
-#[allow(unused)] // TODO
-#[derive(Debug)]
-pub struct TimeDifference {
-    stop_id: i32,
-    time_zone: i32,
-    time_zone_summer_1: Option<i32>,
-    start_date_1: Option<NaiveDateTime>,
-    end_date_1: Option<NaiveDateTime>,
-    time_zone_summer_2: Option<i32>,
-    start_date_2: Option<NaiveDateTime>,
-    end_date_2: Option<NaiveDateTime>,
-}
-
-pub type TimeDifferenceCollection = Vec<Rc<TimeDifference>>;
-
-#[allow(unused)]
-impl TimeDifference {
-    pub fn new(
-        stop_id: i32,
-        time_zone: i32,
-        time_zone_summer_1: Option<i32>,
-        start_date_1: Option<NaiveDateTime>,
-        end_date_1: Option<NaiveDateTime>,
-        time_zone_summer_2: Option<i32>,
-        start_date_2: Option<NaiveDateTime>,
-        end_date_2: Option<NaiveDateTime>,
-    ) -> Self {
-        Self {
-            stop_id,
-            time_zone,
-            time_zone_summer_1,
-            start_date_1,
-            end_date_1,
-            time_zone_summer_2,
-            start_date_2,
-            end_date_2,
-        }
-    }
-
-    // TODO
-}
-
-// ------------------------------------------------------------------------------------------------
 // --- ThroughService
 // ------------------------------------------------------------------------------------------------
 
 #[derive(Debug)]
 pub struct ThroughService {
+    id: i32,
     journey_1_id: i32,
-    journey_1_unknown: String, // "Verwaltung für Fahrt 1"
-    journey_1_stop_id: i32,    // Last stop of journey 1.
+    journey_1_administration: String,
+    journey_1_stop_id: i32, // Last stop of journey 1.
     journey_2_id: i32,
-    journey_2_unknown: String,      // "Verwaltung für Fahrt 2"
+    journey_2_administration: String,
     journey_2_stop_id: Option<i32>, // First stop of journey 2.
     bit_field_id: i32,
-    // TODO : "Attribut zur Markierung der Durchbindung (optional)"
 }
 
-pub type ThroughServiceCollection = Vec<Rc<ThroughService>>;
-// TODO : primary index
+impl Model<ThroughService> for ThroughService {
+    fn id(&self) -> i32 {
+        self.id
+    }
+}
 
 #[allow(unused)]
 impl ThroughService {
     pub fn new(
+        id: i32,
         journey_1_id: i32,
-        journey_1_unknown: String,
+        journey_1_administration: String,
         journey_1_stop_id: i32,
         journey_2_id: i32,
-        journey_2_unknown: String,
+        journey_2_administration: String,
         journey_2_stop_id: Option<i32>,
         bit_field_id: i32,
     ) -> Self {
         Self {
+            id,
             journey_1_id,
-            journey_1_unknown,
+            journey_1_administration,
             journey_1_stop_id,
             journey_2_id,
-            journey_2_unknown,
+            journey_2_administration,
             journey_2_stop_id,
             bit_field_id,
         }
@@ -782,8 +780,8 @@ impl ThroughService {
         self.journey_1_id
     }
 
-    pub fn journey_1_unknown(&self) -> &str {
-        &self.journey_1_unknown
+    pub fn journey_1_administration(&self) -> &str {
+        &self.journey_1_administration
     }
 
     pub fn journey_1_stop_id(&self) -> i32 {
@@ -794,8 +792,8 @@ impl ThroughService {
         self.journey_2_id
     }
 
-    pub fn journey_2_unknown(&self) -> &str {
-        &self.journey_2_unknown
+    pub fn journey_2_administration(&self) -> &str {
+        &self.journey_2_administration
     }
 
     pub fn journey_2_stop_id(&self) -> &Option<i32> {
@@ -813,6 +811,7 @@ impl ThroughService {
 
 #[derive(Debug)]
 pub struct TimetableKeyData {
+    // TODO: i32 index
     start_date: NaiveDate, // The date is included.
     end_date: NaiveDate,   // The date is included.
     metadata: Vec<String>,
@@ -854,8 +853,11 @@ pub struct TransportCompany {
     administrations: Vec<String>,
 }
 
-pub type TransportCompanyCollection = Vec<Rc<TransportCompany>>;
-pub type TransportCompanyPrimaryIndex = HashMap<i32, Rc<TransportCompany>>;
+impl Model<TransportCompany> for TransportCompany {
+    fn id(&self) -> i32 {
+        self.id
+    }
+}
 
 #[allow(unused)]
 impl TransportCompany {
@@ -867,10 +869,6 @@ impl TransportCompany {
             full_name: RefCell::new(HashMap::new()),
             administrations,
         }
-    }
-
-    pub fn id(&self) -> i32 {
-        self.id
     }
 
     pub fn short_name(&self, language: Language) -> String {
@@ -924,8 +922,10 @@ impl TransportCompany {
 // --- TransportType
 // ------------------------------------------------------------------------------------------------
 
+// TODO: Double check this type.
 #[derive(Debug)]
 pub struct TransportType {
+    // TODO: i32 index
     id: String,
     product_class_id: i16,
     tarrif_group: String,
@@ -934,7 +934,7 @@ pub struct TransportType {
     surchage: i16,
     flag: String,
     product_class_name: RefCell<HashMap<String, String>>,
-    long_name: RefCell<HashMap<String, String>>, // TODO : option10, option11, option12, ...
+    category_name: RefCell<HashMap<String, String>>, // TODO: option10, option11, option12, ...
 }
 
 pub type TransportTypeCollection = Vec<Rc<TransportType>>;
@@ -960,7 +960,7 @@ impl TransportType {
             surchage,
             flag,
             product_class_name: RefCell::new(HashMap::new()),
-            long_name: RefCell::new(HashMap::new()),
+            category_name: RefCell::new(HashMap::new()),
         }
     }
 
@@ -1006,16 +1006,16 @@ impl TransportType {
             .insert(language.to_string(), value.to_string());
     }
 
-    pub fn long_name(&self, language: Language) -> String {
-        self.long_name
+    pub fn category_name(&self, language: Language) -> String {
+        self.category_name
             .borrow()
             .get(&language.to_string())
             .cloned()
             .unwrap()
     }
 
-    pub fn set_long_name(&self, language: Language, value: &str) {
-        self.long_name
+    pub fn set_category_name(&self, language: Language, value: &str) {
+        self.category_name
             .borrow_mut()
             .insert(language.to_string(), value.to_string());
     }

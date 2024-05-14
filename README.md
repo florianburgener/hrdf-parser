@@ -1,9 +1,9 @@
 Progression (34/38) :
 * ATTRIBUT
-* ATTRIBUT_DE
-* ATTRIBUT_EN
-* ATTRIBUT_FR
-* ATTRIBUT_IT
+* ATTRIBUT_DE (fichier pas utilisé dans le code)
+* ATTRIBUT_EN (fichier pas utilisé dans le code)
+* ATTRIBUT_FR (fichier pas utilisé dans le code)
+* ATTRIBUT_IT (fichier pas utilisé dans le code)
 * BAHNHOF
 * BETRIEB_DE
 * BETRIEB_EN
@@ -12,7 +12,7 @@ Progression (34/38) :
 * BFKOORD_LV95
 * BFKOORD_WGS
 * BFPRIOS
-* BHFART
+* BHFART (fichier pas utilisé dans le code)
 * BHFART_60
 * BITFELD
 * DURCHBI
@@ -21,7 +21,7 @@ Progression (34/38) :
 * GLEIS
 * GLEIS_LV95
 * GLEIS_WGS
-* GRENZHLT (the file is empty)
+* GRENZHLT (fichier pas utilisé dans le code)
 * INFOTEXT_DE
 * INFOTEXT_EN
 * INFOTEXT_FR
@@ -32,10 +32,23 @@ Progression (34/38) :
 * RICHTUNG
 * UMSTEIGB
 * ZUGART
-* ZEITVS
+* ZEITVS (fichier pas utilisé dans le code)
 
-TODO :
+Fichiers restants :
+* FPLAN
+* UMSTEIGL
+* UMSTEIGV
+* UMSTEIGZ
 
+TODO:
+
+* Terminer le parsing
+    * Remap les identifiants primaires composites vers un i32
+    * Remap les clés étrangères vers un i32
+    * Simplifier le code de parsing quand cela est possible cf. line_parser + le compléter aussi
 * thiserror
 * Chunk loading des fichiers
 * Changer TimetableKeyData vers key => value
+
+
+plateform_parser, stop_parser, timetable_key_parser, transport_type_parser

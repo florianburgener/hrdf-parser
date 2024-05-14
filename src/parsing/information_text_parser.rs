@@ -1,17 +1,18 @@
+// --$--
 // 4 file(s).
 // File(s) read by the parser:
 // INFOTEXT_DE, INFOTEXT_EN, INFOTEXT_FR, INFOTEXT_IT
-use std::{collections::HashMap, error::Error, rc::Rc};
+use std::{error::Error, rc::Rc};
 
 use crate::{
-    models::{InformationText, InformationTextCollection, InformationTextPrimaryIndex, Language},
+    models::{InformationText, Language, Model, PrimaryIndex},
     parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
-    storage::InformationTextData,
+    storage::SimpleDataStorage,
 };
 
 use super::ParsedValue;
 
-pub fn parse() -> Result<InformationTextData, Box<dyn Error>> {
+pub fn parse() -> Result<SimpleDataStorage<InformationText>, Box<dyn Error>> {
     println!("Parsing INFOTEXT_DE...");
     println!("Parsing INFOTEXT_EN...");
     println!("Parsing INFOTEXT_FR...");
@@ -31,23 +32,23 @@ pub fn parse() -> Result<InformationTextData, Box<dyn Error>> {
         .map(|(_, _, values)| create_instance(values))
         .collect();
 
-    let primary_index = create_primary_index(&rows);
+    let primary_index = InformationText::create_primary_index(&rows);
 
     load_content_translation(&primary_index, Language::German)?;
     load_content_translation(&primary_index, Language::English)?;
     load_content_translation(&primary_index, Language::French)?;
     load_content_translation(&primary_index, Language::Italian)?;
 
-    Ok(InformationTextData::new(rows, primary_index))
+    Ok(SimpleDataStorage::new(rows))
 }
 
 fn load_content_translation(
-    primary_index: &InformationTextPrimaryIndex,
+    primary_index: &PrimaryIndex<InformationText>,
     language: Language,
 ) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
-        // This row is used to create a InformationText instance.
+        // This row contains the content in a specific language.
         RowDefinition::from(vec![
             ColumnDefinition::new(1, 9, ExpectedType::Integer32),
             ColumnDefinition::new(11, -1, ExpectedType::String),
@@ -70,17 +71,6 @@ fn load_content_translation(
 }
 
 // ------------------------------------------------------------------------------------------------
-// --- Indexes Creation
-// ------------------------------------------------------------------------------------------------
-
-fn create_primary_index(rows: &InformationTextCollection) -> InformationTextPrimaryIndex {
-    rows.iter().fold(HashMap::new(), |mut acc, item| {
-        acc.insert(item.id(), Rc::clone(item));
-        acc
-    })
-}
-
-// ------------------------------------------------------------------------------------------------
 // --- Data Processing Functions
 // ------------------------------------------------------------------------------------------------
 
@@ -92,7 +82,7 @@ fn create_instance(mut values: Vec<ParsedValue>) -> Rc<InformationText> {
 
 fn set_content(
     mut values: Vec<ParsedValue>,
-    primary_index: &InformationTextPrimaryIndex,
+    primary_index: &PrimaryIndex<InformationText>,
     language: Language,
 ) {
     let id: i32 = values.remove(0).into();

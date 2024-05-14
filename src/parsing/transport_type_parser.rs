@@ -40,21 +40,16 @@ pub fn parse() -> Result<TransportTypeData, Box<dyn Error>> {
         RowDefinition::new(ROW_B, Box::new(FastRowMatcher::new(1, 1, "<", true)), vec![
             ColumnDefinition::new(1, -1, ExpectedType::String),
         ]),
-        // This row contains product class name in a specific language.
+        // This row contains the product class name in a specific language.
         RowDefinition::new(ROW_C, Box::new(
             AdvancedRowMatcher::new("^class.+$")?
         ), vec![
             ColumnDefinition::new(6, 7, ExpectedType::Integer16),
             ColumnDefinition::new(9, -1, ExpectedType::String),
         ]),
-        // -
-        RowDefinition::new(ROW_D, Box::new(
-            AdvancedRowMatcher::new("^option.+$")?
-        ), vec![
-            ColumnDefinition::new(7, 8, ExpectedType::Integer16),
-            ColumnDefinition::new(10, -1, ExpectedType::String),
-        ]),
-        // This row contains long name in a specific language.
+        // This row is ignored.
+        RowDefinition::new(ROW_D, Box::new(AdvancedRowMatcher::new("^option.+$")?), Vec::new()),
+        // This row contains the category name in a specific language.
         RowDefinition::new(ROW_E, Box::new(
             AdvancedRowMatcher::new("^category.+$")?
         ), vec![
@@ -73,7 +68,7 @@ pub fn parse() -> Result<TransportTypeData, Box<dyn Error>> {
         ROW_B => update_current_language(values, &mut current_language),
         ROW_C => set_product_class_name(values, &rows, current_language),
         ROW_D => return,
-        ROW_E => set_long_name(values, &rows, current_language),
+        ROW_E => set_category_name(values, &rows, current_language),
         _ => unreachable!(),
     });
 
@@ -83,7 +78,7 @@ pub fn parse() -> Result<TransportTypeData, Box<dyn Error>> {
 }
 
 // ------------------------------------------------------------------------------------------------
-// --- Indexes Creation
+// --- Legacy Primary Index
 // ------------------------------------------------------------------------------------------------
 
 fn create_primary_index(rows: &TransportTypeCollection) -> TransportTypePrimaryIndex {
@@ -132,14 +127,14 @@ fn set_product_class_name(
     }
 }
 
-fn set_long_name(mut values: Vec<ParsedValue>, rows: &TransportTypeCollection, language: Language) {
+fn set_category_name(mut values: Vec<ParsedValue>, rows: &TransportTypeCollection, language: Language) {
     let index: i32 = values.remove(0).into();
     let index = index as usize;
-    let long_name: String = values.remove(0).into();
+    let category_name: String = values.remove(0).into();
 
     rows.get(index - 1)
         .unwrap()
-        .set_long_name(language, &long_name);
+        .set_category_name(language, &category_name);
 }
 
 // ------------------------------------------------------------------------------------------------

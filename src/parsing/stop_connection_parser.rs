@@ -9,12 +9,12 @@ use crate::{
         AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser,
         RowDefinition, RowParser,
     },
-    storage::StopConnectionData,
+    storage::SimpleDataStorage,
 };
 
 use super::ParsedValue;
 
-pub fn parse() -> Result<StopConnectionData, Box<dyn Error>> {
+pub fn parse() -> Result<SimpleDataStorage<StopConnection>, Box<dyn Error>> {
     println!("Parsing METABHF 1/2...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -28,7 +28,7 @@ pub fn parse() -> Result<StopConnectionData, Box<dyn Error>> {
             ColumnDefinition::new(9, 15, ExpectedType::Integer32),
             ColumnDefinition::new(17, 19, ExpectedType::Integer16),
         ]),
-        //
+        // This row contains the attributes.
         RowDefinition::new(ROW_B, Box::new(FastRowMatcher::new(1, 2, "*A", true)), vec![
             ColumnDefinition::new(4, 5, ExpectedType::String),
         ]),
@@ -37,35 +37,37 @@ pub fn parse() -> Result<StopConnectionData, Box<dyn Error>> {
     ]);
     let file_parser = FileParser::new("data/METABHF", row_parser)?;
 
-    let mut rows = Vec::new();
-    let mut current_instance: Option<Rc<StopConnection>> = None;
+    let mut rows: Vec<Rc<StopConnection>> = Vec::new();
+    let mut next_id = 1;
+    let mut current_row = Rc::new(StopConnection::default());
 
     file_parser
         .parse()
         .for_each(|(id, _, mut values)| match id {
             ROW_A => {
-                current_instance = Some(create_instance(values));
-                rows.push(Rc::clone(current_instance.as_ref().unwrap()));
+                current_row = create_instance(values, next_id);
+                rows.push(Rc::clone(&current_row));
+                next_id += 1;
             }
             ROW_B => {
                 let attribute: String = values.remove(0).into();
-                current_instance.as_ref().unwrap().add_attribute(attribute);
+                current_row.add_attribute(attribute);
             }
             ROW_C => return,
             _ => unreachable!(),
         });
 
-    Ok(StopConnectionData::new(rows))
+    Ok(SimpleDataStorage::new(rows))
 }
 
 // ------------------------------------------------------------------------------------------------
 // --- Data Processing Functions
 // ------------------------------------------------------------------------------------------------
 
-fn create_instance(mut values: Vec<ParsedValue>) -> Rc<StopConnection> {
+fn create_instance(mut values: Vec<ParsedValue>, id: i32) -> Rc<StopConnection> {
     let stop_id_1: i32 = values.remove(0).into();
     let stop_id_2: i32 = values.remove(0).into();
     let duration: i16 = values.remove(0).into();
 
-    Rc::new(StopConnection::new(stop_id_1, stop_id_2, duration))
+    Rc::new(StopConnection::new(id, stop_id_1, stop_id_2, duration))
 }
