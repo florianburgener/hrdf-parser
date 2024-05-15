@@ -12,54 +12,54 @@ use crate::{
 #[allow(unused)]
 #[derive(Debug)]
 pub struct Hrdf {
-    attributes: SimpleResourceStorage<Attribute>,
-    bit_fields: SimpleResourceStorage<BitField>,
-    directions: SimpleResourceStorage<Direction>,
-    holidays: SimpleResourceStorage<Holiday>,
-    information_texts: SimpleResourceStorage<InformationText>,
-    lines: SimpleResourceStorage<Line>,
+    attribute: SimpleResourceStorage<Attribute>,
+    bit_field: SimpleResourceStorage<BitField>,
+    direction: SimpleResourceStorage<Direction>,
+    holiday: SimpleResourceStorage<Holiday>,
+    information_text: SimpleResourceStorage<InformationText>,
+    line: SimpleResourceStorage<Line>,
     journey_platform: SimpleResourceStorage<JourneyPlatform>,
-    platforms: SimpleResourceStorage<Platform>,
-    stop_connections: SimpleResourceStorage<StopConnection>,
-    stops: SimpleResourceStorage<Stop>,
-    through_service_entries: SimpleResourceStorage<ThroughService>,
+    platform: SimpleResourceStorage<Platform>,
+    stop: SimpleResourceStorage<Stop>,
+    stop_connection: SimpleResourceStorage<StopConnection>,
+    through_service: SimpleResourceStorage<ThroughService>,
     timetable_metadata: SimpleResourceStorage<TimetableMetadata>,
-    transport_companies: SimpleResourceStorage<TransportCompany>,
-    transport_types: SimpleResourceStorage<TransportType>,
+    transport_company: SimpleResourceStorage<TransportCompany>,
+    transport_type: SimpleResourceStorage<TransportType>,
 }
 
 #[allow(unused)]
 impl Hrdf {
     pub fn new() -> Result<Rc<Self>, Box<dyn Error>> {
-        let (attributes, _) = parsing::load_attributes()?;
-        let bit_fields = parsing::load_bit_fields()?;
-        let (directions, _) = parsing::load_directions()?;
-        let holidays = parsing::load_holidays()?;
-        let information_texts = parsing::load_information_texts()?;
-        let lines = parsing::load_lines()?;
-        let (journey_platform, platforms, _) = parsing::load_platforms()?;
-        let stop_connections = parsing::load_stop_connections()?;
-        let stops = parsing::load_stops()?;
-        let through_service_entries = parsing::load_through_service_entries()?;
-        let timetable_metadata = parsing::load_timetable_metadata()?;
-        let transport_companies = parsing::load_transport_companies()?;
-        let (transport_types, _) = parsing::load_transport_types()?;
+        let (attribute, _) = parsing::load_attribute_resource()?;
+        let bit_field = parsing::load_bit_field_resource()?;
+        let (direction, _) = parsing::load_direction_resource()?;
+        let holiday = parsing::load_holiday_resource()?;
+        let information_text = parsing::load_information_text_resource()?;
+        let line = parsing::load_line_resource()?;
+        let (journey_platform, platform, _) = parsing::load_platform_resource()?;
+        let stop = parsing::load_stop_resource()?;
+        let stop_connection = parsing::load_stop_connection_resource()?;
+        let through_service = parsing::load_through_service_resource()?;
+        let timetable_metadata = parsing::load_timetable_metadata_resource()?;
+        let transport_company = parsing::load_transport_company_resource()?;
+        let (transport_type, _) = parsing::load_transport_type_resource()?;
 
         let instance = Rc::new(Self {
-            attributes,
-            bit_fields,
-            directions,
-            holidays,
-            information_texts,
-            lines,
+            attribute,
+            bit_field,
+            direction,
+            holiday,
+            information_text,
+            line,
             journey_platform,
-            platforms,
-            stop_connections,
-            stops,
-            through_service_entries,
+            platform,
+            stop,
+            stop_connection,
+            through_service,
             timetable_metadata,
-            transport_companies,
-            transport_types,
+            transport_company,
+            transport_type,
         });
 
         // Self::set_parent_references(&instance);
@@ -72,11 +72,11 @@ impl Hrdf {
     //     }
     // }
 
-    pub fn platforms(&self) -> &SimpleResourceStorage<Platform> {
-        return &self.platforms;
+    pub fn platform(&self) -> &SimpleResourceStorage<Platform> {
+        return &self.platform;
     }
 
-    pub fn stops(&self) -> &SimpleResourceStorage<Stop> {
-        &self.stops
+    pub fn stop(&self) -> &SimpleResourceStorage<Stop> {
+        &self.stop
     }
 }

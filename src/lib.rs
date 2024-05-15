@@ -16,8 +16,8 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     println!("------------------------------------------------------------------------------------------------");
     println!();
 
-    println!("{} platforms", hrdf.platforms().rows().len());
-    println!("{} stops", hrdf.stops().rows().len());
+    println!("{} platforms", hrdf.platform().rows().len());
+    println!("{} stops", hrdf.stop().rows().len());
 
     // println!();
 
