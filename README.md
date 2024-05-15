@@ -41,7 +41,7 @@ Fichiers restants :
 * UMSTEIGZ
 
 let primary_index = information_text_parser, stop_parser, transport_company_parser
-let mut legacy_primary_index = attribute_parser, direction_parser
+let mut legacy_primary_index = attribute_parser, direction_parser, platform_parser, transport_type_parser
 
 TODO :
 * Terminer le parsing

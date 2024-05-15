@@ -6,7 +6,7 @@ use std::{error::Error, rc::Rc};
 use chrono::NaiveDate;
 
 use crate::{
-    models::TimetableMetadata,
+    models::{ResourceCollection, TimetableMetadata},
     parsing::{AdvancedRowMatcher, FastRowMatcher, ParsedValue, RowDefinition, RowParser},
     storage::SimpleDataStorage,
 };
@@ -45,7 +45,7 @@ pub fn parse() -> Result<SimpleDataStorage<TimetableMetadata>, Box<dyn Error>> {
     let end_date = NaiveDate::parse_from_str(&end_date, "%d.%m.%Y")?;
     let metadata: Vec<String> = metadata.split('$').map(String::from).collect();
 
-    let rows: Vec<Rc<TimetableMetadata>>;
+    let rows: ResourceCollection<TimetableMetadata>;
     let mut next_id = 1;
 
     rows = vec![

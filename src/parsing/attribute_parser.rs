@@ -7,7 +7,7 @@
 use std::{collections::HashMap, error::Error, rc::Rc, str::FromStr};
 
 use crate::{
-    models::{Attribute, Language},
+    models::{Attribute, Language, ResourceIndex},
     parsing::{
         AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser,
         RowDefinition, RowParser,
@@ -17,7 +17,13 @@ use crate::{
 
 use super::ParsedValue;
 
-pub fn parse() -> Result<SimpleDataStorage<Attribute>, Box<dyn Error>> {
+pub fn parse() -> Result<
+    (
+        SimpleDataStorage<Attribute>,
+        ResourceIndex<Attribute, String>,
+    ),
+    Box<dyn Error>,
+> {
     println!("Parsing ATTRIBUT...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -58,8 +64,8 @@ pub fn parse() -> Result<SimpleDataStorage<Attribute>, Box<dyn Error>> {
 
     file_parser.parse().for_each(|(id, _, values)| match id {
         ROW_A => {
-            let instance = create_instance(values, next_id);
-            legacy_primary_index.insert(instance.legacy_id().to_owned(), Rc::clone(&instance));
+            let (instance, k) = create_instance(values, next_id);
+            legacy_primary_index.insert(k, Rc::clone(&instance));
             rows.push(instance);
             next_id += 1;
         }
@@ -69,31 +75,32 @@ pub fn parse() -> Result<SimpleDataStorage<Attribute>, Box<dyn Error>> {
         _ => unreachable!(),
     });
 
-    Ok(SimpleDataStorage::new(rows))
+    Ok((SimpleDataStorage::new(rows), legacy_primary_index))
 }
 
 // ------------------------------------------------------------------------------------------------
 // --- Data Processing Functions
 // ------------------------------------------------------------------------------------------------
 
-fn create_instance(mut values: Vec<ParsedValue>, id: i32) -> Rc<Attribute> {
-    let legacy_id: String = values.remove(0).into();
+fn create_instance(mut values: Vec<ParsedValue>, id: i32) -> (Rc<Attribute>, String) {
+    let designation: String = values.remove(0).into();
     let stop_scope: i16 = values.remove(0).into();
     let main_sorting_priority: i16 = values.remove(0).into();
     let secondary_sorting_priority: i16 = values.remove(0).into();
 
-    Rc::new(Attribute::new(
+    let instance = Rc::new(Attribute::new(
         id,
-        legacy_id,
+        designation.to_owned(),
         stop_scope,
         main_sorting_priority,
         secondary_sorting_priority,
-    ))
+    ));
+    (instance, designation)
 }
 
 fn set_description(
     mut values: Vec<ParsedValue>,
-    legacy_primary_index: &HashMap<String, Rc<Attribute>>,
+    legacy_primary_index: &ResourceIndex<Attribute, String>,
     language: Language,
 ) {
     let legacy_id: String = values.remove(0).into();

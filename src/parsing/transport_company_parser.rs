@@ -6,7 +6,7 @@ use std::{error::Error, rc::Rc};
 use regex::Regex;
 
 use crate::{
-    models::{Language, Model, PrimaryIndex, TransportCompany},
+    models::{Language, Model, ResourceIndex, TransportCompany},
     parsing::{ColumnDefinition, ExpectedType, FastRowMatcher, RowDefinition, RowParser},
     storage::SimpleDataStorage,
 };
@@ -29,7 +29,7 @@ pub fn parse() -> Result<SimpleDataStorage<TransportCompany>, Box<dyn Error>> {
     ]);
     let file_parser = FileParser::new("data/BETRIEB_DE", row_parser)?;
 
-    let mut rows: Vec<Rc<TransportCompany>> = Vec::new();
+    let mut rows = Vec::new();
 
     file_parser.parse().for_each(|(id, _, values)| match id {
         ROW_B => rows.push(create_instance(values)),
@@ -47,7 +47,7 @@ pub fn parse() -> Result<SimpleDataStorage<TransportCompany>, Box<dyn Error>> {
 }
 
 fn load_designations(
-    primary_index: &PrimaryIndex<TransportCompany>,
+    primary_index: &ResourceIndex<TransportCompany>,
     language: Language,
 ) -> Result<(), Box<dyn Error>> {
     const ROW_A: i32 = 1;
@@ -95,7 +95,7 @@ fn create_instance(mut values: Vec<ParsedValue>) -> Rc<TransportCompany> {
 
 fn set_designations(
     mut values: Vec<ParsedValue>,
-    primary_index: &PrimaryIndex<TransportCompany>,
+    primary_index: &ResourceIndex<TransportCompany>,
     language: Language,
 ) {
     let id: i32 = values.remove(0).into();

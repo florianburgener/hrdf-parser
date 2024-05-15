@@ -4,14 +4,14 @@
 use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{
-    models::Direction,
+    models::{Direction, ResourceCollection, ResourceIndex},
     parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
     storage::SimpleDataStorage,
 };
 
 use super::ParsedValue;
 
-pub fn parse() -> Result<SimpleDataStorage<Direction>, Box<dyn Error>> {
+pub fn parse() -> Result<(SimpleDataStorage<Direction>, ResourceIndex<Direction, String>), Box<dyn Error>> {
     println!("Parsing RICHTUNG...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -23,19 +23,19 @@ pub fn parse() -> Result<SimpleDataStorage<Direction>, Box<dyn Error>> {
     ]);
     let file_parser = FileParser::new("data/RICHTUNG", row_parser)?;
 
-    let rows: Vec<Rc<Direction>>;
+    let rows: ResourceCollection<Direction>;
     let mut legacy_primary_index = HashMap::new();
 
     rows = file_parser
         .parse()
         .map(|(_, _, values)| {
-            let (instance, id_str) = create_instance(values);
-            legacy_primary_index.insert(id_str, Rc::clone(&instance));
+            let (instance, k) = create_instance(values);
+            legacy_primary_index.insert(k, Rc::clone(&instance));
             instance
         })
         .collect();
 
-    Ok(SimpleDataStorage::new(rows))
+    Ok((SimpleDataStorage::new(rows), legacy_primary_index))
 }
 
 // ------------------------------------------------------------------------------------------------

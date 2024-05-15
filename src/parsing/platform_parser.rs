@@ -6,7 +6,7 @@
 use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{
-    models::{Coordinate, CoordinateType, JourneyPlatform, Model, Platform},
+    models::{Coordinate, CoordinateType, JourneyPlatform, Model, Platform, ResourceIndex},
     parsing::{
         ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, RowDefinition, RowParser,
     },
@@ -19,6 +19,7 @@ pub fn parse() -> Result<
     (
         SimpleDataStorage<JourneyPlatform>,
         SimpleDataStorage<Platform>,
+        ResourceIndex<Platform, (i32, i32)>
     ),
     Box<dyn Error>,
 > {
@@ -47,10 +48,11 @@ pub fn parse() -> Result<
     let file_parser = FileParser::new("data/GLEIS", row_parser)?;
 
     let mut journey_platform_data = Vec::new();
-    let mut bytes_offset = 0;
 
     let mut platforms = Vec::new();
     let mut platforms_legacy_primary_index = HashMap::new();
+
+    let mut bytes_offset = 0;
     let mut next_id = 1;
 
     file_parser
@@ -84,6 +86,7 @@ pub fn parse() -> Result<
     Ok((
         SimpleDataStorage::new(journey_platform),
         SimpleDataStorage::new(platforms),
+        platforms_legacy_primary_index,
     ))
 }
 
@@ -162,9 +165,9 @@ fn create_journey_platform(
 fn create_platform(mut values: Vec<ParsedValue>, id: i32) -> (Rc<Platform>, (i32, i32)) {
     let stop_id: i32 = values.remove(0).into();
     let index: i32 = values.remove(0).into();
-    let raw_platform_data: String = values.remove(0).into();
+    let platform_data: String = values.remove(0).into();
 
-    let (code, sectors) = parse_platform_data(raw_platform_data);
+    let (code, sectors) = parse_platform_data(platform_data);
 
     let instance = Rc::new(Platform::new(id, code, sectors, stop_id));
     (instance, (stop_id, index))
@@ -220,9 +223,9 @@ fn set_coordinate_of_platform(
 // --- Helper Functions
 // ------------------------------------------------------------------------------------------------
 
-fn parse_platform_data(mut raw_platform_data: String) -> (String, Option<String>) {
-    raw_platform_data = format!("{} ", raw_platform_data);
-    let data = raw_platform_data
+fn parse_platform_data(mut platform_data: String) -> (String, Option<String>) {
+    platform_data = format!("{} ", platform_data);
+    let data = platform_data
         .split("' ")
         .filter(|&s| !s.is_empty())
         .fold(HashMap::new(), |mut acc, item| {

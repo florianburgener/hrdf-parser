@@ -7,7 +7,7 @@
 use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{
-    models::{Coordinate, CoordinateType, Model, PrimaryIndex, Stop},
+    models::{Coordinate, CoordinateType, Model, ResourceIndex, Stop},
     parsing::{AdvancedRowMatcher, FastRowMatcher},
     storage::SimpleDataStorage,
 };
@@ -53,7 +53,7 @@ pub fn parse() -> Result<SimpleDataStorage<Stop>, Box<dyn Error>> {
 
 fn load_coordinates(
     coordinate_type: CoordinateType,
-    primary_index: &PrimaryIndex<Stop>,
+    primary_index: &ResourceIndex<Stop>,
 ) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -79,7 +79,7 @@ fn load_coordinates(
     Ok(())
 }
 
-fn load_changing_priorities(primary_index: &PrimaryIndex<Stop>) -> Result<(), Box<dyn Error>> {
+fn load_changing_priorities(primary_index: &ResourceIndex<Stop>) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row contains the changing priority.
@@ -98,7 +98,7 @@ fn load_changing_priorities(primary_index: &PrimaryIndex<Stop>) -> Result<(), Bo
     Ok(())
 }
 
-fn load_changing_flags(primary_index: &PrimaryIndex<Stop>) -> Result<(), Box<dyn Error>> {
+fn load_changing_flags(primary_index: &ResourceIndex<Stop>) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row contains the changing flag.
@@ -117,7 +117,7 @@ fn load_changing_flags(primary_index: &PrimaryIndex<Stop>) -> Result<(), Box<dyn
     Ok(())
 }
 
-fn load_changing_times(primary_index: &PrimaryIndex<Stop>) -> Result<(), Box<dyn Error>> {
+fn load_changing_times(primary_index: &ResourceIndex<Stop>) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row contains the changing time.
@@ -137,7 +137,7 @@ fn load_changing_times(primary_index: &PrimaryIndex<Stop>) -> Result<(), Box<dyn
     Ok(())
 }
 
-fn load_connections(primary_index: &PrimaryIndex<Stop>) -> Result<(), Box<dyn Error>> {
+fn load_connections(primary_index: &ResourceIndex<Stop>) -> Result<(), Box<dyn Error>> {
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
     const ROW_C: i32 = 3;
@@ -165,7 +165,7 @@ fn load_connections(primary_index: &PrimaryIndex<Stop>) -> Result<(), Box<dyn Er
     Ok(())
 }
 
-fn load_descriptions(primary_index: &PrimaryIndex<Stop>) -> Result<(), Box<dyn Error>> {
+fn load_descriptions(primary_index: &ResourceIndex<Stop>) -> Result<(), Box<dyn Error>> {
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
     const ROW_C: i32 = 3;
@@ -220,7 +220,7 @@ fn create_instance(mut values: Vec<ParsedValue>) -> Rc<Stop> {
 fn set_coordinate(
     mut values: Vec<ParsedValue>,
     coordinate_type: CoordinateType,
-    primary_index: &PrimaryIndex<Stop>,
+    primary_index: &ResourceIndex<Stop>,
 ) {
     let stop_id: i32 = values.remove(0).into();
     let mut xy1: f64 = values.remove(0).into();
@@ -241,7 +241,7 @@ fn set_coordinate(
     }
 }
 
-fn set_changing_priority(mut values: Vec<ParsedValue>, primary_index: &PrimaryIndex<Stop>) {
+fn set_changing_priority(mut values: Vec<ParsedValue>, primary_index: &ResourceIndex<Stop>) {
     let stop_id: i32 = values.remove(0).into();
     let changing_priority: i16 = values.remove(0).into();
 
@@ -249,7 +249,7 @@ fn set_changing_priority(mut values: Vec<ParsedValue>, primary_index: &PrimaryIn
     stop.set_changing_priority(changing_priority);
 }
 
-fn set_changing_flag(mut values: Vec<ParsedValue>, primary_index: &PrimaryIndex<Stop>) {
+fn set_changing_flag(mut values: Vec<ParsedValue>, primary_index: &ResourceIndex<Stop>) {
     let stop_id: i32 = values.remove(0).into();
     let changing_flag: i16 = values.remove(0).into();
 
@@ -257,7 +257,7 @@ fn set_changing_flag(mut values: Vec<ParsedValue>, primary_index: &PrimaryIndex<
     stop.set_changing_flag(changing_flag);
 }
 
-fn set_changing_time(mut values: Vec<ParsedValue>, primary_index: &PrimaryIndex<Stop>) {
+fn set_changing_time(mut values: Vec<ParsedValue>, primary_index: &ResourceIndex<Stop>) {
     let stop_id: i32 = values.remove(0).into();
     let changing_time_inter_city: i16 = values.remove(0).into();
     let changing_time_other: i16 = values.remove(0).into();
@@ -275,7 +275,7 @@ fn set_changing_time(mut values: Vec<ParsedValue>, primary_index: &PrimaryIndex<
     }
 }
 
-fn set_connections(mut values: Vec<ParsedValue>, primary_index: &PrimaryIndex<Stop>) {
+fn set_connections(mut values: Vec<ParsedValue>, primary_index: &ResourceIndex<Stop>) {
     let stop_id: i32 = values.remove(0).into();
     let connections: String = values.remove(0).into();
 
@@ -285,7 +285,7 @@ fn set_connections(mut values: Vec<ParsedValue>, primary_index: &PrimaryIndex<St
     stop.set_connections(connections);
 }
 
-fn set_restrictions(mut values: Vec<ParsedValue>, primary_index: &PrimaryIndex<Stop>) {
+fn set_restrictions(mut values: Vec<ParsedValue>, primary_index: &ResourceIndex<Stop>) {
     let stop_id: i32 = values.remove(0).into();
     let restrictions: i16 = values.remove(0).into();
 
@@ -293,7 +293,7 @@ fn set_restrictions(mut values: Vec<ParsedValue>, primary_index: &PrimaryIndex<S
     stop.set_restrictions(restrictions);
 }
 
-fn set_sloid(mut values: Vec<ParsedValue>, primary_index: &PrimaryIndex<Stop>) {
+fn set_sloid(mut values: Vec<ParsedValue>, primary_index: &ResourceIndex<Stop>) {
     let stop_id: i32 = values.remove(0).into();
     let sloid: String = values.remove(0).into();
 
@@ -301,7 +301,7 @@ fn set_sloid(mut values: Vec<ParsedValue>, primary_index: &PrimaryIndex<Stop>) {
     stop.set_sloid(sloid);
 }
 
-fn add_boarding_area(mut values: Vec<ParsedValue>, primary_index: &PrimaryIndex<Stop>) {
+fn add_boarding_area(mut values: Vec<ParsedValue>, primary_index: &ResourceIndex<Stop>) {
     let stop_id: i32 = values.remove(0).into();
     let sloid: String = values.remove(0).into();
 

@@ -1,21 +1,19 @@
-use std::{collections::HashMap, rc::Rc};
-
-use crate::models::Model;
+use crate::models::{Model, ResourceCollection, ResourceIndex};
 
 // ------------------------------------------------------------------------------------------------
 // --- SimpleDataStorage
 // ------------------------------------------------------------------------------------------------
 
 #[derive(Debug)]
-pub struct SimpleDataStorage<T: Model<T>> {
-    rows: Vec<Rc<T>>,
-    primary_index: HashMap<T::U, Rc<T>>,
+pub struct SimpleDataStorage<M: Model<M>> {
+    rows: ResourceCollection<M>,
+    primary_index: ResourceIndex<M, M::K>,
 }
 
 #[allow(unused)]
-impl<T: Model<T>> SimpleDataStorage<T> {
-    pub fn new(rows: Vec<Rc<T>>) -> Self {
-        let primary_index = T::create_primary_index(&rows);
+impl<M: Model<M>> SimpleDataStorage<M> {
+    pub fn new(rows: ResourceCollection<M>) -> Self {
+        let primary_index = M::create_primary_index(&rows);
 
         Self {
             rows,
@@ -23,11 +21,11 @@ impl<T: Model<T>> SimpleDataStorage<T> {
         }
     }
 
-    pub fn rows(&self) -> &Vec<Rc<T>> {
+    pub fn rows(&self) -> &ResourceCollection<M> {
         &self.rows
     }
 
-    pub fn primary_index(&self) -> &HashMap<T::U, Rc<T>> {
+    pub fn primary_index(&self) -> &ResourceIndex<M, M::K> {
         &self.primary_index
     }
 }

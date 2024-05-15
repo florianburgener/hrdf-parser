@@ -4,7 +4,7 @@
 use std::{error::Error, rc::Rc};
 
 use crate::{
-    models::{InformationText, Language, Model, PrimaryIndex},
+    models::{InformationText, Language, Model, ResourceIndex},
     parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
     storage::SimpleDataStorage,
 };
@@ -33,16 +33,16 @@ pub fn parse() -> Result<SimpleDataStorage<InformationText>, Box<dyn Error>> {
 
     let primary_index = InformationText::create_primary_index(&rows);
 
-    load_content_translation(&primary_index, Language::German)?;
-    load_content_translation(&primary_index, Language::English)?;
-    load_content_translation(&primary_index, Language::French)?;
-    load_content_translation(&primary_index, Language::Italian)?;
+    load_content(&primary_index, Language::German)?;
+    load_content(&primary_index, Language::English)?;
+    load_content(&primary_index, Language::French)?;
+    load_content(&primary_index, Language::Italian)?;
 
     Ok(SimpleDataStorage::new(rows))
 }
 
-fn load_content_translation(
-    primary_index: &PrimaryIndex<InformationText>,
+fn load_content(
+    primary_index: &ResourceIndex<InformationText>,
     language: Language,
 ) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
@@ -81,7 +81,7 @@ fn create_instance(mut values: Vec<ParsedValue>) -> Rc<InformationText> {
 
 fn set_content(
     mut values: Vec<ParsedValue>,
-    primary_index: &PrimaryIndex<InformationText>,
+    primary_index: &ResourceIndex<InformationText>,
     language: Language,
 ) {
     let id: i32 = values.remove(0).into();

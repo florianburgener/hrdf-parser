@@ -14,7 +14,7 @@ mod transport_type_parser;
 
 pub use attribute_parser::parse as load_attribute_data;
 pub use bit_field_parser::parse as load_bit_field_data;
-pub use direction_parser::parse as load_direcation_data;
+pub use direction_parser::parse as load_direction_data;
 pub use holiday_parser::parse as load_holiday_data;
 pub use information_text_parser::parse as load_information_text_data;
 pub use line_parser::parse as load_line_data;

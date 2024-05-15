@@ -8,13 +8,13 @@ use std::{
 use chrono::NaiveDate;
 use strum_macros::{self, Display, EnumString};
 
-// U => primary key (id) type.
-pub trait Model<T: Model<T>> {
-    type U: Eq + Hash;
+pub trait Model<M: Model<M>> {
+    // Primary key type.
+    type K: Eq + Hash;
 
-    fn id(&self) -> T::U;
+    fn id(&self) -> M::K;
 
-    fn create_primary_index(rows: &Vec<Rc<T>>) -> HashMap<T::U, Rc<T>> {
+    fn create_primary_index(rows: &ResourceCollection<M>) -> ResourceIndex<M, M::K> {
         rows.iter().fold(HashMap::new(), |mut acc, item| {
             acc.insert(item.id(), Rc::clone(item));
             acc
@@ -22,8 +22,12 @@ pub trait Model<T: Model<T>> {
     }
 }
 
-// pub type ModelCollection<T> = Vec<Rc<T>>;
-pub type PrimaryIndex<T> = HashMap<i32, Rc<T>>;
+/// M = Model type.
+pub type ResourceCollection<M> = Vec<Rc<M>>;
+
+/// M = Model type.
+/// K = Key type.
+pub type ResourceIndex<M, K = i32> = HashMap<K, Rc<M>>;
 
 // ------------------------------------------------------------------------------------------------
 // --- Attribute
@@ -32,7 +36,7 @@ pub type PrimaryIndex<T> = HashMap<i32, Rc<T>>;
 #[derive(Debug)]
 pub struct Attribute {
     id: i32,
-    legacy_id: String,
+    designation: String,
     stop_scope: i16,
     main_sorting_priority: i16,
     secondary_sorting_priority: i16,
@@ -40,7 +44,7 @@ pub struct Attribute {
 }
 
 impl Model<Attribute> for Attribute {
-    type U = i32;
+    type K = i32;
 
     fn id(&self) -> i32 {
         self.id
@@ -51,14 +55,14 @@ impl Model<Attribute> for Attribute {
 impl Attribute {
     pub fn new(
         id: i32,
-        legacy_id: String,
+        designation: String,
         stop_scope: i16,
         main_sorting_priority: i16,
         secondary_sorting_priority: i16,
     ) -> Self {
         Self {
             id,
-            legacy_id,
+            designation,
             stop_scope,
             main_sorting_priority,
             secondary_sorting_priority,
@@ -66,8 +70,8 @@ impl Attribute {
         }
     }
 
-    pub fn legacy_id(&self) -> &str {
-        &self.legacy_id
+    pub fn designation(&self) -> &str {
+        &self.designation
     }
 
     pub fn stop_scope(&self) -> i16 {
@@ -108,7 +112,7 @@ pub struct BitField {
 }
 
 impl Model<BitField> for BitField {
-    type U = i32;
+    type K = i32;
 
     fn id(&self) -> i32 {
         self.id
@@ -222,7 +226,7 @@ pub struct Direction {
 }
 
 impl Model<Direction> for Direction {
-    type U = i32;
+    type K = i32;
 
     fn id(&self) -> i32 {
         self.id
@@ -252,7 +256,7 @@ pub struct Holiday {
 }
 
 impl Model<Holiday> for Holiday {
-    type U = i32;
+    type K = i32;
 
     fn id(&self) -> i32 {
         self.id
@@ -285,7 +289,7 @@ pub struct InformationText {
 }
 
 impl Model<InformationText> for InformationText {
-    type U = i32;
+    type K = i32;
 
     fn id(&self) -> i32 {
         self.id
@@ -353,7 +357,7 @@ pub struct JourneyPlatform {
 }
 
 impl Model<JourneyPlatform> for JourneyPlatform {
-    type U = (i32, i32);
+    type K = (i32, i32);
 
     fn id(&self) -> (i32, i32) {
         (self.journey_id, self.platform_id)
@@ -407,7 +411,7 @@ pub struct Line {
 }
 
 impl Model<Line> for Line {
-    type U = i32;
+    type K = i32;
 
     fn id(&self) -> i32 {
         self.id
@@ -471,7 +475,7 @@ pub struct Platform {
 }
 
 impl Model<Platform> for Platform {
-    type U = i32;
+    type K = i32;
 
     fn id(&self) -> i32 {
         self.id
@@ -553,7 +557,7 @@ pub struct Stop {
 }
 
 impl Model<Stop> for Stop {
-    type U = i32;
+    type K = i32;
 
     fn id(&self) -> i32 {
         self.id
@@ -699,7 +703,7 @@ pub struct StopConnection {
 }
 
 impl Model<StopConnection> for StopConnection {
-    type U = i32;
+    type K = i32;
 
     fn id(&self) -> i32 {
         self.id
@@ -756,7 +760,7 @@ pub struct ThroughService {
 }
 
 impl Model<ThroughService> for ThroughService {
-    type U = i32;
+    type K = i32;
 
     fn id(&self) -> i32 {
         self.id
@@ -828,7 +832,7 @@ pub struct TimetableMetadata {
 }
 
 impl Model<TimetableMetadata> for TimetableMetadata {
-    type U = i32;
+    type K = i32;
 
     fn id(&self) -> i32 {
         self.id
@@ -869,7 +873,7 @@ pub struct TransportCompany {
 }
 
 impl Model<TransportCompany> for TransportCompany {
-    type U = i32;
+    type K = i32;
 
     fn id(&self) -> i32 {
         self.id
@@ -942,7 +946,7 @@ impl TransportCompany {
 #[derive(Debug)]
 pub struct TransportType {
     id: i32,
-    legacy_id: String,
+    designation: String,
     product_class_id: i16,
     tarrif_group: String,
     output_control: i16,
@@ -955,7 +959,7 @@ pub struct TransportType {
 }
 
 impl Model<TransportType> for TransportType {
-    type U = i32;
+    type K = i32;
 
     fn id(&self) -> i32 {
         self.id
@@ -966,7 +970,7 @@ impl Model<TransportType> for TransportType {
 impl TransportType {
     pub fn new(
         id: i32,
-        legacy_id: String,
+        designation: String,
         product_class_id: i16,
         tarrif_group: String,
         output_control: i16,
@@ -976,7 +980,7 @@ impl TransportType {
     ) -> Self {
         Self {
             id,
-            legacy_id,
+            designation,
             product_class_id,
             tarrif_group,
             output_control,
@@ -988,8 +992,8 @@ impl TransportType {
         }
     }
 
-    pub fn legacy_id(&self) -> &str {
-        &self.legacy_id
+    pub fn designation(&self) -> &str {
+        &self.designation
     }
 
     pub fn product_class_id(&self) -> i16 {

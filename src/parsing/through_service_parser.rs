@@ -4,7 +4,7 @@
 use std::{error::Error, rc::Rc};
 
 use crate::{
-    models::ThroughService,
+    models::{ResourceCollection, ThroughService},
     parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
     storage::SimpleDataStorage,
 };
@@ -28,7 +28,7 @@ pub fn parse() -> Result<SimpleDataStorage<ThroughService>, Box<dyn Error>> {
     ]);
     let file_parser = FileParser::new("data/DURCHBI", row_parser)?;
 
-    let rows: Vec<Rc<ThroughService>>;
+    let rows: ResourceCollection<ThroughService>;
     let mut next_id = 1;
 
     rows = file_parser

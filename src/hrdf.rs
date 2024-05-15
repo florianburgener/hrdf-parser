@@ -2,7 +2,8 @@ use std::{error::Error, rc::Rc};
 
 use crate::{
     models::{
-        Attribute, BitField, Direction, Holiday, InformationText, JourneyPlatform, Line, Platform, Stop, StopConnection, ThroughService, TimetableMetadata, TransportCompany, TransportType
+        Attribute, BitField, Direction, Holiday, InformationText, JourneyPlatform, Line, Platform,
+        Stop, StopConnection, ThroughService, TimetableMetadata, TransportCompany, TransportType,
     },
     parsing,
     storage::SimpleDataStorage,
@@ -30,19 +31,19 @@ pub struct Hrdf {
 #[allow(unused)]
 impl Hrdf {
     pub fn new() -> Result<Rc<Self>, Box<dyn Error>> {
-        let attribute_data = parsing::load_attribute_data()?;
+        let (attribute_data, _) = parsing::load_attribute_data()?;
         let bit_field_data = parsing::load_bit_field_data()?;
-        let direction_data = parsing::load_direcation_data()?;
+        let (direction_data, _) = parsing::load_direction_data()?;
         let holiday_data = parsing::load_holiday_data()?;
         let information_text_data = parsing::load_information_text_data()?;
         let line_data = parsing::load_line_data()?;
-        let (journey_platform_data, platform_data) = parsing::load_platform_data()?;
+        let (journey_platform_data, platform_data, _) = parsing::load_platform_data()?;
         let stop_connection_data = parsing::load_stop_connection_data()?;
         let stop_data = parsing::load_stop_data()?;
         let through_service_data = parsing::load_through_service_data()?;
         let timetable_metadata = parsing::load_timetable_metadata()?;
         let transport_company_data = parsing::load_transport_company_data()?;
-        let transport_type_data = parsing::load_transport_type_data()?;
+        let (transport_type_data, _) = parsing::load_transport_type_data()?;
 
         let instance = Rc::new(Self {
             attribute_data,

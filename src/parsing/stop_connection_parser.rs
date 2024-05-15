@@ -37,7 +37,7 @@ pub fn parse() -> Result<SimpleDataStorage<StopConnection>, Box<dyn Error>> {
     ]);
     let file_parser = FileParser::new("data/METABHF", row_parser)?;
 
-    let mut rows: Vec<Rc<StopConnection>> = Vec::new();
+    let mut rows = Vec::new();
     let mut next_id = 1;
     let mut current_instance = Rc::new(StopConnection::default());
 
