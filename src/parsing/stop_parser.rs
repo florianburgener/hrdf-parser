@@ -1,4 +1,3 @@
-// --$--
 // 8.5 file(s).
 // File(s) read by the parser:
 // BAHNHOF, BFKOORD_LV95, BFKOORD_WGS, BFPRIOS, KMINFO, UMSTEIGB, METABHF, BHFART_60

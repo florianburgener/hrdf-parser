@@ -1,16 +1,20 @@
 use std::{
     cell::{Ref, RefCell},
     collections::HashMap,
+    hash::Hash,
     rc::Rc,
 };
 
 use chrono::NaiveDate;
 use strum_macros::{self, Display, EnumString};
 
+// U => primary key (id) type.
 pub trait Model<T: Model<T>> {
-    fn id(&self) -> i32;
+    type U: Eq + Hash;
 
-    fn create_primary_index(rows: &Vec<Rc<T>>) -> HashMap<i32, Rc<T>> {
+    fn id(&self) -> T::U;
+
+    fn create_primary_index(rows: &Vec<Rc<T>>) -> HashMap<T::U, Rc<T>> {
         rows.iter().fold(HashMap::new(), |mut acc, item| {
             acc.insert(item.id(), Rc::clone(item));
             acc
@@ -36,6 +40,8 @@ pub struct Attribute {
 }
 
 impl Model<Attribute> for Attribute {
+    type U = i32;
+
     fn id(&self) -> i32 {
         self.id
     }
@@ -102,6 +108,8 @@ pub struct BitField {
 }
 
 impl Model<BitField> for BitField {
+    type U = i32;
+
     fn id(&self) -> i32 {
         self.id
     }
@@ -210,11 +218,12 @@ impl Coordinate {
 #[derive(Debug)]
 pub struct Direction {
     id: i32,
-    legacy_id: String,
     name: String,
 }
 
 impl Model<Direction> for Direction {
+    type U = i32;
+
     fn id(&self) -> i32 {
         self.id
     }
@@ -222,16 +231,8 @@ impl Model<Direction> for Direction {
 
 #[allow(unused)]
 impl Direction {
-    pub fn new(id: i32, legacy_id: String, name: String) -> Self {
-        Self {
-            id,
-            legacy_id,
-            name,
-        }
-    }
-
-    pub fn legacy_id(&self) -> &str {
-        &self.legacy_id
+    pub fn new(id: i32, name: String) -> Self {
+        Self { id, name }
     }
 
     pub fn name(&self) -> &str {
@@ -251,6 +252,8 @@ pub struct Holiday {
 }
 
 impl Model<Holiday> for Holiday {
+    type U = i32;
+
     fn id(&self) -> i32 {
         self.id
     }
@@ -282,6 +285,8 @@ pub struct InformationText {
 }
 
 impl Model<InformationText> for InformationText {
+    type U = i32;
+
     fn id(&self) -> i32 {
         self.id
     }
@@ -341,30 +346,31 @@ pub enum Language {
 
 #[derive(Debug)]
 pub struct JourneyPlatform {
-    // TODO: i32 index
     journey_id: i32,
-    platform_id: i64,
-    administration: String,
+    platform_id: i32,
     hour: Option<i16>,
     bit_field_id: Option<i32>,
 }
 
-pub type JourneyPlatformCollection = Vec<Rc<JourneyPlatform>>;
-pub type JourneyPlatformPrimaryIndex = HashMap<(i32, i64), Rc<JourneyPlatform>>;
+impl Model<JourneyPlatform> for JourneyPlatform {
+    type U = (i32, i32);
+
+    fn id(&self) -> (i32, i32) {
+        (self.journey_id, self.platform_id)
+    }
+}
 
 #[allow(unused)]
 impl JourneyPlatform {
     pub fn new(
         journey_id: i32,
-        platform_id: i64,
-        administration: String,
+        platform_id: i32,
         hour: Option<i16>,
         bit_field_id: Option<i32>,
     ) -> Self {
         Self {
             journey_id,
             platform_id,
-            administration,
             hour,
             bit_field_id,
         }
@@ -374,12 +380,8 @@ impl JourneyPlatform {
         self.journey_id
     }
 
-    pub fn platform_id(&self) -> i64 {
+    pub fn platform_id(&self) -> i32 {
         self.platform_id
-    }
-
-    pub fn administration(&self) -> &str {
-        &self.administration
     }
 
     pub fn hour(&self) -> &Option<i16> {
@@ -405,6 +407,8 @@ pub struct Line {
 }
 
 impl Model<Line> for Line {
+    type U = i32;
+
     fn id(&self) -> i32 {
         self.id
     }
@@ -457,37 +461,35 @@ impl Line {
 
 #[derive(Debug)]
 pub struct Platform {
-    // TODO: i32 index
-    id: i64, // Haltestellennummer << 32 + "Index der Gleistextinformation"
+    id: i32,
     name: String,
     sectors: Option<String>,
+    stop_id: i32,
     sloid: RefCell<String>,
     lv95_coordinate: RefCell<Coordinate>,
     wgs84_coordinate: RefCell<Coordinate>,
 }
 
-pub type PlatformCollection = Vec<Rc<Platform>>;
-pub type PlatformPrimaryIndex = HashMap<i64, Rc<Platform>>;
+impl Model<Platform> for Platform {
+    type U = i32;
+
+    fn id(&self) -> i32 {
+        self.id
+    }
+}
 
 #[allow(unused)]
 impl Platform {
-    pub fn new(id: i64, name: String, sectors: Option<String>) -> Self {
+    pub fn new(id: i32, name: String, sectors: Option<String>, stop_id: i32) -> Self {
         Self {
             id,
             name,
             sectors,
+            stop_id,
             sloid: RefCell::new(String::default()),
             lv95_coordinate: RefCell::new(Coordinate::default()),
             wgs84_coordinate: RefCell::new(Coordinate::default()),
         }
-    }
-
-    pub fn create_id(stop_id: i32, stop_id_index: i32) -> i64 {
-        ((stop_id as i64) << 32) + (stop_id_index as i64)
-    }
-
-    pub fn id(&self) -> i64 {
-        self.id
     }
 
     pub fn name(&self) -> &str {
@@ -496,6 +498,10 @@ impl Platform {
 
     pub fn sectors(&self) -> &Option<String> {
         &self.sectors
+    }
+
+    pub fn stop_id(&self) -> i32 {
+        self.stop_id
     }
 
     pub fn sloid(&self) -> Ref<'_, String> {
@@ -547,6 +553,8 @@ pub struct Stop {
 }
 
 impl Model<Stop> for Stop {
+    type U = i32;
+
     fn id(&self) -> i32 {
         self.id
     }
@@ -691,6 +699,8 @@ pub struct StopConnection {
 }
 
 impl Model<StopConnection> for StopConnection {
+    type U = i32;
+
     fn id(&self) -> i32 {
         self.id
     }
@@ -746,6 +756,8 @@ pub struct ThroughService {
 }
 
 impl Model<ThroughService> for ThroughService {
+    type U = i32;
+
     fn id(&self) -> i32 {
         self.id
     }
@@ -816,6 +828,8 @@ pub struct TimetableMetadata {
 }
 
 impl Model<TimetableMetadata> for TimetableMetadata {
+    type U = i32;
+
     fn id(&self) -> i32 {
         self.id
     }
@@ -855,6 +869,8 @@ pub struct TransportCompany {
 }
 
 impl Model<TransportCompany> for TransportCompany {
+    type U = i32;
+
     fn id(&self) -> i32 {
         self.id
     }
@@ -939,6 +955,8 @@ pub struct TransportType {
 }
 
 impl Model<TransportType> for TransportType {
+    type U = i32;
+
     fn id(&self) -> i32 {
         self.id
     }

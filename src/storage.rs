@@ -1,18 +1,15 @@
 use std::{collections::HashMap, rc::Rc};
 
-use crate::models::{
-    JourneyPlatformCollection, JourneyPlatformPrimaryIndex, Model, PlatformCollection,
-    PlatformPrimaryIndex,
-};
+use crate::models::Model;
 
 // ------------------------------------------------------------------------------------------------
 // --- SimpleDataStorage
 // ------------------------------------------------------------------------------------------------
 
 #[derive(Debug)]
-pub struct SimpleDataStorage<T> {
+pub struct SimpleDataStorage<T: Model<T>> {
     rows: Vec<Rc<T>>,
-    primary_index: HashMap<i32, Rc<T>>,
+    primary_index: HashMap<T::U, Rc<T>>,
 }
 
 #[allow(unused)]
@@ -30,66 +27,7 @@ impl<T: Model<T>> SimpleDataStorage<T> {
         &self.rows
     }
 
-    pub fn primary_index(&self) -> &HashMap<i32, Rc<T>> {
-        &self.primary_index
-    }
-}
-
-// ------------------------------------------------------------------------------------------------
-// --- JourneyPlatformData
-// ------------------------------------------------------------------------------------------------
-
-#[derive(Debug)]
-pub struct JourneyPlatformData {
-    rows: JourneyPlatformCollection,
-    primary_index: JourneyPlatformPrimaryIndex,
-}
-
-#[allow(unused)]
-impl JourneyPlatformData {
-    pub fn new(
-        rows: JourneyPlatformCollection,
-        primary_index: JourneyPlatformPrimaryIndex,
-    ) -> Self {
-        Self {
-            rows,
-            primary_index,
-        }
-    }
-
-    pub fn rows(&self) -> &JourneyPlatformCollection {
-        &self.rows
-    }
-
-    pub fn primary_index(&self) -> &JourneyPlatformPrimaryIndex {
-        &self.primary_index
-    }
-}
-
-// ------------------------------------------------------------------------------------------------
-// --- PlatformData
-// ------------------------------------------------------------------------------------------------
-
-#[derive(Debug)]
-pub struct PlatformData {
-    rows: PlatformCollection,
-    primary_index: PlatformPrimaryIndex,
-}
-
-#[allow(unused)]
-impl PlatformData {
-    pub fn new(rows: PlatformCollection, primary_index: PlatformPrimaryIndex) -> Self {
-        Self {
-            rows,
-            primary_index,
-        }
-    }
-
-    pub fn rows(&self) -> &PlatformCollection {
-        &self.rows
-    }
-
-    pub fn primary_index(&self) -> &PlatformPrimaryIndex {
+    pub fn primary_index(&self) -> &HashMap<T::U, Rc<T>> {
         &self.primary_index
     }
 }

@@ -6,19 +6,22 @@
 use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{
-    models::{
-        Coordinate, CoordinateType, JourneyPlatform, JourneyPlatformCollection,
-        JourneyPlatformPrimaryIndex, Platform, PlatformCollection, PlatformPrimaryIndex,
-    },
+    models::{Coordinate, CoordinateType, JourneyPlatform, Model, Platform},
     parsing::{
         ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, RowDefinition, RowParser,
     },
-    storage::{JourneyPlatformData, PlatformData},
+    storage::SimpleDataStorage,
 };
 
 use super::ParsedValue;
 
-pub fn parse() -> Result<(JourneyPlatformData, PlatformData), Box<dyn Error>> {
+pub fn parse() -> Result<
+    (
+        SimpleDataStorage<JourneyPlatform>,
+        SimpleDataStorage<Platform>,
+    ),
+    Box<dyn Error>,
+> {
     println!("Parsing GLEIS...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -43,43 +46,51 @@ pub fn parse() -> Result<(JourneyPlatformData, PlatformData), Box<dyn Error>> {
     ]);
     let file_parser = FileParser::new("data/GLEIS", row_parser)?;
 
-    let mut journey_platform = Vec::new();
-    let mut platforms = Vec::new();
+    let mut journey_platform_data = Vec::new();
     let mut bytes_offset = 0;
+
+    let mut platforms = Vec::new();
+    let mut platforms_legacy_primary_index = HashMap::new();
+    let mut next_id = 1;
 
     file_parser
         .parse()
         .for_each(|(id, bytes_read, values)| match id {
             ROW_A => {
+                journey_platform_data.push(values);
                 bytes_offset += bytes_read;
-                journey_platform.push(create_journey_platform(values))
             }
-            ROW_B => platforms.push(create_platform(values)),
+            ROW_B => {
+                let (instance, k) = create_platform(values, next_id);
+                platforms_legacy_primary_index.insert(k, Rc::clone(&instance));
+                platforms.push(instance);
+                next_id += 1;
+            }
             _ => unreachable!(),
         });
 
-    let journey_platform_primary_index = create_journey_platform_primary_index(&journey_platform);
-    let platforms_primary_index = create_platforms_primary_index(&platforms);
+    let journey_platform = journey_platform_data
+        .into_iter()
+        .map(|values| create_journey_platform(values, &platforms_legacy_primary_index))
+        .collect();
 
     println!("Parsing GLEIS_LV95...");
-    load_coordinates_for_platforms(CoordinateType::LV95, bytes_offset, &platforms_primary_index)?;
+    #[rustfmt::skip]
+    load_coordinates_for_platforms(CoordinateType::LV95, bytes_offset, &platforms_legacy_primary_index)?;
     println!("Parsing GLEIS_WGS84...");
-    load_coordinates_for_platforms(
-        CoordinateType::WGS84,
-        bytes_offset,
-        &platforms_primary_index,
-    )?;
+    #[rustfmt::skip]
+    load_coordinates_for_platforms(CoordinateType::WGS84, bytes_offset, &platforms_legacy_primary_index)?;
 
     Ok((
-        JourneyPlatformData::new(journey_platform, journey_platform_primary_index),
-        PlatformData::new(platforms, platforms_primary_index),
+        SimpleDataStorage::new(journey_platform),
+        SimpleDataStorage::new(platforms),
     ))
 }
 
 fn load_coordinates_for_platforms(
     coordinate_type: CoordinateType,
     bytes_offset: u64,
-    platforms_primary_index: &PlatformPrimaryIndex,
+    platforms_legacy_primary_index: &HashMap<(i32, i32), Rc<Platform>>,
 ) -> Result<(), Box<dyn Error>> {
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -112,8 +123,10 @@ fn load_coordinates_for_platforms(
 
     file_parser.parse().for_each(|(id, _, values)| match id {
         ROW_A => return,
-        ROW_B => set_sloid_of_platform(values, coordinate_type, platforms_primary_index),
-        ROW_C => set_coordinate_of_platform(values, coordinate_type, platforms_primary_index),
+        ROW_B => set_sloid_of_platform(values, coordinate_type, platforms_legacy_primary_index),
+        ROW_C => {
+            set_coordinate_of_platform(values, coordinate_type, platforms_legacy_primary_index)
+        }
         _ => unreachable!(),
     });
 
@@ -121,47 +134,91 @@ fn load_coordinates_for_platforms(
 }
 
 // ------------------------------------------------------------------------------------------------
-// --- Legacy Primary Index
-// ------------------------------------------------------------------------------------------------
-
-fn create_journey_platform_primary_index(
-    journey_platform: &JourneyPlatformCollection,
-) -> JourneyPlatformPrimaryIndex {
-    journey_platform
-        .iter()
-        .fold(HashMap::new(), |mut acc, item| {
-            acc.insert((item.journey_id(), item.platform_id()), Rc::clone(item));
-            acc
-        })
-}
-
-fn create_platforms_primary_index(platforms: &PlatformCollection) -> PlatformPrimaryIndex {
-    platforms.iter().fold(HashMap::new(), |mut acc, item| {
-        acc.insert(item.id(), Rc::clone(item));
-        acc
-    })
-}
-
-// ------------------------------------------------------------------------------------------------
 // --- Helper Functions
 // ------------------------------------------------------------------------------------------------
 
-fn create_journey_platform(mut values: Vec<ParsedValue>) -> Rc<JourneyPlatform> {
+fn create_journey_platform(
+    mut values: Vec<ParsedValue>,
+    platforms_legacy_primary_index: &HashMap<(i32, i32), Rc<Platform>>,
+) -> Rc<JourneyPlatform> {
     let stop_id: i32 = values.remove(0).into();
     let journey_id: i32 = values.remove(0).into();
-    let unknown1: String = values.remove(0).into();
-    let stop_id_index: i32 = values.remove(0).into();
+    let _: String = values.remove(0).into();
+    let index: i32 = values.remove(0).into();
     let hour: Option<i16> = values.remove(0).into();
     let bit_field_id: Option<i32> = values.remove(0).into();
 
     Rc::new(JourneyPlatform::new(
         journey_id,
-        Platform::create_id(stop_id, stop_id_index),
-        unknown1,
+        platforms_legacy_primary_index
+            .get(&(stop_id, index))
+            .unwrap()
+            .id(),
         hour,
         bit_field_id,
     ))
 }
+
+fn create_platform(mut values: Vec<ParsedValue>, id: i32) -> (Rc<Platform>, (i32, i32)) {
+    let stop_id: i32 = values.remove(0).into();
+    let index: i32 = values.remove(0).into();
+    let raw_platform_data: String = values.remove(0).into();
+
+    let (code, sectors) = parse_platform_data(raw_platform_data);
+
+    let instance = Rc::new(Platform::new(id, code, sectors, stop_id));
+    (instance, (stop_id, index))
+}
+
+fn set_sloid_of_platform(
+    mut values: Vec<ParsedValue>,
+    coordinate_type: CoordinateType,
+    platforms_legacy_primary_index: &HashMap<(i32, i32), Rc<Platform>>,
+) {
+    // The SLOID is processed only when loading LV95 coordinates.
+    if coordinate_type == CoordinateType::LV95 {
+        let stop_id: i32 = values.remove(0).into();
+        let index: i32 = values.remove(0).into();
+        let sloid: String = values.remove(0).into();
+
+        platforms_legacy_primary_index
+            .get(&(stop_id, index))
+            .unwrap()
+            .set_sloid(sloid);
+    }
+}
+
+fn set_coordinate_of_platform(
+    mut values: Vec<ParsedValue>,
+    coordinate_type: CoordinateType,
+    platforms_legacy_primary_index: &HashMap<(i32, i32), Rc<Platform>>,
+) {
+    let stop_id: i32 = values.remove(0).into();
+    let index: i32 = values.remove(0).into();
+    let mut xy1: f64 = values.remove(0).into();
+    let mut xy2: f64 = values.remove(0).into();
+    // Altitude is not provided for platforms.
+    let altitude = 0;
+
+    if coordinate_type == CoordinateType::WGS84 {
+        // WGS84 coordinates are stored in reverse order for some unknown reason.
+        (xy1, xy2) = (xy2, xy1);
+    }
+
+    let coordinate = Coordinate::new(coordinate_type, xy1, xy2, altitude);
+    let platform = platforms_legacy_primary_index
+        .get(&(stop_id, index))
+        .unwrap();
+
+    match coordinate_type {
+        CoordinateType::LV95 => platform.set_lv95_coordinate(coordinate),
+        CoordinateType::WGS84 => platform.set_wgs84_coordinate(coordinate),
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
+// --- Helper Functions
+// ------------------------------------------------------------------------------------------------
 
 fn parse_platform_data(mut raw_platform_data: String) -> (String, Option<String>) {
     raw_platform_data = format!("{} ", raw_platform_data);
@@ -179,64 +236,4 @@ fn parse_platform_data(mut raw_platform_data: String) -> (String, Option<String>
     let sectors = data.get("A").map(|s| s.to_string());
 
     (code, sectors)
-}
-
-fn create_platform(mut values: Vec<ParsedValue>) -> Rc<Platform> {
-    let stop_id: i32 = values.remove(0).into();
-    let stop_id_index: i32 = values.remove(0).into();
-    let raw_platform_data: String = values.remove(0).into();
-
-    let (code, sectors) = parse_platform_data(raw_platform_data);
-
-    Rc::new(Platform::new(
-        Platform::create_id(stop_id, stop_id_index),
-        code,
-        sectors,
-    ))
-}
-
-fn set_sloid_of_platform(
-    mut values: Vec<ParsedValue>,
-    coordinate_type: CoordinateType,
-    platforms_primary_index: &PlatformPrimaryIndex,
-) {
-    // The SLOID is processed only when loading LV95 coordinates.
-    if coordinate_type == CoordinateType::LV95 {
-        let stop_id: i32 = values.remove(0).into();
-        let stop_id_index: i32 = values.remove(0).into();
-        let sloid: String = values.remove(0).into();
-
-        platforms_primary_index
-            .get(&Platform::create_id(stop_id, stop_id_index))
-            .unwrap()
-            .set_sloid(sloid);
-    }
-}
-
-fn set_coordinate_of_platform(
-    mut values: Vec<ParsedValue>,
-    coordinate_type: CoordinateType,
-    platforms_primary_index: &PlatformPrimaryIndex,
-) {
-    let stop_id: i32 = values.remove(0).into();
-    let stop_id_index: i32 = values.remove(0).into();
-    let mut xy1: f64 = values.remove(0).into();
-    let mut xy2: f64 = values.remove(0).into();
-    // Altitude is not provided for platforms.
-    let altitude = 0;
-
-    if coordinate_type == CoordinateType::WGS84 {
-        // WGS84 coordinates are stored in reverse order for some unknown reason.
-        (xy1, xy2) = (xy2, xy1);
-    }
-
-    let coordinate = Coordinate::new(coordinate_type, xy1, xy2, altitude);
-    let platform = platforms_primary_index
-        .get(&Platform::create_id(stop_id, stop_id_index))
-        .unwrap();
-
-    match coordinate_type {
-        CoordinateType::LV95 => platform.set_lv95_coordinate(coordinate),
-        CoordinateType::WGS84 => platform.set_wgs84_coordinate(coordinate),
-    }
 }

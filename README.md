@@ -40,14 +40,11 @@ Fichiers restants :
 * UMSTEIGV
 * UMSTEIGZ
 
-TODO :
+let primary_index = information_text_parser, stop_parser, transport_company_parser
+let mut legacy_primary_index = attribute_parser, direction_parser
 
+TODO :
 * Terminer le parsing
-    * Simplifier le code de parsing quand cela est possible cf. line_parser + le compléter aussi
-    * Remap les identifiants primaires composites vers un i32
-    * Vérifier les for et for_each
-    * Remap les clés étrangères vers un i32
+* Remap les clés étrangères vers un i32
 * thiserror
 * Chunk loading des fichiers
-
-plateform_parser, transport_type_parser

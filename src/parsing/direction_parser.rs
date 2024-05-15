@@ -1,4 +1,3 @@
-// --$--
 // 1 file(s).
 // File(s) read by the parser:
 // RICHTUNG
@@ -26,14 +25,12 @@ pub fn parse() -> Result<SimpleDataStorage<Direction>, Box<dyn Error>> {
 
     let rows: Vec<Rc<Direction>>;
     let mut legacy_primary_index = HashMap::new();
-    let mut next_id = 1;
 
     rows = file_parser
         .parse()
         .map(|(_, _, values)| {
-            let instance = create_instance(values, next_id);
-            legacy_primary_index.insert(instance.legacy_id().to_owned(), Rc::clone(&instance));
-            next_id += 1;
+            let (instance, id_str) = create_instance(values);
+            legacy_primary_index.insert(id_str, Rc::clone(&instance));
             instance
         })
         .collect();
@@ -45,9 +42,22 @@ pub fn parse() -> Result<SimpleDataStorage<Direction>, Box<dyn Error>> {
 // --- Data Processing Functions
 // ------------------------------------------------------------------------------------------------
 
-fn create_instance(mut values: Vec<ParsedValue>, id: i32) -> Rc<Direction> {
-    let legacy_id: String = values.remove(0).into();
+fn create_instance(mut values: Vec<ParsedValue>) -> (Rc<Direction>, String) {
+    let id_str: String = values.remove(0).into();
     let name: String = values.remove(0).into();
 
-    Rc::new(Direction::new(id, legacy_id, name))
+    let id = remove_first_char(&id_str);
+    let id = id.parse::<i32>().unwrap();
+
+    (Rc::new(Direction::new(id, name)), id_str)
+}
+
+// ------------------------------------------------------------------------------------------------
+// --- Helper Functions
+// ------------------------------------------------------------------------------------------------
+
+fn remove_first_char(value: &str) -> &str {
+    let mut chars = value.chars();
+    chars.next();
+    chars.as_str()
 }

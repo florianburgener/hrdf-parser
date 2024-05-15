@@ -1,4 +1,3 @@
-// --$--
 // 4 file(s).
 // File(s) read by the parser:
 // INFOTEXT_DE, INFOTEXT_EN, INFOTEXT_FR, INFOTEXT_IT

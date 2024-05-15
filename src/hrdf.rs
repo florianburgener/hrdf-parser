@@ -2,11 +2,10 @@ use std::{error::Error, rc::Rc};
 
 use crate::{
     models::{
-        Attribute, BitField, Direction, Holiday, InformationText, Line, Stop, StopConnection,
-        ThroughService, TimetableMetadata, TransportCompany, TransportType,
+        Attribute, BitField, Direction, Holiday, InformationText, JourneyPlatform, Line, Platform, Stop, StopConnection, ThroughService, TimetableMetadata, TransportCompany, TransportType
     },
     parsing,
-    storage::{JourneyPlatformData, PlatformData, SimpleDataStorage},
+    storage::SimpleDataStorage,
 };
 
 #[allow(unused)]
@@ -18,8 +17,8 @@ pub struct Hrdf {
     holiday_data: SimpleDataStorage<Holiday>,
     information_text_data: SimpleDataStorage<InformationText>,
     line_data: SimpleDataStorage<Line>,
-    journey_platform_data: JourneyPlatformData,
-    platform_data: PlatformData,
+    journey_platform_data: SimpleDataStorage<JourneyPlatform>,
+    platform_data: SimpleDataStorage<Platform>,
     stop_connection_data: SimpleDataStorage<StopConnection>,
     stop_data: SimpleDataStorage<Stop>,
     through_service_data: SimpleDataStorage<ThroughService>,
@@ -72,7 +71,7 @@ impl Hrdf {
     //     }
     // }
 
-    pub fn platform_data(&self) -> &PlatformData {
+    pub fn platform_data(&self) -> &SimpleDataStorage<Platform> {
         return &self.platform_data;
     }
 

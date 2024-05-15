@@ -1,4 +1,3 @@
-// --$--
 // 4 file(s).
 // File(s) read by the parser:
 // BETRIEB_DE, BETRIEB_EN, BETRIEB_FR, BETRIEB_IT
