@@ -10,15 +10,15 @@ use crate::{
     parsing::{
         ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, RowDefinition, RowParser,
     },
-    storage::SimpleDataStorage,
+    storage::SimpleResourceStorage,
 };
 
 use super::ParsedValue;
 
 pub fn parse() -> Result<
     (
-        SimpleDataStorage<JourneyPlatform>,
-        SimpleDataStorage<Platform>,
+        SimpleResourceStorage<JourneyPlatform>,
+        SimpleResourceStorage<Platform>,
         ResourceIndex<Platform, (i32, i32)>
     ),
     Box<dyn Error>,
@@ -84,8 +84,8 @@ pub fn parse() -> Result<
     load_coordinates_for_platforms(CoordinateType::WGS84, bytes_offset, &platforms_legacy_primary_index)?;
 
     Ok((
-        SimpleDataStorage::new(journey_platform),
-        SimpleDataStorage::new(platforms),
+        SimpleResourceStorage::new(journey_platform),
+        SimpleResourceStorage::new(platforms),
         platforms_legacy_primary_index,
     ))
 }

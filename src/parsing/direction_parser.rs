@@ -6,12 +6,12 @@ use std::{collections::HashMap, error::Error, rc::Rc};
 use crate::{
     models::{Direction, ResourceCollection, ResourceIndex},
     parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
-    storage::SimpleDataStorage,
+    storage::SimpleResourceStorage,
 };
 
 use super::ParsedValue;
 
-pub fn parse() -> Result<(SimpleDataStorage<Direction>, ResourceIndex<Direction, String>), Box<dyn Error>> {
+pub fn parse() -> Result<(SimpleResourceStorage<Direction>, ResourceIndex<Direction, String>), Box<dyn Error>> {
     println!("Parsing RICHTUNG...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -35,7 +35,7 @@ pub fn parse() -> Result<(SimpleDataStorage<Direction>, ResourceIndex<Direction,
         })
         .collect();
 
-    Ok((SimpleDataStorage::new(rows), legacy_primary_index))
+    Ok((SimpleResourceStorage::new(rows), legacy_primary_index))
 }
 
 // ------------------------------------------------------------------------------------------------

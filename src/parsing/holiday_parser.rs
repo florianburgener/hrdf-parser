@@ -8,12 +8,12 @@ use chrono::NaiveDate;
 use crate::{
     models::Holiday,
     parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
-    storage::SimpleDataStorage,
+    storage::SimpleResourceStorage,
 };
 
 use super::ParsedValue;
 
-pub fn parse() -> Result<SimpleDataStorage<Holiday>, Box<dyn Error>> {
+pub fn parse() -> Result<SimpleResourceStorage<Holiday>, Box<dyn Error>> {
     println!("Parsing FEIERTAG...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -34,7 +34,7 @@ pub fn parse() -> Result<SimpleDataStorage<Holiday>, Box<dyn Error>> {
         next_id += 1;
     }
 
-    Ok(SimpleDataStorage::new(rows))
+    Ok(SimpleResourceStorage::new(rows))
 }
 
 // ------------------------------------------------------------------------------------------------

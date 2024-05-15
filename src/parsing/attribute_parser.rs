@@ -12,14 +12,14 @@ use crate::{
         AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser,
         RowDefinition, RowParser,
     },
-    storage::SimpleDataStorage,
+    storage::SimpleResourceStorage,
 };
 
 use super::ParsedValue;
 
 pub fn parse() -> Result<
     (
-        SimpleDataStorage<Attribute>,
+        SimpleResourceStorage<Attribute>,
         ResourceIndex<Attribute, String>,
     ),
     Box<dyn Error>,
@@ -75,7 +75,7 @@ pub fn parse() -> Result<
         _ => unreachable!(),
     });
 
-    Ok((SimpleDataStorage::new(rows), legacy_primary_index))
+    Ok((SimpleResourceStorage::new(rows), legacy_primary_index))
 }
 
 // ------------------------------------------------------------------------------------------------

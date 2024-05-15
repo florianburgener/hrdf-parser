@@ -9,12 +9,12 @@ use std::{collections::HashMap, error::Error, rc::Rc};
 use crate::{
     models::{Coordinate, CoordinateType, Model, ResourceIndex, Stop},
     parsing::{AdvancedRowMatcher, FastRowMatcher},
-    storage::SimpleDataStorage,
+    storage::SimpleResourceStorage,
 };
 
 use super::{ColumnDefinition, ExpectedType, FileParser, ParsedValue, RowDefinition, RowParser};
 
-pub fn parse() -> Result<SimpleDataStorage<Stop>, Box<dyn Error>> {
+pub fn parse() -> Result<SimpleResourceStorage<Stop>, Box<dyn Error>> {
     println!("Parsing BAHNHOF...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -48,7 +48,7 @@ pub fn parse() -> Result<SimpleDataStorage<Stop>, Box<dyn Error>> {
     println!("Parsing BHFART_60...");
     load_descriptions(&primary_index)?;
 
-    Ok(SimpleDataStorage::new(rows))
+    Ok(SimpleResourceStorage::new(rows))
 }
 
 fn load_coordinates(

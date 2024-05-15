@@ -8,12 +8,12 @@ use crate::{
     parsing::{
         ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, RowDefinition, RowParser,
     },
-    storage::SimpleDataStorage,
+    storage::SimpleResourceStorage,
 };
 
 use super::ParsedValue;
 
-pub fn parse() -> Result<SimpleDataStorage<Line>, Box<dyn Error>> {
+pub fn parse() -> Result<SimpleResourceStorage<Line>, Box<dyn Error>> {
     println!("Parsing LINIE...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -61,7 +61,7 @@ pub fn parse() -> Result<SimpleDataStorage<Line>, Box<dyn Error>> {
         _ => unreachable!(),
     });
 
-    Ok(SimpleDataStorage::new(rows))
+    Ok(SimpleResourceStorage::new(rows))
 }
 
 // ------------------------------------------------------------------------------------------------

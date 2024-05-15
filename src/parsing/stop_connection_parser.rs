@@ -9,12 +9,12 @@ use crate::{
         AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser,
         RowDefinition, RowParser,
     },
-    storage::SimpleDataStorage,
+    storage::SimpleResourceStorage,
 };
 
 use super::ParsedValue;
 
-pub fn parse() -> Result<SimpleDataStorage<StopConnection>, Box<dyn Error>> {
+pub fn parse() -> Result<SimpleResourceStorage<StopConnection>, Box<dyn Error>> {
     println!("Parsing METABHF 1/2...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -57,7 +57,7 @@ pub fn parse() -> Result<SimpleDataStorage<StopConnection>, Box<dyn Error>> {
             _ => unreachable!(),
         });
 
-    Ok(SimpleDataStorage::new(rows))
+    Ok(SimpleResourceStorage::new(rows))
 }
 
 // ------------------------------------------------------------------------------------------------

@@ -6,12 +6,12 @@ use std::{error::Error, rc::Rc};
 use crate::{
     models::BitField,
     parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
-    storage::SimpleDataStorage,
+    storage::SimpleResourceStorage,
 };
 
 use super::ParsedValue;
 
-pub fn parse() -> Result<SimpleDataStorage<BitField>, Box<dyn Error>> {
+pub fn parse() -> Result<SimpleResourceStorage<BitField>, Box<dyn Error>> {
     println!("Parsing BITFELD...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -28,7 +28,7 @@ pub fn parse() -> Result<SimpleDataStorage<BitField>, Box<dyn Error>> {
         .map(|(_, _, values)| create_instance(values))
         .collect();
 
-    Ok(SimpleDataStorage::new(rows))
+    Ok(SimpleResourceStorage::new(rows))
 }
 
 // ------------------------------------------------------------------------------------------------

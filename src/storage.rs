@@ -5,13 +5,13 @@ use crate::models::{Model, ResourceCollection, ResourceIndex};
 // ------------------------------------------------------------------------------------------------
 
 #[derive(Debug)]
-pub struct SimpleDataStorage<M: Model<M>> {
+pub struct SimpleResourceStorage<M: Model<M>> {
     rows: ResourceCollection<M>,
     primary_index: ResourceIndex<M, M::K>,
 }
 
 #[allow(unused)]
-impl<M: Model<M>> SimpleDataStorage<M> {
+impl<M: Model<M>> SimpleResourceStorage<M> {
     pub fn new(rows: ResourceCollection<M>) -> Self {
         let primary_index = M::create_primary_index(&rows);
 

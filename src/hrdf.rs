@@ -6,60 +6,60 @@ use crate::{
         Stop, StopConnection, ThroughService, TimetableMetadata, TransportCompany, TransportType,
     },
     parsing,
-    storage::SimpleDataStorage,
+    storage::SimpleResourceStorage,
 };
 
 #[allow(unused)]
 #[derive(Debug)]
 pub struct Hrdf {
-    attribute_data: SimpleDataStorage<Attribute>,
-    bit_field_data: SimpleDataStorage<BitField>,
-    direction_data: SimpleDataStorage<Direction>,
-    holiday_data: SimpleDataStorage<Holiday>,
-    information_text_data: SimpleDataStorage<InformationText>,
-    line_data: SimpleDataStorage<Line>,
-    journey_platform_data: SimpleDataStorage<JourneyPlatform>,
-    platform_data: SimpleDataStorage<Platform>,
-    stop_connection_data: SimpleDataStorage<StopConnection>,
-    stop_data: SimpleDataStorage<Stop>,
-    through_service_data: SimpleDataStorage<ThroughService>,
-    timetable_metadata: SimpleDataStorage<TimetableMetadata>,
-    transport_company_data: SimpleDataStorage<TransportCompany>,
-    transport_type_data: SimpleDataStorage<TransportType>,
+    attributes: SimpleResourceStorage<Attribute>,
+    bit_fields: SimpleResourceStorage<BitField>,
+    directions: SimpleResourceStorage<Direction>,
+    holidays: SimpleResourceStorage<Holiday>,
+    information_texts: SimpleResourceStorage<InformationText>,
+    lines: SimpleResourceStorage<Line>,
+    journey_platform: SimpleResourceStorage<JourneyPlatform>,
+    platforms: SimpleResourceStorage<Platform>,
+    stop_connections: SimpleResourceStorage<StopConnection>,
+    stops: SimpleResourceStorage<Stop>,
+    through_service_entries: SimpleResourceStorage<ThroughService>,
+    timetable_metadata: SimpleResourceStorage<TimetableMetadata>,
+    transport_companies: SimpleResourceStorage<TransportCompany>,
+    transport_types: SimpleResourceStorage<TransportType>,
 }
 
 #[allow(unused)]
 impl Hrdf {
     pub fn new() -> Result<Rc<Self>, Box<dyn Error>> {
-        let (attribute_data, _) = parsing::load_attribute_data()?;
-        let bit_field_data = parsing::load_bit_field_data()?;
-        let (direction_data, _) = parsing::load_direction_data()?;
-        let holiday_data = parsing::load_holiday_data()?;
-        let information_text_data = parsing::load_information_text_data()?;
-        let line_data = parsing::load_line_data()?;
-        let (journey_platform_data, platform_data, _) = parsing::load_platform_data()?;
-        let stop_connection_data = parsing::load_stop_connection_data()?;
-        let stop_data = parsing::load_stop_data()?;
-        let through_service_data = parsing::load_through_service_data()?;
+        let (attributes, _) = parsing::load_attributes()?;
+        let bit_fields = parsing::load_bit_fields()?;
+        let (directions, _) = parsing::load_directions()?;
+        let holidays = parsing::load_holidays()?;
+        let information_texts = parsing::load_information_texts()?;
+        let lines = parsing::load_lines()?;
+        let (journey_platform, platforms, _) = parsing::load_platforms()?;
+        let stop_connections = parsing::load_stop_connections()?;
+        let stops = parsing::load_stops()?;
+        let through_service_entries = parsing::load_through_service_entries()?;
         let timetable_metadata = parsing::load_timetable_metadata()?;
-        let transport_company_data = parsing::load_transport_company_data()?;
-        let (transport_type_data, _) = parsing::load_transport_type_data()?;
+        let transport_companies = parsing::load_transport_companies()?;
+        let (transport_types, _) = parsing::load_transport_types()?;
 
         let instance = Rc::new(Self {
-            attribute_data,
-            bit_field_data,
-            direction_data,
-            holiday_data,
-            information_text_data,
-            line_data,
-            journey_platform_data,
-            platform_data,
-            stop_connection_data,
-            stop_data,
-            through_service_data,
+            attributes,
+            bit_fields,
+            directions,
+            holidays,
+            information_texts,
+            lines,
+            journey_platform,
+            platforms,
+            stop_connections,
+            stops,
+            through_service_entries,
             timetable_metadata,
-            transport_company_data,
-            transport_type_data,
+            transport_companies,
+            transport_types,
         });
 
         // Self::set_parent_references(&instance);
@@ -72,11 +72,11 @@ impl Hrdf {
     //     }
     // }
 
-    pub fn platform_data(&self) -> &SimpleDataStorage<Platform> {
-        return &self.platform_data;
+    pub fn platforms(&self) -> &SimpleResourceStorage<Platform> {
+        return &self.platforms;
     }
 
-    pub fn stop_data(&self) -> &SimpleDataStorage<Stop> {
-        &self.stop_data
+    pub fn stops(&self) -> &SimpleResourceStorage<Stop> {
+        &self.stops
     }
 }

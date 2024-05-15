@@ -8,12 +8,12 @@ use regex::Regex;
 use crate::{
     models::{Language, Model, ResourceIndex, TransportCompany},
     parsing::{ColumnDefinition, ExpectedType, FastRowMatcher, RowDefinition, RowParser},
-    storage::SimpleDataStorage,
+    storage::SimpleResourceStorage,
 };
 
 use super::{FileParser, ParsedValue};
 
-pub fn parse() -> Result<SimpleDataStorage<TransportCompany>, Box<dyn Error>> {
+pub fn parse() -> Result<SimpleResourceStorage<TransportCompany>, Box<dyn Error>> {
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
 
@@ -43,7 +43,7 @@ pub fn parse() -> Result<SimpleDataStorage<TransportCompany>, Box<dyn Error>> {
     load_designations(&primary_index, Language::French)?;
     load_designations(&primary_index, Language::Italian)?;
 
-    Ok(SimpleDataStorage::new(rows))
+    Ok(SimpleResourceStorage::new(rows))
 }
 
 fn load_designations(

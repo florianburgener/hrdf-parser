@@ -6,12 +6,12 @@ use std::{error::Error, rc::Rc};
 use crate::{
     models::{InformationText, Language, Model, ResourceIndex},
     parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
-    storage::SimpleDataStorage,
+    storage::SimpleResourceStorage,
 };
 
 use super::ParsedValue;
 
-pub fn parse() -> Result<SimpleDataStorage<InformationText>, Box<dyn Error>> {
+pub fn parse() -> Result<SimpleResourceStorage<InformationText>, Box<dyn Error>> {
     println!("Parsing INFOTEXT_DE...");
     println!("Parsing INFOTEXT_EN...");
     println!("Parsing INFOTEXT_FR...");
@@ -38,7 +38,7 @@ pub fn parse() -> Result<SimpleDataStorage<InformationText>, Box<dyn Error>> {
     load_content(&primary_index, Language::French)?;
     load_content(&primary_index, Language::Italian)?;
 
-    Ok(SimpleDataStorage::new(rows))
+    Ok(SimpleResourceStorage::new(rows))
 }
 
 fn load_content(

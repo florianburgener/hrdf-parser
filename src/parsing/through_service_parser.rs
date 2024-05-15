@@ -6,12 +6,12 @@ use std::{error::Error, rc::Rc};
 use crate::{
     models::{ResourceCollection, ThroughService},
     parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
-    storage::SimpleDataStorage,
+    storage::SimpleResourceStorage,
 };
 
 use super::ParsedValue;
 
-pub fn parse() -> Result<SimpleDataStorage<ThroughService>, Box<dyn Error>> {
+pub fn parse() -> Result<SimpleResourceStorage<ThroughService>, Box<dyn Error>> {
     println!("Parsing DURCHBI...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -40,7 +40,7 @@ pub fn parse() -> Result<SimpleDataStorage<ThroughService>, Box<dyn Error>> {
         })
         .collect();
 
-    Ok(SimpleDataStorage::new(rows))
+    Ok(SimpleResourceStorage::new(rows))
 }
 
 // ------------------------------------------------------------------------------------------------

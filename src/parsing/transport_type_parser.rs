@@ -9,12 +9,12 @@ use crate::{
         AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, RowDefinition,
         RowParser,
     },
-    storage::SimpleDataStorage,
+    storage::SimpleResourceStorage,
 };
 
 use super::{FileParser, ParsedValue};
 
-pub fn parse() -> Result<(SimpleDataStorage<TransportType>, ResourceIndex<TransportType, String>), Box<dyn Error>> {
+pub fn parse() -> Result<(SimpleResourceStorage<TransportType>, ResourceIndex<TransportType, String>), Box<dyn Error>> {
     println!("Parsing ZUGART...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -79,7 +79,7 @@ pub fn parse() -> Result<(SimpleDataStorage<TransportType>, ResourceIndex<Transp
         _ => unreachable!(),
     });
 
-    Ok((SimpleDataStorage::new(rows), legacy_primary_index))
+    Ok((SimpleResourceStorage::new(rows), legacy_primary_index))
 }
 
 // ------------------------------------------------------------------------------------------------
