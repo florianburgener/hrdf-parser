@@ -256,11 +256,17 @@ impl RowParser {
             .map(|column_definition| {
                 let start = column_definition.start - 1;
                 let stop = if column_definition.stop == -1 {
-                    row.len()
+                    row.chars().count()
                 } else {
                     column_definition.stop as usize
                 };
 
+                let start = row.char_indices().map(|(i, _)| i).nth(start).unwrap();
+                let stop = if let Some(i) = row.char_indices().map(|(i, _)| i).nth(stop) {
+                    i
+                } else {
+                    row.len()
+                };
                 let value = row[start..stop].trim();
 
                 match column_definition.expected_type {

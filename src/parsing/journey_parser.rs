@@ -265,7 +265,7 @@ fn set_line(mut values: Vec<ParsedValue>, journey: &Rc<Journey>) {
 
     let (resource_id, extra_field1) = if line_designation.chars().next().unwrap() == '#' {
         (
-            Some(line_designation.get(1..).unwrap().parse::<i32>().unwrap()),
+            Some(line_designation[1..].parse::<i32>().unwrap()),
             None,
         )
     } else {

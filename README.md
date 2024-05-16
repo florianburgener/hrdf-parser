@@ -50,3 +50,4 @@ TODO :
 * Chunk loading des fichiers
 
 Chaine UTF-8...
+Correctement stocker les heures
