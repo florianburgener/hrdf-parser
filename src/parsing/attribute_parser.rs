@@ -57,7 +57,7 @@ pub fn parse() -> Result<
     let file_parser = FileParser::new("data/ATTRIBUT", row_parser)?;
 
     let mut rows = Vec::new();
-    let mut legacy_primary_index = HashMap::new();
+    let mut legacy_pk_index = HashMap::new();
 
     let auto_increment = AutoIncrement::new();
     let mut current_language = Language::default();
@@ -65,16 +65,16 @@ pub fn parse() -> Result<
     file_parser.parse().for_each(|(id, _, values)| match id {
         ROW_A => {
             let (instance, k) = create_instance(values, &auto_increment);
-            legacy_primary_index.insert(k, Rc::clone(&instance));
+            legacy_pk_index.insert(k, Rc::clone(&instance));
             rows.push(instance);
         }
         ROW_B => return,
         ROW_C => update_current_language(values, &mut current_language),
-        ROW_D => set_description(values, &legacy_primary_index, current_language),
+        ROW_D => set_description(values, &legacy_pk_index, current_language),
         _ => unreachable!(),
     });
 
-    Ok((SimpleResourceStorage::new(rows), legacy_primary_index))
+    Ok((SimpleResourceStorage::new(rows), legacy_pk_index))
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -99,13 +99,13 @@ fn create_instance(mut values: Vec<ParsedValue>, auto_increment: &AutoIncrement)
 
 fn set_description(
     mut values: Vec<ParsedValue>,
-    legacy_primary_index: &ResourceIndex<Attribute, String>,
+    legacy_pk_index: &ResourceIndex<Attribute, String>,
     language: Language,
 ) {
     let legacy_id: String = values.remove(0).into();
     let description: String = values.remove(0).into();
 
-    legacy_primary_index
+    legacy_pk_index
         .get(&legacy_id)
         .unwrap()
         .set_description(language, &description);

@@ -40,8 +40,7 @@ Fichiers restants :
 * UMSTEIGV
 * UMSTEIGZ
 
-let primary_index = information_text_parser, stop_parser, transport_company_parser
-let mut legacy_primary_index = attribute_parser, direction_parser, platform_parser, transport_type_parser
+let mut legacy_pk_index = attribute_parser, direction_parser, journey_parser, transport_type_parser
 
 TODO :
 * FPLAN
@@ -49,3 +48,5 @@ TODO :
 * 1 UMSTEI
 * thiserror
 * Chunk loading des fichiers
+
+Chaine UTF-8...

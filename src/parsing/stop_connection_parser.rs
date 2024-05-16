@@ -15,7 +15,7 @@ use crate::{
 use super::ParsedValue;
 
 pub fn parse(
-    attribute_legacy_primary_index: ResourceIndex<Attribute, String>,
+    attribute_legacy_pk_index: &ResourceIndex<Attribute, String>,
 ) -> Result<SimpleResourceStorage<StopConnection>, Box<dyn Error>> {
     println!("Parsing METABHF 1/2...");
     const ROW_A: i32 = 1;
@@ -54,7 +54,7 @@ pub fn parse(
             ROW_B => {
                 let attribute: String = values.remove(0).into();
                 current_instance
-                    .add_attribute(attribute_legacy_primary_index.get(&attribute).unwrap().id());
+                    .add_attribute(attribute_legacy_pk_index.get(&attribute).unwrap().id());
             }
             ROW_C => return,
             _ => unreachable!(),

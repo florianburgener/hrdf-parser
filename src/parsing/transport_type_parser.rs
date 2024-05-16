@@ -60,7 +60,7 @@ pub fn parse() -> Result<(SimpleResourceStorage<TransportType>, ResourceIndex<Tr
     let file_parser = FileParser::new("data/ZUGART", row_parser)?;
 
     let mut rows = Vec::new();
-    let mut legacy_primary_index = HashMap::new();
+    let mut legacy_pk_index = HashMap::new();
 
     let auto_increment = AutoIncrement::new();
     let mut current_language = Language::default();
@@ -68,7 +68,7 @@ pub fn parse() -> Result<(SimpleResourceStorage<TransportType>, ResourceIndex<Tr
     file_parser.parse().for_each(|(id, _, values)| match id {
         ROW_A => {
             let (instance, k) = create_instance(values, &auto_increment);
-            legacy_primary_index.insert(k, Rc::clone(&instance));
+            legacy_pk_index.insert(k, Rc::clone(&instance));
             rows.push(instance);
         }
         ROW_B => update_current_language(values, &mut current_language),
@@ -78,7 +78,7 @@ pub fn parse() -> Result<(SimpleResourceStorage<TransportType>, ResourceIndex<Tr
         _ => unreachable!(),
     });
 
-    Ok((SimpleResourceStorage::new(rows), legacy_primary_index))
+    Ok((SimpleResourceStorage::new(rows), legacy_pk_index))
 }
 
 // ------------------------------------------------------------------------------------------------

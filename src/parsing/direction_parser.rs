@@ -24,18 +24,18 @@ pub fn parse() -> Result<(SimpleResourceStorage<Direction>, ResourceIndex<Direct
     let file_parser = FileParser::new("data/RICHTUNG", row_parser)?;
 
     let rows: ResourceCollection<Direction>;
-    let mut legacy_primary_index = HashMap::new();
+    let mut legacy_pk_index = HashMap::new();
 
     rows = file_parser
         .parse()
         .map(|(_, _, values)| {
             let (instance, k) = create_instance(values);
-            legacy_primary_index.insert(k, Rc::clone(&instance));
+            legacy_pk_index.insert(k, Rc::clone(&instance));
             instance
         })
         .collect();
 
-    Ok((SimpleResourceStorage::new(rows), legacy_primary_index))
+    Ok((SimpleResourceStorage::new(rows), legacy_pk_index))
 }
 
 // ------------------------------------------------------------------------------------------------

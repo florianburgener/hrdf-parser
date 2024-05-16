@@ -7,17 +7,17 @@ use crate::models::{Model, ResourceCollection, ResourceIndex};
 #[derive(Debug)]
 pub struct SimpleResourceStorage<M: Model<M>> {
     rows: ResourceCollection<M>,
-    primary_index: ResourceIndex<M, M::K>,
+    pk_index: ResourceIndex<M, M::K>,
 }
 
 #[allow(unused)]
 impl<M: Model<M>> SimpleResourceStorage<M> {
     pub fn new(rows: ResourceCollection<M>) -> Self {
-        let primary_index = M::create_primary_index(&rows);
+        let pk_index = M::create_pk_index(&rows);
 
         Self {
             rows,
-            primary_index,
+            pk_index,
         }
     }
 
@@ -25,7 +25,7 @@ impl<M: Model<M>> SimpleResourceStorage<M> {
         &self.rows
     }
 
-    pub fn primary_index(&self) -> &ResourceIndex<M, M::K> {
-        &self.primary_index
+    pub fn pk_index(&self) -> &ResourceIndex<M, M::K> {
+        &self.pk_index
     }
 }

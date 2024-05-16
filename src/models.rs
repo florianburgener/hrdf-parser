@@ -43,7 +43,7 @@ pub trait Model<M: Model<M>> {
 
     fn id(&self) -> M::K;
 
-    fn create_primary_index(rows: &ResourceCollection<M>) -> ResourceIndex<M, M::K> {
+    fn create_pk_index(rows: &ResourceCollection<M>) -> ResourceIndex<M, M::K> {
         rows.iter().fold(HashMap::new(), |mut acc, item| {
             acc.insert(item.id(), Rc::clone(item));
             acc
@@ -414,6 +414,7 @@ pub struct Journey {
     id: i32,
     administration: String,
     metadata: RefCell<HashMap<JourneyMetadataType, RefCell<Vec<JourneyMetadataEntry>>>>,
+    route: RefCell<Vec<JourneyRouteEntry>>,
 }
 
 impl Model<Journey> for Journey {
@@ -424,6 +425,7 @@ impl Model<Journey> for Journey {
     }
 }
 
+// TODO: getters/setters
 #[allow(unused)]
 impl Journey {
     pub fn new(id: i32, administration: String) -> Self {
@@ -431,6 +433,7 @@ impl Journey {
             id,
             administration,
             metadata: RefCell::new(HashMap::new()),
+            route: RefCell::new(Vec::new()),
         }
     }
 
@@ -444,6 +447,10 @@ impl Journey {
         } else {
             self.metadata.borrow_mut().insert(k, RefCell::new(vec![v]));
         }
+    }
+
+    pub fn add_route_entry(&self, entry: JourneyRouteEntry) {
+        self.route.borrow_mut().push(entry);
     }
 }
 
@@ -460,26 +467,28 @@ pub enum JourneyMetadataType {
 }
 
 #[derive(Debug)]
-pub struct JourneyMetadataEntry<T = String> {
-    from_stop_id: i32,
-    until_stop_id: i32,
+pub struct JourneyMetadataEntry {
+    from_stop_id: Option<i32>,
+    until_stop_id: Option<i32>,
     resource_id: Option<i32>,
     bit_field_id: Option<i32>,
     departure_time: Option<i32>,
     arrival_time: Option<i32>,
-    extra_field1: Option<T>,
+    extra_field1: Option<String>,
+    extra_field2: Option<i32>,
 }
 
 #[allow(unused)]
-impl<T> JourneyMetadataEntry<T> {
+impl JourneyMetadataEntry {
     pub fn new(
-        from_stop_id: i32,
-        until_stop_id: i32,
+        from_stop_id: Option<i32>,
+        until_stop_id: Option<i32>,
         resource_id: Option<i32>,
         bit_field_id: Option<i32>,
         departure_time: Option<i32>,
         arrival_time: Option<i32>,
-        extra_field1: Option<T>,
+        extra_field1: Option<String>,
+        extra_field2: Option<i32>,
     ) -> Self {
         Self {
             from_stop_id,
@@ -489,15 +498,16 @@ impl<T> JourneyMetadataEntry<T> {
             departure_time,
             arrival_time,
             extra_field1,
+            extra_field2,
         }
     }
 
-    pub fn from_stop_id(&self) -> i32 {
-        self.from_stop_id
+    pub fn from_stop_id(&self) -> &Option<i32> {
+        &self.from_stop_id
     }
 
-    pub fn until_stop_id(&self) -> i32 {
-        self.until_stop_id
+    pub fn until_stop_id(&self) -> &Option<i32> {
+        &self.until_stop_id
     }
 
     pub fn resource_id(&self) -> &Option<i32> {
@@ -516,8 +526,46 @@ impl<T> JourneyMetadataEntry<T> {
         &self.arrival_time
     }
 
-    pub fn extra_field1(&self) -> &Option<T> {
+    pub fn extra_field1(&self) -> &Option<String> {
         &self.extra_field1
+    }
+
+    pub fn extra_field2(&self) -> &Option<i32> {
+        &self.extra_field2
+    }
+}
+
+#[derive(Debug)]
+pub struct JourneyRouteEntry {
+    stop_id: i32,
+    arrival_time: Option<i32>,
+    departure_time: Option<i32>,
+}
+
+#[allow(unused)]
+impl JourneyRouteEntry {
+    pub fn new(
+        stop_id: i32,
+        arrival_time: Option<i32>,
+        departure_time: Option<i32>,
+    ) -> Self {
+        Self {
+            stop_id,
+            arrival_time,
+            departure_time,
+        }
+    }
+
+    pub fn stop_id(&self) -> i32 {
+        self.stop_id
+    }
+
+    pub fn arrival_time(&self) -> &Option<i32> {
+        &self.arrival_time
+    }
+
+    pub fn departure_time(&self) -> &Option<i32> {
+        &self.departure_time
     }
 }
 

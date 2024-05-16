@@ -49,25 +49,28 @@ impl Hrdf {
         let timetable_metadata = parsing::load_timetable_metadata_resource()?;
 
         // Master data.
-        let (attribute, attribute_legacy_primary_index) = parsing::load_attribute_resource()?;
-        let (direction, _) = parsing::load_direction_resource()?;
+        let (attribute, attribute_legacy_pk_index) = parsing::load_attribute_resource()?;
+        let (direction, direction_legacy_pk_index) = parsing::load_direction_resource()?;
         let information_text = parsing::load_information_text_resource()?;
         let line = parsing::load_line_resource()?;
         let transport_company = parsing::load_transport_company_resource()?;
-        let (transport_type, transport_type_legacy_primary_index) =
+        let (transport_type, transport_type_legacy_pk_index) =
             parsing::load_transport_type_resource()?;
 
         // Stop data.
         let stop = parsing::load_stop_resource()?;
-        let stop_connection =
-            parsing::load_stop_connection_resource(attribute_legacy_primary_index)?;
+        let stop_connection = parsing::load_stop_connection_resource(&attribute_legacy_pk_index)?;
 
         // Transfer times.
         let administration_transfer_time = parsing::load_administration_transfer_time_resource()?;
 
         // Timetable data.
-        let (journey, _) = parsing::load_journey_resource(transport_type_legacy_primary_index)?;
-        let (journey_platform, platform, _) = parsing::load_platform_resource()?;
+        let (journey, _) = parsing::load_journey_resource(
+            &transport_type_legacy_pk_index,
+            &attribute_legacy_pk_index,
+            &direction_legacy_pk_index,
+        )?;
+        let (journey_platform, platform) = parsing::load_platform_resource()?;
         let through_service = parsing::load_through_service_resource()?;
 
         let instance = Rc::new(Self {

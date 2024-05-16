@@ -36,18 +36,18 @@ pub fn parse() -> Result<SimpleResourceStorage<TransportCompany>, Box<dyn Error>
         _ => return,
     });
 
-    let primary_index = TransportCompany::create_primary_index(&rows);
+    let pk_index = TransportCompany::create_pk_index(&rows);
 
-    load_designations(&primary_index, Language::German)?;
-    load_designations(&primary_index, Language::English)?;
-    load_designations(&primary_index, Language::French)?;
-    load_designations(&primary_index, Language::Italian)?;
+    load_designations(&pk_index, Language::German)?;
+    load_designations(&pk_index, Language::English)?;
+    load_designations(&pk_index, Language::French)?;
+    load_designations(&pk_index, Language::Italian)?;
 
     Ok(SimpleResourceStorage::new(rows))
 }
 
 fn load_designations(
-    primary_index: &ResourceIndex<TransportCompany>,
+    pk_index: &ResourceIndex<TransportCompany>,
     language: Language,
 ) -> Result<(), Box<dyn Error>> {
     const ROW_A: i32 = 1;
@@ -73,7 +73,7 @@ fn load_designations(
     let file_parser = FileParser::new(&file_path, row_parser)?;
 
     file_parser.parse().for_each(|(id, _, values)| match id {
-        ROW_A => set_designations(values, primary_index, language),
+        ROW_A => set_designations(values, pk_index, language),
         _ => return,
     });
 
@@ -95,7 +95,7 @@ fn create_instance(mut values: Vec<ParsedValue>) -> Rc<TransportCompany> {
 
 fn set_designations(
     mut values: Vec<ParsedValue>,
-    primary_index: &ResourceIndex<TransportCompany>,
+    pk_index: &ResourceIndex<TransportCompany>,
     language: Language,
 ) {
     let id: i32 = values.remove(0).into();
@@ -103,7 +103,7 @@ fn set_designations(
 
     let (short_name, long_name, full_name) = parse_designations(designations);
 
-    let transport_company = primary_index.get(&id).unwrap();
+    let transport_company = pk_index.get(&id).unwrap();
     transport_company.set_short_name(language, &short_name);
     transport_company.set_long_name(language, &long_name);
     transport_company.set_full_name(language, &full_name);
