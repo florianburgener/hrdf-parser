@@ -8,6 +8,35 @@ use std::{
 use chrono::NaiveDate;
 use strum_macros::{self, Display, EnumString};
 
+// ------------------------------------------------------------------------------------------------
+// --- AutoIncrement
+// ------------------------------------------------------------------------------------------------
+
+pub struct AutoIncrement {
+    value: RefCell<i32>,
+}
+
+impl AutoIncrement {
+    pub fn new() -> Self {
+        Self {
+            value: RefCell::new(0),
+        }
+    }
+
+    pub fn value(&self) -> i32 {
+        *self.value.borrow()
+    }
+
+    pub fn next(&self) -> i32 {
+        *self.value.borrow_mut() += 1;
+        *self.value.borrow()
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
+// --- Model
+// ------------------------------------------------------------------------------------------------
+
 pub trait Model<M: Model<M>> {
     // Primary key type.
     type K: Eq + Hash;
@@ -30,6 +59,62 @@ pub type ResourceCollection<M> = Vec<Rc<M>>;
 pub type ResourceIndex<M, K = i32> = HashMap<K, Rc<M>>;
 
 // ------------------------------------------------------------------------------------------------
+// --- AdministrationTransferTime
+// ------------------------------------------------------------------------------------------------
+
+#[derive(Debug)]
+pub struct AdministrationTransferTime {
+    id: i32,
+    stop_id: Option<i32>, // A None value means that the transfer time applies to all stops if there is no specific entry for the stop and the 2 administrations.
+    administration_1: String,
+    administration_2: String,
+    duration: i16, // Transfer time from administration 1 to administration 2 is in minutes.
+}
+
+impl Model<AdministrationTransferTime> for AdministrationTransferTime {
+    type K = i32;
+
+    fn id(&self) -> Self::K {
+        self.id
+    }
+}
+
+#[allow(unused)]
+impl AdministrationTransferTime {
+    pub fn new(
+        id: i32,
+        stop_id: Option<i32>,
+        administration_1: String,
+        administration_2: String,
+        duration: i16,
+    ) -> Self {
+        Self {
+            id,
+            stop_id,
+            administration_1,
+            administration_2,
+            duration,
+        }
+    }
+
+    pub fn stop_id(&self) -> &Option<i32> {
+        &self.stop_id
+    }
+
+    pub fn administration_1(&self) -> &str {
+        &self.administration_1
+    }
+
+    pub fn administration_2(&self) -> &str {
+        &self.administration_2
+    }
+
+    pub fn duration(&self) -> i16 {
+        self.duration
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
 // --- Attribute
 // ------------------------------------------------------------------------------------------------
 
@@ -46,7 +131,7 @@ pub struct Attribute {
 impl Model<Attribute> for Attribute {
     type K = i32;
 
-    fn id(&self) -> i32 {
+    fn id(&self) -> Self::K {
         self.id
     }
 }
@@ -114,7 +199,7 @@ pub struct BitField {
 impl Model<BitField> for BitField {
     type K = i32;
 
-    fn id(&self) -> i32 {
+    fn id(&self) -> Self::K {
         self.id
     }
 }
@@ -228,7 +313,7 @@ pub struct Direction {
 impl Model<Direction> for Direction {
     type K = i32;
 
-    fn id(&self) -> i32 {
+    fn id(&self) -> Self::K {
         self.id
     }
 }
@@ -258,7 +343,7 @@ pub struct Holiday {
 impl Model<Holiday> for Holiday {
     type K = i32;
 
-    fn id(&self) -> i32 {
+    fn id(&self) -> Self::K {
         self.id
     }
 }
@@ -291,7 +376,7 @@ pub struct InformationText {
 impl Model<InformationText> for InformationText {
     type K = i32;
 
-    fn id(&self) -> i32 {
+    fn id(&self) -> Self::K {
         self.id
     }
 }
@@ -303,10 +388,6 @@ impl InformationText {
             id,
             content: RefCell::new(HashMap::new()),
         }
-    }
-
-    pub fn id(&self) -> i32 {
-        return self.id;
     }
 
     pub fn content(&self, language: Language) -> String {
@@ -325,23 +406,119 @@ impl InformationText {
 }
 
 // ------------------------------------------------------------------------------------------------
-// --- Language
+// --- Journey
 // ------------------------------------------------------------------------------------------------
 
-#[derive(Clone, Copy, Debug, Default, Display, EnumString)]
-pub enum Language {
-    #[default]
-    #[strum(serialize = "deu")]
-    German,
+#[derive(Debug, Default)]
+pub struct Journey {
+    id: i32,
+    administration: String,
+    metadata: RefCell<HashMap<JourneyMetadataType, RefCell<Vec<JourneyMetadataEntry>>>>,
+}
 
-    #[strum(serialize = "fra")]
-    French,
+impl Model<Journey> for Journey {
+    type K = i32;
 
-    #[strum(serialize = "ita")]
-    Italian,
+    fn id(&self) -> Self::K {
+        self.id
+    }
+}
 
-    #[strum(serialize = "eng")]
-    English,
+#[allow(unused)]
+impl Journey {
+    pub fn new(id: i32, administration: String) -> Self {
+        Self {
+            id,
+            administration,
+            metadata: RefCell::new(HashMap::new()),
+        }
+    }
+
+    pub fn administration(&self) -> &str {
+        &self.administration
+    }
+
+    pub fn add_metadata_entry(&self, k: JourneyMetadataType, v: JourneyMetadataEntry) {
+        if self.metadata.borrow().contains_key(&k) {
+            self.metadata.borrow().get(&k).unwrap().borrow_mut().push(v);
+        } else {
+            self.metadata.borrow_mut().insert(k, RefCell::new(vec![v]));
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub enum JourneyMetadataType {
+    TransportType,
+    BitField,
+    Attribute,
+    InformationText,
+    Line,
+    Direction,
+    TransferTimeBoarding,
+    TransferTimeDisembarking,
+}
+
+#[derive(Debug)]
+pub struct JourneyMetadataEntry<T = String> {
+    from_stop_id: i32,
+    until_stop_id: i32,
+    resource_id: Option<i32>,
+    bit_field_id: Option<i32>,
+    departure_time: Option<i32>,
+    arrival_time: Option<i32>,
+    extra_field1: Option<T>,
+}
+
+#[allow(unused)]
+impl<T> JourneyMetadataEntry<T> {
+    pub fn new(
+        from_stop_id: i32,
+        until_stop_id: i32,
+        resource_id: Option<i32>,
+        bit_field_id: Option<i32>,
+        departure_time: Option<i32>,
+        arrival_time: Option<i32>,
+        extra_field1: Option<T>,
+    ) -> Self {
+        Self {
+            from_stop_id,
+            until_stop_id,
+            resource_id,
+            bit_field_id,
+            departure_time,
+            arrival_time,
+            extra_field1,
+        }
+    }
+
+    pub fn from_stop_id(&self) -> i32 {
+        self.from_stop_id
+    }
+
+    pub fn until_stop_id(&self) -> i32 {
+        self.until_stop_id
+    }
+
+    pub fn resource_id(&self) -> &Option<i32> {
+        &self.resource_id
+    }
+
+    pub fn bit_field_id(&self) -> &Option<i32> {
+        &self.bit_field_id
+    }
+
+    pub fn departure_time(&self) -> &Option<i32> {
+        &self.departure_time
+    }
+
+    pub fn arrival_time(&self) -> &Option<i32> {
+        &self.arrival_time
+    }
+
+    pub fn extra_field1(&self) -> &Option<T> {
+        &self.extra_field1
+    }
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -359,7 +536,7 @@ pub struct JourneyPlatform {
 impl Model<JourneyPlatform> for JourneyPlatform {
     type K = (i32, i32);
 
-    fn id(&self) -> (i32, i32) {
+    fn id(&self) -> Self::K {
         (self.journey_id, self.platform_id)
     }
 }
@@ -398,6 +575,26 @@ impl JourneyPlatform {
 }
 
 // ------------------------------------------------------------------------------------------------
+// --- Language
+// ------------------------------------------------------------------------------------------------
+
+#[derive(Clone, Copy, Debug, Default, Display, EnumString)]
+pub enum Language {
+    #[default]
+    #[strum(serialize = "deu")]
+    German,
+
+    #[strum(serialize = "fra")]
+    French,
+
+    #[strum(serialize = "ita")]
+    Italian,
+
+    #[strum(serialize = "eng")]
+    English,
+}
+
+// ------------------------------------------------------------------------------------------------
 // --- Line
 // ------------------------------------------------------------------------------------------------
 
@@ -413,7 +610,7 @@ pub struct Line {
 impl Model<Line> for Line {
     type K = i32;
 
-    fn id(&self) -> i32 {
+    fn id(&self) -> Self::K {
         self.id
     }
 }
@@ -477,7 +674,7 @@ pub struct Platform {
 impl Model<Platform> for Platform {
     type K = i32;
 
-    fn id(&self) -> i32 {
+    fn id(&self) -> Self::K {
         self.id
     }
 }
@@ -546,10 +743,10 @@ pub struct Stop {
     synonyms: Option<Vec<String>>,
     lv95_coordinate: RefCell<Option<Coordinate>>,
     wgs84_coordinate: RefCell<Option<Coordinate>>,
-    changing_priority: RefCell<i16>,
-    changing_flag: RefCell<Option<i16>>,
-    changing_time_inter_city: RefCell<i16>,
-    changing_time_other: RefCell<i16>,
+    transfer_priority: RefCell<i16>,
+    transfer_flag: RefCell<Option<i16>>,
+    transfer_time_inter_city: RefCell<i16>,
+    transfer_time_other: RefCell<i16>,
     connections: RefCell<Vec<i32>>, // Vec of Stop.id
     restrictions: RefCell<i16>,
     sloid: RefCell<String>,
@@ -559,7 +756,7 @@ pub struct Stop {
 impl Model<Stop> for Stop {
     type K = i32;
 
-    fn id(&self) -> i32 {
+    fn id(&self) -> Self::K {
         self.id
     }
 }
@@ -581,10 +778,10 @@ impl Stop {
             synonyms,
             lv95_coordinate: RefCell::new(None),
             wgs84_coordinate: RefCell::new(None),
-            changing_priority: RefCell::new(8), // 8 is the default priority.
-            changing_flag: RefCell::new(None),
-            changing_time_inter_city: RefCell::new(0),
-            changing_time_other: RefCell::new(0),
+            transfer_priority: RefCell::new(8), // 8 is the default priority.
+            transfer_flag: RefCell::new(None),
+            transfer_time_inter_city: RefCell::new(0),
+            transfer_time_other: RefCell::new(0),
             connections: RefCell::new(Vec::new()),
             restrictions: RefCell::new(0),
             sloid: RefCell::new(String::new()),
@@ -624,36 +821,36 @@ impl Stop {
         *self.wgs84_coordinate.borrow_mut() = Some(value);
     }
 
-    pub fn changing_priority(&self) -> i16 {
-        *self.changing_priority.borrow()
+    pub fn transfer_priority(&self) -> i16 {
+        *self.transfer_priority.borrow()
     }
 
-    pub fn set_changing_priority(&self, value: i16) {
-        *self.changing_priority.borrow_mut() = value;
+    pub fn set_transfer_priority(&self, value: i16) {
+        *self.transfer_priority.borrow_mut() = value;
     }
 
-    pub fn changing_flag(&self) -> Option<i16> {
-        *self.changing_flag.borrow()
+    pub fn transfer_flag(&self) -> Option<i16> {
+        *self.transfer_flag.borrow()
     }
 
-    pub fn set_changing_flag(&self, value: i16) {
-        *self.changing_flag.borrow_mut() = Some(value);
+    pub fn set_transfer_flag(&self, value: i16) {
+        *self.transfer_flag.borrow_mut() = Some(value);
     }
 
-    pub fn changing_time_inter_city(&self) -> i16 {
-        *self.changing_time_inter_city.borrow()
+    pub fn transfer_time_inter_city(&self) -> i16 {
+        *self.transfer_time_inter_city.borrow()
     }
 
-    pub fn set_changing_time_inter_city(&self, value: i16) {
-        *self.changing_time_inter_city.borrow_mut() = value;
+    pub fn set_transfer_time_inter_city(&self, value: i16) {
+        *self.transfer_time_inter_city.borrow_mut() = value;
     }
 
-    pub fn changing_time_other(&self) -> i16 {
-        *self.changing_time_other.borrow()
+    pub fn transfer_time_other(&self) -> i16 {
+        *self.transfer_time_other.borrow()
     }
 
-    pub fn set_changing_time_other(&self, value: i16) {
-        *self.changing_time_other.borrow_mut() = value;
+    pub fn set_transfer_time_other(&self, value: i16) {
+        *self.transfer_time_other.borrow_mut() = value;
     }
 
     pub fn connections(&self) -> Ref<'_, Vec<i32>> {
@@ -699,13 +896,13 @@ pub struct StopConnection {
     stop_id_1: i32,
     stop_id_2: i32,
     duration: i16, // Transfer time from stop 1 to stop 2 is in minutes.
-    attributes: RefCell<Vec<String>>,
+    attributes: RefCell<Vec<i32>>,
 }
 
 impl Model<StopConnection> for StopConnection {
     type K = i32;
 
-    fn id(&self) -> i32 {
+    fn id(&self) -> Self::K {
         self.id
     }
 }
@@ -734,11 +931,11 @@ impl StopConnection {
         self.duration
     }
 
-    pub fn attributes(&self) -> Ref<'_, Vec<String>> {
+    pub fn attributes(&self) -> Ref<'_, Vec<i32>> {
         self.attributes.borrow()
     }
 
-    pub fn add_attribute(&self, value: String) {
+    pub fn add_attribute(&self, value: i32) {
         self.attributes.borrow_mut().push(value);
     }
 }
@@ -762,7 +959,7 @@ pub struct ThroughService {
 impl Model<ThroughService> for ThroughService {
     type K = i32;
 
-    fn id(&self) -> i32 {
+    fn id(&self) -> Self::K {
         self.id
     }
 }
@@ -825,22 +1022,22 @@ impl ThroughService {
 // ------------------------------------------------------------------------------------------------
 
 #[derive(Debug)]
-pub struct TimetableMetadata {
+pub struct TimetableMetadataEntry {
     id: i32,
     key: String,
     value: String,
 }
 
-impl Model<TimetableMetadata> for TimetableMetadata {
+impl Model<TimetableMetadataEntry> for TimetableMetadataEntry {
     type K = i32;
 
-    fn id(&self) -> i32 {
+    fn id(&self) -> Self::K {
         self.id
     }
 }
 
 #[allow(unused)]
-impl TimetableMetadata {
+impl TimetableMetadataEntry {
     pub fn new(id: i32, key: String, value: String) -> Self {
         Self { id, key, value }
     }
@@ -875,7 +1072,7 @@ pub struct TransportCompany {
 impl Model<TransportCompany> for TransportCompany {
     type K = i32;
 
-    fn id(&self) -> i32 {
+    fn id(&self) -> Self::K {
         self.id
     }
 }
@@ -961,7 +1158,7 @@ pub struct TransportType {
 impl Model<TransportType> for TransportType {
     type K = i32;
 
-    fn id(&self) -> i32 {
+    fn id(&self) -> Self::K {
         self.id
     }
 }

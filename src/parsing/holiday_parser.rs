@@ -6,7 +6,7 @@ use std::{collections::HashMap, error::Error, rc::Rc};
 use chrono::NaiveDate;
 
 use crate::{
-    models::Holiday,
+    models::{AutoIncrement, Holiday},
     parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
     storage::SimpleResourceStorage,
 };
@@ -26,12 +26,11 @@ pub fn parse() -> Result<SimpleResourceStorage<Holiday>, Box<dyn Error>> {
     let file_parser = FileParser::new("data/FEIERTAG", row_parser)?;
 
     let mut rows = Vec::new();
-    let mut next_id = 1;
+    let auto_increment = AutoIncrement::new();
 
     // A for loop is used here, as create_instance must be able to return an error.
     for (_, _, values) in file_parser.parse() {
-        rows.push(create_instance(values, next_id)?);
-        next_id += 1;
+        rows.push(create_instance(values, &auto_increment)?);
     }
 
     Ok(SimpleResourceStorage::new(rows))
@@ -41,14 +40,14 @@ pub fn parse() -> Result<SimpleResourceStorage<Holiday>, Box<dyn Error>> {
 // --- Data Processing Functions
 // ------------------------------------------------------------------------------------------------
 
-fn create_instance(mut values: Vec<ParsedValue>, id: i32) -> Result<Rc<Holiday>, Box<dyn Error>> {
+fn create_instance(mut values: Vec<ParsedValue>, auto_increment: &AutoIncrement) -> Result<Rc<Holiday>, Box<dyn Error>> {
     let date: String = values.remove(0).into();
     let name_translations: String = values.remove(0).into();
 
     let date = NaiveDate::parse_from_str(&date, "%d.%m.%Y")?;
     let name = parse_name_translations(name_translations);
 
-    Ok(Rc::new(Holiday::new(id, date, name)))
+    Ok(Rc::new(Holiday::new(auto_increment.next(), date, name)))
 }
 
 // ------------------------------------------------------------------------------------------------

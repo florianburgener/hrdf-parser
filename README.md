@@ -44,7 +44,8 @@ let primary_index = information_text_parser, stop_parser, transport_company_pars
 let mut legacy_primary_index = attribute_parser, direction_parser, platform_parser, transport_type_parser
 
 TODO :
-* Terminer le parsing
-* Remap les clés étrangères vers un i32
+* FPLAN
+* 1 UMSTEI
+* 1 UMSTEI
 * thiserror
 * Chunk loading des fichiers

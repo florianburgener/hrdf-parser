@@ -7,7 +7,7 @@
 use std::{collections::HashMap, error::Error, rc::Rc, str::FromStr};
 
 use crate::{
-    models::{Attribute, Language, ResourceIndex},
+    models::{Attribute, AutoIncrement, Language, ResourceIndex},
     parsing::{
         AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser,
         RowDefinition, RowParser,
@@ -59,15 +59,14 @@ pub fn parse() -> Result<
     let mut rows = Vec::new();
     let mut legacy_primary_index = HashMap::new();
 
-    let mut next_id = 1;
+    let auto_increment = AutoIncrement::new();
     let mut current_language = Language::default();
 
     file_parser.parse().for_each(|(id, _, values)| match id {
         ROW_A => {
-            let (instance, k) = create_instance(values, next_id);
+            let (instance, k) = create_instance(values, &auto_increment);
             legacy_primary_index.insert(k, Rc::clone(&instance));
             rows.push(instance);
-            next_id += 1;
         }
         ROW_B => return,
         ROW_C => update_current_language(values, &mut current_language),
@@ -82,14 +81,14 @@ pub fn parse() -> Result<
 // --- Data Processing Functions
 // ------------------------------------------------------------------------------------------------
 
-fn create_instance(mut values: Vec<ParsedValue>, id: i32) -> (Rc<Attribute>, String) {
+fn create_instance(mut values: Vec<ParsedValue>, auto_increment: &AutoIncrement) -> (Rc<Attribute>, String) {
     let designation: String = values.remove(0).into();
     let stop_scope: i16 = values.remove(0).into();
     let main_sorting_priority: i16 = values.remove(0).into();
     let secondary_sorting_priority: i16 = values.remove(0).into();
 
     let instance = Rc::new(Attribute::new(
-        id,
+        auto_increment.next(),
         designation.to_owned(),
         stop_scope,
         main_sorting_priority,

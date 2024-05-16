@@ -6,14 +6,14 @@ use std::{error::Error, rc::Rc};
 use chrono::NaiveDate;
 
 use crate::{
-    models::{ResourceCollection, TimetableMetadata},
+    models::{AutoIncrement, ResourceCollection, TimetableMetadataEntry},
     parsing::{AdvancedRowMatcher, FastRowMatcher, ParsedValue, RowDefinition, RowParser},
     storage::SimpleResourceStorage,
 };
 
 use super::{ColumnDefinition, ExpectedType, FileParser};
 
-pub fn parse() -> Result<SimpleResourceStorage<TimetableMetadata>, Box<dyn Error>> {
+pub fn parse() -> Result<SimpleResourceStorage<TimetableMetadataEntry>, Box<dyn Error>> {
     println!("Parsing ECKDATEN...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -45,8 +45,8 @@ pub fn parse() -> Result<SimpleResourceStorage<TimetableMetadata>, Box<dyn Error
     let end_date = NaiveDate::parse_from_str(&end_date, "%d.%m.%Y")?;
     let metadata: Vec<String> = metadata.split('$').map(String::from).collect();
 
-    let rows: ResourceCollection<TimetableMetadata>;
-    let mut next_id = 1;
+    let rows: ResourceCollection<TimetableMetadataEntry>;
+    let auto_increment = AutoIncrement::new();
 
     rows = vec![
         ("start_date", start_date.to_string()),
@@ -58,12 +58,12 @@ pub fn parse() -> Result<SimpleResourceStorage<TimetableMetadata>, Box<dyn Error
     ]
     .iter()
     .map(|(key, value)| {
-        let instance = Rc::new(TimetableMetadata::new(
-            next_id,
+        let instance = Rc::new(TimetableMetadataEntry::new(
+            auto_increment.next(),
             key.to_string(),
             value.to_owned(),
         ));
-        next_id += 1;
+
         instance
     })
     .collect();

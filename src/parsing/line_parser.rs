@@ -52,8 +52,9 @@ pub fn parse() -> Result<SimpleResourceStorage<Line>, Box<dyn Error>> {
     file_parser.parse().for_each(|(id, _, values)| match id {
         ROW_A => {
             // Using this method, it is assumed that the following lines of types B, C and D are related to current_instance.
-            current_instance = create_instance(values);
-            rows.push(Rc::clone(&current_instance));
+            let instance = create_instance(values);
+            rows.push(Rc::clone(&instance));
+            current_instance = instance;
         }
         ROW_B => set_short_name(values, &current_instance),
         ROW_C => set_text_color(values, &current_instance),

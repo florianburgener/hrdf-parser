@@ -38,11 +38,11 @@ pub fn parse() -> Result<SimpleResourceStorage<Stop>, Box<dyn Error>> {
     println!("Parsing BFKOORD_WGS...");
     load_coordinates(CoordinateType::WGS84, &primary_index)?;
     println!("Parsing BFPRIOS...");
-    load_changing_priorities(&primary_index)?;
+    load_transfer_priorities(&primary_index)?;
     println!("Parsing KMINFO...");
-    load_changing_flags(&primary_index)?;
+    load_transfer_flags(&primary_index)?;
     println!("Parsing UMSTEIGB...");
-    load_changing_times(&primary_index)?;
+    load_transfer_times(&primary_index)?;
     println!("Parsing METABHF 2/2...");
     load_connections(&primary_index)?;
     println!("Parsing BHFART_60...");
@@ -79,7 +79,7 @@ fn load_coordinates(
     Ok(())
 }
 
-fn load_changing_priorities(primary_index: &ResourceIndex<Stop>) -> Result<(), Box<dyn Error>> {
+fn load_transfer_priorities(primary_index: &ResourceIndex<Stop>) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row contains the changing priority.
@@ -93,12 +93,12 @@ fn load_changing_priorities(primary_index: &ResourceIndex<Stop>) -> Result<(), B
 
     file_parser
         .parse()
-        .for_each(|(_, _, values)| set_changing_priority(values, primary_index));
+        .for_each(|(_, _, values)| set_transfer_priority(values, primary_index));
 
     Ok(())
 }
 
-fn load_changing_flags(primary_index: &ResourceIndex<Stop>) -> Result<(), Box<dyn Error>> {
+fn load_transfer_flags(primary_index: &ResourceIndex<Stop>) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row contains the changing flag.
@@ -112,12 +112,12 @@ fn load_changing_flags(primary_index: &ResourceIndex<Stop>) -> Result<(), Box<dy
 
     file_parser
         .parse()
-        .for_each(|(_, _, values)| set_changing_flag(values, primary_index));
+        .for_each(|(_, _, values)| set_transfer_flag(values, primary_index));
 
     Ok(())
 }
 
-fn load_changing_times(primary_index: &ResourceIndex<Stop>) -> Result<(), Box<dyn Error>> {
+fn load_transfer_times(primary_index: &ResourceIndex<Stop>) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row contains the changing time.
@@ -132,7 +132,7 @@ fn load_changing_times(primary_index: &ResourceIndex<Stop>) -> Result<(), Box<dy
 
     file_parser
         .parse()
-        .for_each(|(_, _, values)| set_changing_time(values, primary_index));
+        .for_each(|(_, _, values)| set_transfer_time(values, primary_index));
 
     Ok(())
 }
@@ -241,37 +241,37 @@ fn set_coordinate(
     }
 }
 
-fn set_changing_priority(mut values: Vec<ParsedValue>, primary_index: &ResourceIndex<Stop>) {
+fn set_transfer_priority(mut values: Vec<ParsedValue>, primary_index: &ResourceIndex<Stop>) {
     let stop_id: i32 = values.remove(0).into();
-    let changing_priority: i16 = values.remove(0).into();
+    let transfer_priority: i16 = values.remove(0).into();
 
     let stop = primary_index.get(&stop_id).unwrap();
-    stop.set_changing_priority(changing_priority);
+    stop.set_transfer_priority(transfer_priority);
 }
 
-fn set_changing_flag(mut values: Vec<ParsedValue>, primary_index: &ResourceIndex<Stop>) {
+fn set_transfer_flag(mut values: Vec<ParsedValue>, primary_index: &ResourceIndex<Stop>) {
     let stop_id: i32 = values.remove(0).into();
-    let changing_flag: i16 = values.remove(0).into();
+    let transfer_flag: i16 = values.remove(0).into();
 
     let stop = primary_index.get(&stop_id).unwrap();
-    stop.set_changing_flag(changing_flag);
+    stop.set_transfer_flag(transfer_flag);
 }
 
-fn set_changing_time(mut values: Vec<ParsedValue>, primary_index: &ResourceIndex<Stop>) {
+fn set_transfer_time(mut values: Vec<ParsedValue>, primary_index: &ResourceIndex<Stop>) {
     let stop_id: i32 = values.remove(0).into();
-    let changing_time_inter_city: i16 = values.remove(0).into();
-    let changing_time_other: i16 = values.remove(0).into();
+    let transfer_time_inter_city: i16 = values.remove(0).into();
+    let transfer_time_other: i16 = values.remove(0).into();
 
     if stop_id == 9999999 {
         // The first row of the file has the stop ID number 9999999. It contains the default values for all stops.
         for stop in primary_index.values() {
-            stop.set_changing_time_inter_city(changing_time_inter_city);
-            stop.set_changing_time_other(changing_time_other);
+            stop.set_transfer_time_inter_city(transfer_time_inter_city);
+            stop.set_transfer_time_other(transfer_time_other);
         }
     } else {
         let stop = primary_index.get(&stop_id).unwrap();
-        stop.set_changing_time_inter_city(changing_time_inter_city);
-        stop.set_changing_time_other(changing_time_other);
+        stop.set_transfer_time_inter_city(transfer_time_inter_city);
+        stop.set_transfer_time_other(transfer_time_other);
     }
 }
 

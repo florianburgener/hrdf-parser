@@ -4,7 +4,7 @@
 use std::{error::Error, rc::Rc};
 
 use crate::{
-    models::{ResourceCollection, ThroughService},
+    models::{AutoIncrement, ResourceCollection, ThroughService},
     parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
     storage::SimpleResourceStorage,
 };
@@ -29,13 +29,12 @@ pub fn parse() -> Result<SimpleResourceStorage<ThroughService>, Box<dyn Error>> 
     let file_parser = FileParser::new("data/DURCHBI", row_parser)?;
 
     let rows: ResourceCollection<ThroughService>;
-    let mut next_id = 1;
+    let auto_increment = AutoIncrement::new();
 
     rows = file_parser
         .parse()
         .map(|(_, _, values)| {
-            let instance = create_instance(values, next_id);
-            next_id += 1;
+            let instance = create_instance(values, &auto_increment);
             instance
         })
         .collect();
@@ -47,7 +46,7 @@ pub fn parse() -> Result<SimpleResourceStorage<ThroughService>, Box<dyn Error>> 
 // --- Data Processing Functions
 // ------------------------------------------------------------------------------------------------
 
-fn create_instance(mut values: Vec<ParsedValue>, id: i32) -> Rc<ThroughService> {
+fn create_instance(mut values: Vec<ParsedValue>, auto_increment: &AutoIncrement) -> Rc<ThroughService> {
     let journey_1_id: i32 = values.remove(0).into();
     let journey_1_unknown: String = values.remove(0).into();
     let journey_1_stop_id: i32 = values.remove(0).into();
@@ -57,7 +56,7 @@ fn create_instance(mut values: Vec<ParsedValue>, id: i32) -> Rc<ThroughService> 
     let journey_2_stop_id: Option<i32> = values.remove(0).into();
 
     Rc::new(ThroughService::new(
-        id,
+        auto_increment.next(),
         journey_1_id,
         journey_1_unknown,
         journey_1_stop_id,

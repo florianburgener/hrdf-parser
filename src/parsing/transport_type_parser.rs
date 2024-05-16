@@ -4,7 +4,7 @@
 use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{
-    models::{Language, ResourceCollection, ResourceIndex, TransportType},
+    models::{AutoIncrement, Language, ResourceCollection, ResourceIndex, TransportType},
     parsing::{
         AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, RowDefinition,
         RowParser,
@@ -62,15 +62,14 @@ pub fn parse() -> Result<(SimpleResourceStorage<TransportType>, ResourceIndex<Tr
     let mut rows = Vec::new();
     let mut legacy_primary_index = HashMap::new();
 
-    let mut next_id = 1;
+    let auto_increment = AutoIncrement::new();
     let mut current_language = Language::default();
 
     file_parser.parse().for_each(|(id, _, values)| match id {
         ROW_A => {
-            let (instance, k) = create_instance(values, next_id);
+            let (instance, k) = create_instance(values, &auto_increment);
             legacy_primary_index.insert(k, Rc::clone(&instance));
             rows.push(instance);
-            next_id += 1;
         }
         ROW_B => update_current_language(values, &mut current_language),
         ROW_C => set_product_class_name(values, &rows, current_language),
@@ -86,7 +85,7 @@ pub fn parse() -> Result<(SimpleResourceStorage<TransportType>, ResourceIndex<Tr
 // --- Data Processing Functions
 // ------------------------------------------------------------------------------------------------
 
-fn create_instance(mut values: Vec<ParsedValue>, id: i32) -> (Rc<TransportType>, String) {
+fn create_instance(mut values: Vec<ParsedValue>, auto_increment: &AutoIncrement) -> (Rc<TransportType>, String) {
     let designation: String = values.remove(0).into();
     let product_class_id: i16 = values.remove(0).into();
     let tarrif_group: String = values.remove(0).into();
@@ -96,7 +95,7 @@ fn create_instance(mut values: Vec<ParsedValue>, id: i32) -> (Rc<TransportType>,
     let flag: String = values.remove(0).into();
 
     let instance = Rc::new(TransportType::new(
-        id,
+        auto_increment.next(),
         designation.to_owned(),
         product_class_id,
         tarrif_group,
