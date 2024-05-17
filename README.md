@@ -41,7 +41,6 @@ Fichiers restants :
 * UMSTEIGZ
 
 TODO :
-* Correctement stocker les heures
 * 2 UMSTEI
 * Normaliser le code
 * Ajouter thiserror

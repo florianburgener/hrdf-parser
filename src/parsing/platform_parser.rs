@@ -48,7 +48,7 @@ pub fn parse() -> Result<
 
     let mut journey_platform_data = Vec::new();
 
-    let mut platform_legacy_pk_index = HashMap::new();
+    let mut platforms_legacy_pk_index = HashMap::new();
 
     let mut bytes_offset = 0;
     let auto_increment = AutoIncrement::new();
@@ -63,7 +63,7 @@ pub fn parse() -> Result<
                 }
                 ROW_B => {
                     let (instance, k) = create_platform(values, &auto_increment);
-                    platform_legacy_pk_index.insert(k, Rc::clone(&instance));
+                    platforms_legacy_pk_index.insert(k, Rc::clone(&instance));
                     return Some(instance);
                 }
                 _ => unreachable!(),
@@ -74,15 +74,15 @@ pub fn parse() -> Result<
 
     let journey_platform = journey_platform_data
         .into_iter()
-        .map(|values| create_journey_platform(values, &platform_legacy_pk_index))
+        .map(|values| create_journey_platform(values, &platforms_legacy_pk_index))
         .collect();
 
     println!("Parsing GLEIS_LV95...");
     #[rustfmt::skip]
-    load_coordinates_for_platforms(CoordinateType::LV95, bytes_offset, &platform_legacy_pk_index)?;
+    load_coordinates_for_platforms(CoordinateType::LV95, bytes_offset, &platforms_legacy_pk_index)?;
     println!("Parsing GLEIS_WGS84...");
     #[rustfmt::skip]
-    load_coordinates_for_platforms(CoordinateType::WGS84, bytes_offset, &platform_legacy_pk_index)?;
+    load_coordinates_for_platforms(CoordinateType::WGS84, bytes_offset, &platforms_legacy_pk_index)?;
 
     Ok((
         SimpleResourceStorage::new(journey_platform),
@@ -93,7 +93,7 @@ pub fn parse() -> Result<
 fn load_coordinates_for_platforms(
     coordinate_type: CoordinateType,
     bytes_offset: u64,
-    platform_legacy_pk_index: &HashMap<(i32, i32), Rc<Platform>>,
+    platforms_legacy_pk_index: &HashMap<(i32, i32), Rc<Platform>>,
 ) -> Result<(), Box<dyn Error>> {
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -126,8 +126,8 @@ fn load_coordinates_for_platforms(
 
     parser.parse().for_each(|(id, _, values)| match id {
         ROW_A => return,
-        ROW_B => set_sloid_of_platform(values, coordinate_type, platform_legacy_pk_index),
-        ROW_C => set_coordinate_of_platform(values, coordinate_type, platform_legacy_pk_index),
+        ROW_B => set_sloid_of_platform(values, coordinate_type, platforms_legacy_pk_index),
+        ROW_C => set_coordinate_of_platform(values, coordinate_type, platforms_legacy_pk_index),
         _ => unreachable!(),
     });
 
@@ -140,7 +140,7 @@ fn load_coordinates_for_platforms(
 
 fn create_journey_platform(
     mut values: Vec<ParsedValue>,
-    platform_legacy_pk_index: &HashMap<(i32, i32), Rc<Platform>>,
+    platforms_legacy_pk_index: &HashMap<(i32, i32), Rc<Platform>>,
 ) -> Rc<JourneyPlatform> {
     let stop_id: i32 = values.remove(0).into();
     let journey_id: i32 = values.remove(0).into();
@@ -151,7 +151,7 @@ fn create_journey_platform(
 
     Rc::new(JourneyPlatform::new(
         journey_id,
-        platform_legacy_pk_index
+        platforms_legacy_pk_index
             .get(&(stop_id, index))
             .unwrap()
             .id(),
@@ -177,7 +177,7 @@ fn create_platform(
 fn set_sloid_of_platform(
     mut values: Vec<ParsedValue>,
     coordinate_type: CoordinateType,
-    platform_legacy_pk_index: &HashMap<(i32, i32), Rc<Platform>>,
+    platforms_legacy_pk_index: &HashMap<(i32, i32), Rc<Platform>>,
 ) {
     // The SLOID is processed only when loading LV95 coordinates.
     if coordinate_type == CoordinateType::LV95 {
@@ -185,7 +185,7 @@ fn set_sloid_of_platform(
         let index: i32 = values.remove(0).into();
         let sloid: String = values.remove(0).into();
 
-        platform_legacy_pk_index
+        platforms_legacy_pk_index
             .get(&(stop_id, index))
             .unwrap()
             .set_sloid(sloid);
@@ -195,7 +195,7 @@ fn set_sloid_of_platform(
 fn set_coordinate_of_platform(
     mut values: Vec<ParsedValue>,
     coordinate_type: CoordinateType,
-    platform_legacy_pk_index: &HashMap<(i32, i32), Rc<Platform>>,
+    platforms_legacy_pk_index: &HashMap<(i32, i32), Rc<Platform>>,
 ) {
     let stop_id: i32 = values.remove(0).into();
     let index: i32 = values.remove(0).into();
@@ -210,7 +210,7 @@ fn set_coordinate_of_platform(
     }
 
     let coordinate = Coordinate::new(coordinate_type, xy1, xy2, altitude);
-    let platform = platform_legacy_pk_index.get(&(stop_id, index)).unwrap();
+    let platform = platforms_legacy_pk_index.get(&(stop_id, index)).unwrap();
 
     match coordinate_type {
         CoordinateType::LV95 => platform.set_lv95_coordinate(coordinate),
