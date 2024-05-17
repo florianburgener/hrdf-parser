@@ -1,4 +1,4 @@
-Progression (34/38) :
+Progression (36/38) :
 * ATTRIBUT
 * ATTRIBUT_DE (fichier pas utilisé dans le code)
 * ATTRIBUT_EN (fichier pas utilisé dans le code)
@@ -18,6 +18,7 @@ Progression (34/38) :
 * DURCHBI
 * ECKDATEN
 * FEIERTAG
+* FPLAN
 * GLEIS
 * GLEIS_LV95
 * GLEIS_WGS
@@ -31,23 +32,20 @@ Progression (34/38) :
 * METABHF
 * RICHTUNG
 * UMSTEIGB
+* UMSTEIGV
 * ZUGART
 * ZEITVS (fichier pas utilisé dans le code)
 
 Fichiers restants :
-* FPLAN
 * UMSTEIGL
-* UMSTEIGV
 * UMSTEIGZ
 
 let mut legacy_pk_index = attribute_parser, direction_parser, journey_parser, transport_type_parser
 
 TODO :
-* FPLAN
-* 1 UMSTEI
-* 1 UMSTEI
-* thiserror
+* 2 UMSTEI
+* Fix le bug avec les chaînes de caractères UTF-8
+* Correctement stocker les heures
+* Normaliser le code
+* Ajouter thiserror
 * Chunk loading des fichiers
-
-Chaine UTF-8...
-Correctement stocker les heures
