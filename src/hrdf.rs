@@ -15,7 +15,7 @@ use crate::{
 pub struct Hrdf {
     // Time-relevant data.
     bit_fields: SimpleResourceStorage<BitField>,
-    holidayss: SimpleResourceStorage<Holiday>,
+    holidays: SimpleResourceStorage<Holiday>,
     timetable_metadata: SimpleResourceStorage<TimetableMetadataEntry>,
 
     // Master data.
@@ -76,7 +76,7 @@ impl Hrdf {
         let instance = Rc::new(Self {
             // Time-relevant data.
             bit_fields,
-            holidayss: holidays,
+            holidays,
             timetable_metadata,
             // Master data.
             attributes,
@@ -107,11 +107,11 @@ impl Hrdf {
     //     }
     // }
 
-    pub fn platform(&self) -> &SimpleResourceStorage<Platform> {
+    pub fn platforms(&self) -> &SimpleResourceStorage<Platform> {
         return &self.platforms;
     }
 
-    pub fn stop(&self) -> &SimpleResourceStorage<Stop> {
+    pub fn stops(&self) -> &SimpleResourceStorage<Stop> {
         &self.stops
     }
 }
