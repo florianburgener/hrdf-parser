@@ -23,15 +23,14 @@ pub fn parse() -> Result<SimpleResourceStorage<Holiday>, Box<dyn Error>> {
             ColumnDefinition::new(12, -1, ExpectedType::String),
         ]),
     ]);
-    let file_parser = FileParser::new("data/FEIERTAG", row_parser)?;
+    let parser = FileParser::new("data/FEIERTAG", row_parser)?;
 
-    let mut rows = Vec::new();
     let auto_increment = AutoIncrement::new();
 
-    // A for loop is used here, as create_instance must be able to return an error.
-    for (_, _, values) in file_parser.parse() {
-        rows.push(create_instance(values, &auto_increment)?);
-    }
+    let rows = parser
+        .parse()
+        .filter_map(|(_, _, values)| Some(create_instance(values, &auto_increment)))
+        .collect();
 
     Ok(SimpleResourceStorage::new(rows))
 }
@@ -40,14 +39,14 @@ pub fn parse() -> Result<SimpleResourceStorage<Holiday>, Box<dyn Error>> {
 // --- Data Processing Functions
 // ------------------------------------------------------------------------------------------------
 
-fn create_instance(mut values: Vec<ParsedValue>, auto_increment: &AutoIncrement) -> Result<Rc<Holiday>, Box<dyn Error>> {
+fn create_instance(mut values: Vec<ParsedValue>, auto_increment: &AutoIncrement) -> Rc<Holiday> {
     let date: String = values.remove(0).into();
     let name_translations: String = values.remove(0).into();
 
-    let date = NaiveDate::parse_from_str(&date, "%d.%m.%Y")?;
+    let date = NaiveDate::parse_from_str(&date, "%d.%m.%Y").unwrap();
     let name = parse_name_translations(name_translations);
 
-    Ok(Rc::new(Holiday::new(auto_increment.next(), date, name)))
+    Rc::new(Holiday::new(auto_increment.next(), date, name))
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -55,7 +54,8 @@ fn create_instance(mut values: Vec<ParsedValue>, auto_increment: &AutoIncrement)
 // ------------------------------------------------------------------------------------------------
 
 fn parse_name_translations(name_translations: String) -> HashMap<String, String> {
-    name_translations.split('>')
+    name_translations
+        .split('>')
         .filter(|&s| !s.is_empty())
         .map(|s| {
             let mut parts = s.split('<');

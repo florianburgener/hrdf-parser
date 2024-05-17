@@ -40,12 +40,8 @@ Fichiers restants :
 * UMSTEIGL
 * UMSTEIGZ
 
-let mut legacy_pk_index = attribute_parser, direction_parser, journey_parser, transport_type_parser
-
 TODO :
-* 2 UMSTEI
-* Fix le bug avec les chaînes de caractères UTF-8
 * Correctement stocker les heures
+* 2 UMSTEI
 * Normaliser le code
 * Ajouter thiserror
-* Chunk loading des fichiers

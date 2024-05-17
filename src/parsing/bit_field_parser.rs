@@ -21,11 +21,11 @@ pub fn parse() -> Result<SimpleResourceStorage<BitField>, Box<dyn Error>> {
             ColumnDefinition::new(8, 103, ExpectedType::String),
         ]),
     ]);
-    let file_parser = FileParser::new("data/BITFELD", row_parser)?;
+    let parser = FileParser::new("data/BITFELD", row_parser)?;
 
-    let rows = file_parser
+    let rows = parser
         .parse()
-        .map(|(_, _, values)| create_instance(values))
+        .filter_map(|(_, _, values)| Some(create_instance(values)))
         .collect();
 
     Ok(SimpleResourceStorage::new(rows))
@@ -50,11 +50,12 @@ fn create_instance(mut values: Vec<ParsedValue>) -> Rc<BitField> {
 
 /// Converts a hexadecimal number into a list of where each item represents a bit.
 fn convert_hex_number_to_bits(hex_number: String) -> Vec<u8> {
-    hex_number.chars()
+    hex_number
+        .chars()
         .flat_map(|hex_digit| {
             (0..4)
                 .rev()
-                .map(move |i| ((hex_digit.to_digit(16).unwrap() >> i) & 0x1) as u8)
+                .map(move |i| ((hex_digit.to_digit(16).unwrap() >> i) & 1) as u8)
         })
         .collect()
 }

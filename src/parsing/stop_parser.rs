@@ -24,11 +24,11 @@ pub fn parse() -> Result<SimpleResourceStorage<Stop>, Box<dyn Error>> {
             ColumnDefinition::new(13, -1, ExpectedType::String), // Should be 13-62, but some entries go beyond column 62.
         ]),
     ]);
-    let file_parser = FileParser::new("data/BAHNHOF", row_parser)?;
+    let parser = FileParser::new("data/BAHNHOF", row_parser)?;
 
-    let rows = file_parser
+    let rows = parser
         .parse()
-        .map(|(_, _, values)| create_instance(values))
+        .filter_map(|(_, _, values)| Some(create_instance(values)))
         .collect();
 
     let pk_index = Stop::create_pk_index(&rows);
@@ -69,10 +69,10 @@ fn load_coordinates(
         CoordinateType::LV95 => "BFKOORD_LV95",
         CoordinateType::WGS84 => "BFKOORD_WGS",
     };
-    let file_path = format!("data/{}", filename);
-    let file_parser = FileParser::new(&file_path, row_parser)?;
+    let path = format!("data/{}", filename);
+    let parser = FileParser::new(&path, row_parser)?;
 
-    file_parser
+    parser
         .parse()
         .for_each(|(_, _, values)| set_coordinate(values, coordinate_type, pk_index));
 
@@ -88,10 +88,10 @@ fn load_transfer_priorities(pk_index: &ResourceIndex<Stop>) -> Result<(), Box<dy
             ColumnDefinition::new(9, 10, ExpectedType::Integer16),
         ]),
     ]);
-    let file_path = "data/BFPRIOS";
-    let file_parser = FileParser::new(&file_path, row_parser)?;
+    let path = "data/BFPRIOS";
+    let parser = FileParser::new(&path, row_parser)?;
 
-    file_parser
+    parser
         .parse()
         .for_each(|(_, _, values)| set_transfer_priority(values, pk_index));
 
@@ -107,10 +107,9 @@ fn load_transfer_flags(pk_index: &ResourceIndex<Stop>) -> Result<(), Box<dyn Err
             ColumnDefinition::new(9, 13, ExpectedType::Integer16),
         ]),
     ]);
-    let file_path = "data/KMINFO";
-    let file_parser = FileParser::new(&file_path, row_parser)?;
+    let parser = FileParser::new("data/KMINFO", row_parser)?;
 
-    file_parser
+    parser
         .parse()
         .for_each(|(_, _, values)| set_transfer_flag(values, pk_index));
 
@@ -127,10 +126,9 @@ fn load_transfer_times(pk_index: &ResourceIndex<Stop>) -> Result<(), Box<dyn Err
             ColumnDefinition::new(12, 13, ExpectedType::Integer16),
         ]),
     ]);
-    let file_path = "data/UMSTEIGB";
-    let file_parser = FileParser::new(&file_path, row_parser)?;
+    let parser = FileParser::new("data/UMSTEIGB", row_parser)?;
 
-    file_parser
+    parser
         .parse()
         .for_each(|(_, _, values)| set_transfer_time(values, pk_index));
 
@@ -154,9 +152,9 @@ fn load_connections(pk_index: &ResourceIndex<Stop>) -> Result<(), Box<dyn Error>
             ColumnDefinition::new(11, -1, ExpectedType::String),
         ]),
     ]);
-    let file_parser = FileParser::new("data/METABHF", row_parser)?;
+    let parser = FileParser::new("data/METABHF", row_parser)?;
 
-    file_parser.parse().for_each(|(id, _, values)| match id {
+    parser.parse().for_each(|(id, _, values)| match id {
         ROW_A | ROW_B => return,
         ROW_C => set_connections(values, pk_index),
         _ => unreachable!(),
@@ -191,9 +189,9 @@ fn load_descriptions(pk_index: &ResourceIndex<Stop>) -> Result<(), Box<dyn Error
             ColumnDefinition::new(13, -1, ExpectedType::String),
         ]),
     ]);
-    let file_parser = FileParser::new("data/BHFART_60", row_parser)?;
+    let parser = FileParser::new("data/BHFART_60", row_parser)?;
 
-    file_parser.parse().for_each(|(id, _, values)| match id {
+    parser.parse().for_each(|(id, _, values)| match id {
         ROW_A => return,
         ROW_B => set_restrictions(values, pk_index),
         ROW_C => set_sloid(values, pk_index),
@@ -313,7 +311,9 @@ fn add_boarding_area(mut values: Vec<ParsedValue>, pk_index: &ResourceIndex<Stop
 // --- Helper Functions
 // ------------------------------------------------------------------------------------------------
 
-fn parse_designations(designations: String) -> (String, Option<String>, Option<String>, Option<Vec<String>>) {
+fn parse_designations(
+    designations: String,
+) -> (String, Option<String>, Option<String>, Option<Vec<String>>) {
     let designations: HashMap<i32, Vec<String>> = designations
         .split('>')
         .filter(|&s| !s.is_empty())

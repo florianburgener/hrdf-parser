@@ -4,7 +4,7 @@
 use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{
-    models::{AutoIncrement, Language, ResourceCollection, ResourceIndex, TransportType},
+    models::{AutoIncrement, Language, ResourceIndex, TransportType},
     parsing::{
         AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, RowDefinition,
         RowParser,
@@ -14,7 +14,13 @@ use crate::{
 
 use super::{FileParser, ParsedValue};
 
-pub fn parse() -> Result<(SimpleResourceStorage<TransportType>, ResourceIndex<TransportType, String>), Box<dyn Error>> {
+pub fn parse() -> Result<
+    (
+        SimpleResourceStorage<TransportType>,
+        ResourceIndex<TransportType, String>,
+    ),
+    Box<dyn Error>,
+> {
     println!("Parsing ZUGART...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -57,26 +63,37 @@ pub fn parse() -> Result<(SimpleResourceStorage<TransportType>, ResourceIndex<Tr
             ColumnDefinition::new(14, -1, ExpectedType::String),
         ]),
     ]);
-    let file_parser = FileParser::new("data/ZUGART", row_parser)?;
-
-    let mut rows = Vec::new();
-    let mut legacy_pk_index = HashMap::new();
+    let parser = FileParser::new("data/ZUGART", row_parser)?;
 
     let auto_increment = AutoIncrement::new();
+    let mut current_instance = Rc::new(TransportType::default());
     let mut current_language = Language::default();
+    let mut legacy_pk_index = HashMap::new();
+    let mut product_class_id_dict = HashMap::new();
 
-    file_parser.parse().for_each(|(id, _, values)| match id {
-        ROW_A => {
-            let (instance, k) = create_instance(values, &auto_increment);
-            legacy_pk_index.insert(k, Rc::clone(&instance));
-            rows.push(instance);
-        }
-        ROW_B => update_current_language(values, &mut current_language),
-        ROW_C => set_product_class_name(values, &rows, current_language),
-        ROW_D => return,
-        ROW_E => set_category_name(values, &rows, current_language),
-        _ => unreachable!(),
-    });
+    let rows = parser
+        .parse()
+        .filter_map(|(id, _, values)| {
+            match id {
+                ROW_A => {
+                    let (instance, k) = create_instance(values, &auto_increment);
+                    current_instance = Rc::clone(&instance);
+                    legacy_pk_index.insert(k, Rc::clone(&instance));
+                    product_class_id_dict
+                        .entry(current_instance.product_class_id())
+                        .or_insert(Vec::new())
+                        .push(Rc::clone(&instance));
+                    return Some(instance);
+                }
+                ROW_B => update_current_language(values, &mut current_language),
+                ROW_C => set_product_class_name(values, &product_class_id_dict, current_language),
+                ROW_D => (),
+                ROW_E => set_category_name(values, &current_instance, current_language),
+                _ => unreachable!(),
+            };
+            None
+        })
+        .collect();
 
     Ok((SimpleResourceStorage::new(rows), legacy_pk_index))
 }
@@ -85,7 +102,10 @@ pub fn parse() -> Result<(SimpleResourceStorage<TransportType>, ResourceIndex<Tr
 // --- Data Processing Functions
 // ------------------------------------------------------------------------------------------------
 
-fn create_instance(mut values: Vec<ParsedValue>, auto_increment: &AutoIncrement) -> (Rc<TransportType>, String) {
+fn create_instance(
+    mut values: Vec<ParsedValue>,
+    auto_increment: &AutoIncrement,
+) -> (Rc<TransportType>, String) {
     let designation: String = values.remove(0).into();
     let product_class_id: i16 = values.remove(0).into();
     let tarrif_group: String = values.remove(0).into();
@@ -109,31 +129,28 @@ fn create_instance(mut values: Vec<ParsedValue>, auto_increment: &AutoIncrement)
 
 fn set_product_class_name(
     mut values: Vec<ParsedValue>,
-    rows: &ResourceCollection<TransportType>,
+    product_class_id_dict: &HashMap<i16, Vec<Rc<TransportType>>>,
     language: Language,
 ) {
-    let id: i16 = values.remove(0).into();
+    let product_class_id: i16 = values.remove(0).into();
     let product_class_name: String = values.remove(0).into();
 
-    for row in rows.iter() {
-        if row.product_class_id() == id {
-            row.set_product_class_name(language, &product_class_name);
-        }
-    }
+    product_class_id_dict.get(&product_class_id).map(|items| {
+        items
+            .iter()
+            .for_each(|instance| instance.set_product_class_name(language, &product_class_name))
+    });
 }
 
 fn set_category_name(
     mut values: Vec<ParsedValue>,
-    rows: &ResourceCollection<TransportType>,
+    current_instance: &Rc<TransportType>,
     language: Language,
 ) {
-    let index: i32 = values.remove(0).into();
-    let index = index as usize;
+    let _: i32 = values.remove(0).into();
     let category_name: String = values.remove(0).into();
 
-    rows.get(index - 1)
-        .unwrap()
-        .set_category_name(language, &category_name);
+    current_instance.set_category_name(language, &category_name);
 }
 
 // ------------------------------------------------------------------------------------------------

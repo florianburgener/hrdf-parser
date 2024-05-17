@@ -54,25 +54,29 @@ pub fn parse() -> Result<
         ]),
     ]);
     // The ATTRIBUT file is used instead of ATTRIBUT_* for simplicity's sake.
-    let file_parser = FileParser::new("data/ATTRIBUT", row_parser)?;
-
-    let mut rows = Vec::new();
-    let mut legacy_pk_index = HashMap::new();
+    let parser = FileParser::new("data/ATTRIBUT", row_parser)?;
 
     let auto_increment = AutoIncrement::new();
     let mut current_language = Language::default();
+    let mut legacy_pk_index = HashMap::new();
 
-    file_parser.parse().for_each(|(id, _, values)| match id {
-        ROW_A => {
-            let (instance, k) = create_instance(values, &auto_increment);
-            legacy_pk_index.insert(k, Rc::clone(&instance));
-            rows.push(instance);
-        }
-        ROW_B => return,
-        ROW_C => update_current_language(values, &mut current_language),
-        ROW_D => set_description(values, &legacy_pk_index, current_language),
-        _ => unreachable!(),
-    });
+    let rows = parser
+        .parse()
+        .filter_map(|(id, _, values)| {
+            match id {
+                ROW_A => {
+                    let (instance, k) = create_instance(values, &auto_increment);
+                    legacy_pk_index.insert(k, Rc::clone(&instance));
+                    return Some(instance);
+                }
+                ROW_B => (),
+                ROW_C => update_current_language(values, &mut current_language),
+                ROW_D => set_description(values, &legacy_pk_index, current_language),
+                _ => unreachable!(),
+            };
+            None
+        })
+        .collect();
 
     Ok((SimpleResourceStorage::new(rows), legacy_pk_index))
 }
@@ -81,7 +85,10 @@ pub fn parse() -> Result<
 // --- Data Processing Functions
 // ------------------------------------------------------------------------------------------------
 
-fn create_instance(mut values: Vec<ParsedValue>, auto_increment: &AutoIncrement) -> (Rc<Attribute>, String) {
+fn create_instance(
+    mut values: Vec<ParsedValue>,
+    auto_increment: &AutoIncrement,
+) -> (Rc<Attribute>, String) {
     let designation: String = values.remove(0).into();
     let stop_scope: i16 = values.remove(0).into();
     let main_sorting_priority: i16 = values.remove(0).into();

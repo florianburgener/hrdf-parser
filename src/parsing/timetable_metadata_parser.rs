@@ -6,7 +6,7 @@ use std::{error::Error, rc::Rc};
 use chrono::NaiveDate;
 
 use crate::{
-    models::{AutoIncrement, ResourceCollection, TimetableMetadataEntry},
+    models::{AutoIncrement, TimetableMetadataEntry},
     parsing::{AdvancedRowMatcher, FastRowMatcher, ParsedValue, RowDefinition, RowParser},
     storage::SimpleResourceStorage,
 };
@@ -30,9 +30,9 @@ pub fn parse() -> Result<SimpleResourceStorage<TimetableMetadataEntry>, Box<dyn 
         ]),
     ]);
 
-    let file_parser = FileParser::new("data/ECKDATEN", row_parser)?;
+    let parser = FileParser::new("data/ECKDATEN", row_parser)?;
 
-    let mut data: Vec<ParsedValue> = file_parser
+    let mut data: Vec<ParsedValue> = parser
         .parse()
         .map(|(_, _, mut values)| values.remove(0))
         .collect();
@@ -45,28 +45,29 @@ pub fn parse() -> Result<SimpleResourceStorage<TimetableMetadataEntry>, Box<dyn 
     let end_date = NaiveDate::parse_from_str(&end_date, "%d.%m.%Y")?;
     let metadata: Vec<String> = metadata.split('$').map(String::from).collect();
 
-    let rows: ResourceCollection<TimetableMetadataEntry>;
-    let auto_increment = AutoIncrement::new();
-
-    rows = vec![
+    let rows = vec![
         ("start_date", start_date.to_string()),
         ("end_date", end_date.to_string()),
         ("name", metadata[0].to_owned()),
         ("created_at", metadata[1].to_owned()),
         ("version", metadata[2].to_owned()),
         ("provider", metadata[3].to_owned()),
-    ]
-    .iter()
-    .map(|(key, value)| {
-        let instance = Rc::new(TimetableMetadataEntry::new(
-            auto_increment.next(),
-            key.to_string(),
-            value.to_owned(),
-        ));
+    ];
 
-        instance
-    })
-    .collect();
+    let auto_increment = AutoIncrement::new();
+
+    let rows = rows
+        .iter()
+        .map(|(key, value)| {
+            let instance = Rc::new(TimetableMetadataEntry::new(
+                auto_increment.next(),
+                key.to_string(),
+                value.to_owned(),
+            ));
+
+            instance
+        })
+        .collect();
 
     Ok(SimpleResourceStorage::new(rows))
 }

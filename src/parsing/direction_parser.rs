@@ -4,7 +4,7 @@
 use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{
-    models::{Direction, ResourceCollection, ResourceIndex},
+    models::{Direction, ResourceIndex},
     parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
     storage::SimpleResourceStorage,
 };
@@ -21,17 +21,16 @@ pub fn parse() -> Result<(SimpleResourceStorage<Direction>, ResourceIndex<Direct
             ColumnDefinition::new(9, -1, ExpectedType::String),
         ]),
     ]);
-    let file_parser = FileParser::new("data/RICHTUNG", row_parser)?;
+    let parser = FileParser::new("data/RICHTUNG", row_parser)?;
 
-    let rows: ResourceCollection<Direction>;
     let mut legacy_pk_index = HashMap::new();
 
-    rows = file_parser
+    let rows = parser
         .parse()
-        .map(|(_, _, values)| {
+        .filter_map(|(_, _, values)| {
             let (instance, k) = create_instance(values);
             legacy_pk_index.insert(k, Rc::clone(&instance));
-            instance
+            Some(instance)
         })
         .collect();
 

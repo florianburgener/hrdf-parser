@@ -4,7 +4,7 @@
 use std::{error::Error, rc::Rc};
 
 use crate::{
-    models::{AdministrationTransferTime, AutoIncrement, ResourceCollection},
+    models::{AdministrationTransferTime, AutoIncrement},
     parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
     storage::SimpleResourceStorage,
 };
@@ -23,14 +23,13 @@ pub fn parse() -> Result<SimpleResourceStorage<AdministrationTransferTime>, Box<
             ColumnDefinition::new(23, 24, ExpectedType::Integer16),
         ]),
     ]);
-    let file_parser = FileParser::new("data/UMSTEIGV", row_parser)?;
+    let parser = FileParser::new("data/UMSTEIGV", row_parser)?;
 
-    let rows: ResourceCollection<AdministrationTransferTime>;
     let auto_increment = AutoIncrement::new();
 
-    rows = file_parser
+    let rows = parser
         .parse()
-        .map(|(_, _, values)| create_instance(values, &auto_increment))
+        .filter_map(|(_, _, values)| Some(create_instance(values, &auto_increment)))
         .collect();
 
     Ok(SimpleResourceStorage::new(rows))
@@ -40,7 +39,10 @@ pub fn parse() -> Result<SimpleResourceStorage<AdministrationTransferTime>, Box<
 // --- Data Processing Functions
 // ------------------------------------------------------------------------------------------------
 
-fn create_instance(mut values: Vec<ParsedValue>, auto_increment: &AutoIncrement) -> Rc<AdministrationTransferTime> {
+fn create_instance(
+    mut values: Vec<ParsedValue>,
+    auto_increment: &AutoIncrement,
+) -> Rc<AdministrationTransferTime> {
     let stop_id: Option<i32> = values.remove(0).into();
     let administration_1: String = values.remove(0).into();
     let administration_2: String = values.remove(0).into();

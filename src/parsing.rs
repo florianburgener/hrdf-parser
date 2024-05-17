@@ -144,6 +144,9 @@ impl FastRowMatcher {
 
 impl RowMatcher for FastRowMatcher {
     fn match_row(&self, row: &str) -> bool {
+        // Info: if the start index is after characters longer than 1 byte, the code will not function correctly.
+        // This is not a problem, as the start index is always at the beginning of the
+        // string, where there is no character requiring more than 1 byte.
         let start = self.start - 1;
         let target_value = &row[start..(start + self.length)];
         self.should_equal_value == (target_value == self.value)

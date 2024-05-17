@@ -37,28 +37,35 @@ pub fn parse(
         // This row is ignored.
         RowDefinition::new(ROW_C, Box::new(FastRowMatcher::new(8, 1, ":", true)), Vec::new()),
     ]);
-    let file_parser = FileParser::new("data/METABHF", row_parser)?;
+    let parser = FileParser::new("data/METABHF", row_parser)?;
 
-    let mut rows = Vec::new();
     let auto_increment = AutoIncrement::new();
     let mut current_instance = Rc::new(StopConnection::default());
 
-    file_parser
+    let rows = parser
         .parse()
-        .for_each(|(id, _, mut values)| match id {
-            ROW_A => {
-                let instance = create_instance(values, &auto_increment);
-                rows.push(Rc::clone(&instance));
-                current_instance = instance;
-            }
-            ROW_B => {
-                let attribute: String = values.remove(0).into();
-                current_instance
-                    .add_attribute(attribute_legacy_pk_index.get(&attribute).unwrap().id());
-            }
-            ROW_C => return,
-            _ => unreachable!(),
-        });
+        .filter_map(|(id, _, mut values)| {
+            match id {
+                ROW_A => {
+                    let instance = create_instance(values, &auto_increment);
+                    current_instance = Rc::clone(&instance);
+                    return Some(instance);
+                }
+                ROW_B => {
+                    let attribute_designation: String = values.remove(0).into();
+                    current_instance.add_attribute(
+                        attribute_legacy_pk_index
+                            .get(&attribute_designation)
+                            .unwrap()
+                            .id(),
+                    );
+                }
+                ROW_C => (),
+                _ => unreachable!(),
+            };
+            None
+        })
+        .collect();
 
     Ok(SimpleResourceStorage::new(rows))
 }
@@ -67,10 +74,18 @@ pub fn parse(
 // --- Data Processing Functions
 // ------------------------------------------------------------------------------------------------
 
-fn create_instance(mut values: Vec<ParsedValue>, auto_increment: &AutoIncrement) -> Rc<StopConnection> {
+fn create_instance(
+    mut values: Vec<ParsedValue>,
+    auto_increment: &AutoIncrement,
+) -> Rc<StopConnection> {
     let stop_id_1: i32 = values.remove(0).into();
     let stop_id_2: i32 = values.remove(0).into();
     let duration: i16 = values.remove(0).into();
 
-    Rc::new(StopConnection::new(auto_increment.next(), stop_id_1, stop_id_2, duration))
+    Rc::new(StopConnection::new(
+        auto_increment.next(),
+        stop_id_1,
+        stop_id_2,
+        duration,
+    ))
 }

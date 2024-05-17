@@ -104,14 +104,15 @@ pub fn parse(
             ColumnDefinition::new(37, 42, ExpectedType::OptionInteger32),
         ]),
     ]);
-    let file_parser = FileParser::new("data/FPLAN", row_parser)?;
+    let parser = FileParser::new("data/FPLAN", row_parser)?;
 
     let mut rows = Vec::new();
     let mut legacy_pk_index = HashMap::new();
     let mut current_instance = Rc::new(Journey::default());
     let auto_increment = AutoIncrement::new();
 
-    for (id, _, values) in file_parser.parse() {
+    // TODO: parser.parse()
+    for (id, _, values) in parser.parse() {
         match id {
             ROW_A => {
                 if auto_increment.value() == 1 {

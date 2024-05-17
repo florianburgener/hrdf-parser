@@ -24,11 +24,11 @@ pub fn parse() -> Result<SimpleResourceStorage<InformationText>, Box<dyn Error>>
             ColumnDefinition::new(1, 9, ExpectedType::Integer32),
         ]),
     ]);
-    let file_parser = FileParser::new("data/INFOTEXT_DE", row_parser)?;
+    let parser = FileParser::new("data/INFOTEXT_DE", row_parser)?;
 
-    let rows = file_parser
+    let rows = parser
         .parse()
-        .map(|(_, _, values)| create_instance(values))
+        .filter_map(|(_, _, values)| Some(create_instance(values)))
         .collect();
 
     let pk_index = InformationText::create_pk_index(&rows);
@@ -59,10 +59,10 @@ fn load_content(
         Language::French => "INFOTEXT_FR",
         Language::Italian => "INFOTEXT_IT",
     };
-    let file_path = format!("data/{}", filename);
-    let file_parser = FileParser::new(&file_path, row_parser)?;
+    let path = format!("data/{}", filename);
+    let parser = FileParser::new(&path, row_parser)?;
 
-    file_parser
+    parser
         .parse()
         .for_each(|(_, _, values)| set_content(values, pk_index, language));
 

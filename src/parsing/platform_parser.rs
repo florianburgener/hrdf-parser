@@ -44,30 +44,33 @@ pub fn parse() -> Result<
             ColumnDefinition::new(18, -1, ExpectedType::String),
         ]),
     ]);
-    let file_parser = FileParser::new("data/GLEIS", row_parser)?;
+    let parser = FileParser::new("data/GLEIS", row_parser)?;
 
     let mut journey_platform_data = Vec::new();
 
-    let mut platforms = Vec::new();
     let mut platform_legacy_pk_index = HashMap::new();
 
     let mut bytes_offset = 0;
     let auto_increment = AutoIncrement::new();
 
-    file_parser
+    let platforms = parser
         .parse()
-        .for_each(|(id, bytes_read, values)| match id {
-            ROW_A => {
-                journey_platform_data.push(values);
-                bytes_offset += bytes_read;
-            }
-            ROW_B => {
-                let (instance, k) = create_platform(values, &auto_increment);
-                platform_legacy_pk_index.insert(k, Rc::clone(&instance));
-                platforms.push(instance);
-            }
-            _ => unreachable!(),
-        });
+        .filter_map(|(id, bytes_read, values)| {
+            match id {
+                ROW_A => {
+                    journey_platform_data.push(values);
+                    bytes_offset += bytes_read;
+                }
+                ROW_B => {
+                    let (instance, k) = create_platform(values, &auto_increment);
+                    platform_legacy_pk_index.insert(k, Rc::clone(&instance));
+                    return Some(instance);
+                }
+                _ => unreachable!(),
+            };
+            None
+        })
+        .collect();
 
     let journey_platform = journey_platform_data
         .into_iter()
@@ -118,10 +121,10 @@ fn load_coordinates_for_platforms(
         CoordinateType::LV95 => "GLEIS_LV95",
         CoordinateType::WGS84 => "GLEIS_WGS",
     };
-    let file_path = format!("data/{}", filename);
-    let file_parser = FileParser::new_with_bytes_offset(&file_path, row_parser, bytes_offset)?;
+    let path = format!("data/{}", filename);
+    let parser = FileParser::new_with_bytes_offset(&path, row_parser, bytes_offset)?;
 
-    file_parser.parse().for_each(|(id, _, values)| match id {
+    parser.parse().for_each(|(id, _, values)| match id {
         ROW_A => return,
         ROW_B => set_sloid_of_platform(values, coordinate_type, platform_legacy_pk_index),
         ROW_C => set_coordinate_of_platform(values, coordinate_type, platform_legacy_pk_index),

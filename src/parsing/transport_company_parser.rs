@@ -27,14 +27,19 @@ pub fn parse() -> Result<SimpleResourceStorage<TransportCompany>, Box<dyn Error>
             ColumnDefinition::new(9, -1, ExpectedType::String),
         ]),
     ]);
-    let file_parser = FileParser::new("data/BETRIEB_DE", row_parser)?;
+    let parser = FileParser::new("data/BETRIEB_DE", row_parser)?;
 
-    let mut rows = Vec::new();
-
-    file_parser.parse().for_each(|(id, _, values)| match id {
-        ROW_B => rows.push(create_instance(values)),
-        _ => return,
-    });
+    let rows = parser
+        .parse()
+        .filter_map(|(id, _, values)| {
+            match id {
+                ROW_A => (),
+                ROW_B => return Some(create_instance(values)),
+                _ => unreachable!(),
+            };
+            None
+        })
+        .collect();
 
     let pk_index = TransportCompany::create_pk_index(&rows);
 
@@ -69,10 +74,10 @@ fn load_designations(
         Language::French => "BETRIEB_FR",
         Language::Italian => "BETRIEB_IT",
     };
-    let file_path = format!("data/{}", filename);
-    let file_parser = FileParser::new(&file_path, row_parser)?;
+    let path = format!("data/{}", filename);
+    let parser = FileParser::new(&path, row_parser)?;
 
-    file_parser.parse().for_each(|(id, _, values)| match id {
+    parser.parse().for_each(|(id, _, values)| match id {
         ROW_A => set_designations(values, pk_index, language),
         _ => return,
     });

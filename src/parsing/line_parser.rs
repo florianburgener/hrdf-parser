@@ -44,23 +44,27 @@ pub fn parse() -> Result<SimpleResourceStorage<Line>, Box<dyn Error>> {
             ColumnDefinition::new(19, 21, ExpectedType::Integer16),
         ]),
     ]);
-    let file_parser = FileParser::new("data/LINIE", row_parser)?;
+    let parser = FileParser::new("data/LINIE", row_parser)?;
 
-    let mut rows = Vec::new();
     let mut current_instance = Rc::new(Line::default());
 
-    file_parser.parse().for_each(|(id, _, values)| match id {
-        ROW_A => {
-            // Using this method, it is assumed that the following lines of types B, C and D are related to current_instance.
-            let instance = create_instance(values);
-            rows.push(Rc::clone(&instance));
-            current_instance = instance;
-        }
-        ROW_B => set_short_name(values, &current_instance),
-        ROW_C => set_text_color(values, &current_instance),
-        ROW_D => set_background_color(values, &current_instance),
-        _ => unreachable!(),
-    });
+    let rows = parser
+        .parse()
+        .filter_map(|(id, _, values)| {
+            match id {
+                ROW_A => {
+                    let instance = create_instance(values);
+                    current_instance = Rc::clone(&instance);
+                    return Some(instance);
+                }
+                ROW_B => set_short_name(values, &current_instance),
+                ROW_C => set_text_color(values, &current_instance),
+                ROW_D => set_background_color(values, &current_instance),
+                _ => unreachable!(),
+            };
+            None
+        })
+        .collect();
 
     Ok(SimpleResourceStorage::new(rows))
 }

@@ -442,11 +442,12 @@ impl Journey {
     }
 
     pub fn add_metadata_entry(&self, k: JourneyMetadataType, v: JourneyMetadataEntry) {
-        if self.metadata.borrow().contains_key(&k) {
-            self.metadata.borrow().get(&k).unwrap().borrow_mut().push(v);
-        } else {
-            self.metadata.borrow_mut().insert(k, RefCell::new(vec![v]));
-        }
+        self.metadata
+            .borrow_mut()
+            .entry(k)
+            .or_insert(RefCell::new(Vec::new()))
+            .borrow_mut()
+            .push(v);
     }
 
     pub fn add_route_entry(&self, entry: JourneyRouteEntry) {
@@ -544,11 +545,7 @@ pub struct JourneyRouteEntry {
 
 #[allow(unused)]
 impl JourneyRouteEntry {
-    pub fn new(
-        stop_id: i32,
-        arrival_time: Option<i32>,
-        departure_time: Option<i32>,
-    ) -> Self {
+    pub fn new(stop_id: i32, arrival_time: Option<i32>, departure_time: Option<i32>) -> Self {
         Self {
             stop_id,
             arrival_time,
@@ -1188,7 +1185,7 @@ impl TransportCompany {
 // --- TransportType
 // ------------------------------------------------------------------------------------------------
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct TransportType {
     id: i32,
     designation: String,
@@ -1200,7 +1197,6 @@ pub struct TransportType {
     flag: String,
     product_class_name: RefCell<HashMap<String, String>>,
     category_name: RefCell<HashMap<String, String>>,
-    // TODO: option10, option11, option12, ...
 }
 
 impl Model<TransportType> for TransportType {
