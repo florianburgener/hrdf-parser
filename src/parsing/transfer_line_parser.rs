@@ -1,10 +1,10 @@
 // 1 file(s).
 // File(s) read by the parser:
 // UMSTEIGL
-use std::{error::Error, rc::Rc};
+use std::{error::Error, rc::Rc, str::FromStr};
 
 use crate::{
-    models::{LineTransferTime, Model, ResourceIndex, TransportType},
+    models::{DirectionType, TransferTimeLine, Model, ResourceIndex, TransportType},
     parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
     storage::SimpleResourceStorage, utils::AutoIncrement,
 };
@@ -13,7 +13,7 @@ use super::ParsedValue;
 
 pub fn parse(
     transport_types_legacy_pk_index: &ResourceIndex<TransportType, String>,
-) -> Result<SimpleResourceStorage<LineTransferTime>, Box<dyn Error>> {
+) -> Result<SimpleResourceStorage<TransferTimeLine>, Box<dyn Error>> {
     println!("Parsing UMSTEIGL...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -58,7 +58,7 @@ fn create_instance(
     mut values: Vec<ParsedValue>,
     auto_increment: &AutoIncrement,
     transport_types_legacy_pk_index: &ResourceIndex<TransportType, String>,
-) -> Rc<LineTransferTime> {
+) -> Rc<TransferTimeLine> {
     let stop_id: i32 = values.remove(0).into();
     let administration_1: String = values.remove(0).into();
     let transport_type_id_1: String = values.remove(0).into();
@@ -85,7 +85,7 @@ fn create_instance(
     let direction_1 = if direction_1 == "*" {
         None
     } else {
-        Some(direction_1)
+        Some(DirectionType::from_str(&direction_1).unwrap())
     };
 
     let transport_type_id_2 = transport_types_legacy_pk_index
@@ -102,12 +102,12 @@ fn create_instance(
     let direction_2 = if direction_2 == "*" {
         None
     } else {
-        Some(direction_2)
+        Some(DirectionType::from_str(&direction_2).unwrap())
     };
 
     let is_guaranteed = is_guaranteed == "!";
 
-    Rc::new(LineTransferTime::new(
+    Rc::new(TransferTimeLine::new(
         auto_increment.next(),
         stop_id,
         administration_1,

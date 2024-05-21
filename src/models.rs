@@ -35,62 +35,6 @@ pub type ResourceCollection<M> = Vec<Rc<M>>;
 pub type ResourceIndex<M, K = i32> = HashMap<K, Rc<M>>;
 
 // ------------------------------------------------------------------------------------------------
-// --- AdministrationTransferTime
-// ------------------------------------------------------------------------------------------------
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct AdministrationTransferTime {
-    id: i32,
-    stop_id: Option<i32>, // A None value means that the transfer time applies to all stops if there is no specific entry for the stop and the 2 administrations.
-    administration_1: String,
-    administration_2: String,
-    duration: i16, // Transfer time from administration 1 to administration 2 is in minutes.
-}
-
-impl Model<AdministrationTransferTime> for AdministrationTransferTime {
-    type K = i32;
-
-    fn id(&self) -> Self::K {
-        self.id
-    }
-}
-
-#[allow(unused)]
-impl AdministrationTransferTime {
-    pub fn new(
-        id: i32,
-        stop_id: Option<i32>,
-        administration_1: String,
-        administration_2: String,
-        duration: i16,
-    ) -> Self {
-        Self {
-            id,
-            stop_id,
-            administration_1,
-            administration_2,
-            duration,
-        }
-    }
-
-    pub fn stop_id(&self) -> &Option<i32> {
-        &self.stop_id
-    }
-
-    pub fn administration_1(&self) -> &str {
-        &self.administration_1
-    }
-
-    pub fn administration_2(&self) -> &str {
-        &self.administration_2
-    }
-
-    pub fn duration(&self) -> i16 {
-        self.duration
-    }
-}
-
-// ------------------------------------------------------------------------------------------------
 // --- Attribute
 // ------------------------------------------------------------------------------------------------
 
@@ -101,7 +45,7 @@ pub struct Attribute {
     stop_scope: i16,
     main_sorting_priority: i16,
     secondary_sorting_priority: i16,
-    description: RefCell<HashMap<String, String>>, // Key: deu, fra, ita or eng.
+    description: RefCell<HashMap<Language, String>>,
 }
 
 impl Model<Attribute> for Attribute {
@@ -148,17 +92,13 @@ impl Attribute {
     }
 
     pub fn description(&self, language: Language) -> String {
-        self.description
-            .borrow()
-            .get(&language.to_string())
-            .cloned()
-            .unwrap()
+        self.description.borrow().get(&language).cloned().unwrap()
     }
 
     pub fn set_description(&self, language: Language, value: &str) {
         self.description
             .borrow_mut()
-            .insert(language.to_string(), value.to_string());
+            .insert(language, value.to_string());
     }
 }
 
@@ -222,15 +162,19 @@ impl Color {
 }
 
 // ------------------------------------------------------------------------------------------------
-// --- Coordinate
+// --- CoordinateType
 // ------------------------------------------------------------------------------------------------
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Default, Display, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub enum CoordinateType {
     #[default]
     LV95,
     WGS84,
 }
+
+// ------------------------------------------------------------------------------------------------
+// --- Coordinate
+// ------------------------------------------------------------------------------------------------
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Coordinate {
@@ -306,6 +250,22 @@ impl Direction {
 }
 
 // ------------------------------------------------------------------------------------------------
+// --- DirectionType
+// ------------------------------------------------------------------------------------------------
+
+#[derive(
+    Clone, Copy, Debug, Default, Display, Eq, Hash, PartialEq, EnumString, Serialize, Deserialize,
+)]
+pub enum DirectionType {
+    #[default]
+    #[strum(serialize = "R")]
+    Outbound,
+
+    #[strum(serialize = "H")]
+    Return,
+}
+
+// ------------------------------------------------------------------------------------------------
 // --- Holiday
 // ------------------------------------------------------------------------------------------------
 
@@ -313,7 +273,7 @@ impl Direction {
 pub struct Holiday {
     id: i32,
     date: NaiveDate,
-    name: HashMap<String, String>, // Key: deu, fra, ita or eng.
+    name: HashMap<Language, String>,
 }
 
 impl Model<Holiday> for Holiday {
@@ -326,7 +286,7 @@ impl Model<Holiday> for Holiday {
 
 #[allow(unused)]
 impl Holiday {
-    pub fn new(id: i32, date: NaiveDate, name: HashMap<String, String>) -> Self {
+    pub fn new(id: i32, date: NaiveDate, name: HashMap<Language, String>) -> Self {
         Self { id, date, name }
     }
 
@@ -335,7 +295,7 @@ impl Holiday {
     }
 
     pub fn name(&self, language: Language) -> String {
-        self.name.get(&language.to_string()).cloned().unwrap()
+        self.name.get(&language).cloned().unwrap()
     }
 }
 
@@ -346,7 +306,7 @@ impl Holiday {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct InformationText {
     id: i32,
-    content: RefCell<HashMap<String, String>>, // Key: deu, fra, ita or eng.
+    content: RefCell<HashMap<Language, String>>,
 }
 
 impl Model<InformationText> for InformationText {
@@ -367,17 +327,13 @@ impl InformationText {
     }
 
     pub fn content(&self, language: Language) -> String {
-        self.content
-            .borrow()
-            .get(&language.to_string())
-            .cloned()
-            .unwrap()
+        self.content.borrow().get(&language).cloned().unwrap()
     }
 
     pub fn set_content(&self, language: Language, value: &str) {
         self.content
             .borrow_mut()
-            .insert(language.to_string(), value.to_string());
+            .insert(language, value.to_string());
     }
 }
 
@@ -401,7 +357,6 @@ impl Model<Journey> for Journey {
     }
 }
 
-// TODO: getters/setters
 #[allow(unused)]
 impl Journey {
     pub fn new(id: i32, administration: String) -> Self {
@@ -429,19 +384,30 @@ impl Journey {
     pub fn add_route_entry(&self, entry: JourneyRouteEntry) {
         self.route.borrow_mut().push(entry);
     }
+
+    // TODO: getters/setters.
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+// ------------------------------------------------------------------------------------------------
+// --- JourneyMetadataType
+// ------------------------------------------------------------------------------------------------
+
+#[derive(Clone, Copy, Debug, Default, Display, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub enum JourneyMetadataType {
-    TransportType,
-    BitField,
+    #[default]
     Attribute,
+    BitField,
+    Direction,
     InformationText,
     Line,
-    Direction,
     TransferTimeBoarding,
     TransferTimeDisembarking,
+    TransportType,
 }
+
+// ------------------------------------------------------------------------------------------------
+// --- JourneyMetadataEntry
+// ------------------------------------------------------------------------------------------------
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct JourneyMetadataEntry {
@@ -479,22 +445,6 @@ impl JourneyMetadataEntry {
         }
     }
 
-    pub fn from_stop_id(&self) -> &Option<i32> {
-        &self.from_stop_id
-    }
-
-    pub fn until_stop_id(&self) -> &Option<i32> {
-        &self.until_stop_id
-    }
-
-    pub fn resource_id(&self) -> &Option<i32> {
-        &self.resource_id
-    }
-
-    pub fn bit_field_id(&self) -> &Option<i32> {
-        &self.bit_field_id
-    }
-
     pub fn departure_time(&self) -> &Option<i32> {
         &self.departure_time
     }
@@ -512,6 +462,10 @@ impl JourneyMetadataEntry {
     }
 }
 
+// ------------------------------------------------------------------------------------------------
+// --- JourneyRouteEntry
+// ------------------------------------------------------------------------------------------------
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct JourneyRouteEntry {
     stop_id: i32,
@@ -527,10 +481,6 @@ impl JourneyRouteEntry {
             arrival_time,
             departure_time,
         }
-    }
-
-    pub fn stop_id(&self) -> i32 {
-        self.stop_id
     }
 
     pub fn arrival_time(&self) -> &Option<i32> {
@@ -550,7 +500,7 @@ impl JourneyRouteEntry {
 pub struct JourneyPlatform {
     journey_id: i32,
     platform_id: i32,
-    hour: Option<i16>,
+    time: Option<i16>,
     bit_field_id: Option<i32>,
 }
 
@@ -567,101 +517,19 @@ impl JourneyPlatform {
     pub fn new(
         journey_id: i32,
         platform_id: i32,
-        hour: Option<i16>,
+        time: Option<i16>,
         bit_field_id: Option<i32>,
     ) -> Self {
         Self {
             journey_id,
             platform_id,
-            hour,
+            time,
             bit_field_id,
         }
     }
 
-    pub fn journey_id(&self) -> i32 {
-        self.journey_id
-    }
-
-    pub fn platform_id(&self) -> i32 {
-        self.platform_id
-    }
-
-    pub fn hour(&self) -> &Option<i16> {
-        &self.hour
-    }
-
-    pub fn bit_field_id(&self) -> &Option<i32> {
-        &self.bit_field_id
-    }
-}
-
-// ------------------------------------------------------------------------------------------------
-// --- JourneyTransferTime
-// ------------------------------------------------------------------------------------------------
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct JourneyTransferTime {
-    id: i32,
-    stop_id: i32,
-    journey_id_1: i32,
-    journey_id_2: i32,
-    duration: i16, // Transfer time from journey 1 to journey 2 is in minutes.
-    is_guaranteed: bool,
-    bit_field_id: Option<i32>,
-}
-
-impl Model<JourneyTransferTime> for JourneyTransferTime {
-    type K = i32;
-
-    fn id(&self) -> Self::K {
-        self.id
-    }
-}
-
-#[allow(unused)]
-impl JourneyTransferTime {
-    pub fn new(
-        id: i32,
-        stop_id: i32,
-        journey_id_1: i32,
-        journey_id_2: i32,
-        duration: i16,
-        is_guaranteed: bool,
-        bit_field_id: Option<i32>,
-    ) -> Self {
-        Self {
-            id,
-            stop_id,
-            journey_id_1,
-            journey_id_2,
-            duration,
-            is_guaranteed,
-            bit_field_id,
-        }
-    }
-
-    pub fn stop_id(&self) -> i32 {
-        self.stop_id
-    }
-
-    pub fn journey_id_1(&self) -> i32 {
-        self.journey_id_1
-    }
-
-    pub fn journey_id_2(&self) -> i32 {
-        self.journey_id_2
-    }
-
-    pub fn duration(&self) -> i16 {
-        self.duration
-    }
-
-    pub fn is_guaranteed(&self) -> bool {
-        self.is_guaranteed
-    }
-
-    pub fn bit_field_id(&self) -> &Option<i32> {
-        &self.bit_field_id
+    pub fn time(&self) -> &Option<i16> {
+        &self.time
     }
 }
 
@@ -669,7 +537,9 @@ impl JourneyTransferTime {
 // --- Language
 // ------------------------------------------------------------------------------------------------
 
-#[derive(Clone, Copy, Debug, Default, Display, EnumString)]
+#[derive(
+    Clone, Copy, Debug, Default, Display, Eq, Hash, PartialEq, EnumString, Serialize, Deserialize,
+)]
 pub enum Language {
     #[default]
     #[strum(serialize = "deu")]
@@ -748,111 +618,6 @@ impl Line {
 }
 
 // ------------------------------------------------------------------------------------------------
-// --- LineTransferTime
-// ------------------------------------------------------------------------------------------------
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct LineTransferTime {
-    id: i32,
-    stop_id: i32,
-    administration_1: String,
-    transport_type_id_1: i32,
-    line_id_1: Option<String>, // If the value is None, then the transfer time applies to all lines in administration_1.
-    direction_1: Option<String>, // If the value is None, then the match time applies in both directions.
-    administration_2: String,
-    transport_type_id_2: i32,
-    line_id_2: Option<String>, // If the value is None, then the transfer time applies to all lines in administration_2.
-    direction_2: Option<String>, // If the value is None, then the match time applies in both directions.
-    duration: i16,               // Transfer time from line 1 to line 2 is in minutes.
-    is_guaranteed: bool,
-}
-
-impl Model<LineTransferTime> for LineTransferTime {
-    type K = i32;
-
-    fn id(&self) -> Self::K {
-        self.id
-    }
-}
-
-#[allow(unused)]
-impl LineTransferTime {
-    pub fn new(
-        id: i32,
-        stop_id: i32,
-        administration_1: String,
-        transport_type_id_1: i32,
-        line_id_1: Option<String>,
-        direction_1: Option<String>,
-        administration_2: String,
-        transport_type_id_2: i32,
-        line_id_2: Option<String>,
-        direction_2: Option<String>,
-        duration: i16,
-        is_guaranteed: bool,
-    ) -> Self {
-        Self {
-            id,
-            stop_id,
-            administration_1,
-            transport_type_id_1,
-            line_id_1,
-            direction_1,
-            administration_2,
-            transport_type_id_2,
-            line_id_2,
-            direction_2,
-            duration,
-            is_guaranteed,
-        }
-    }
-
-    pub fn stop_id(&self) -> i32 {
-        self.stop_id
-    }
-
-    pub fn administration_1(&self) -> &str {
-        &self.administration_1
-    }
-
-    pub fn transport_type_id_1(&self) -> i32 {
-        self.transport_type_id_1
-    }
-
-    pub fn line_id_1(&self) -> &Option<String> {
-        &self.line_id_1
-    }
-
-    pub fn direction_1(&self) -> &Option<String> {
-        &self.direction_1
-    }
-
-    pub fn administration_2(&self) -> &str {
-        &self.administration_2
-    }
-
-    pub fn transport_type_id_2(&self) -> i32 {
-        self.transport_type_id_2
-    }
-
-    pub fn line_id_2(&self) -> &Option<String> {
-        &self.line_id_2
-    }
-
-    pub fn direction_2(&self) -> &Option<String> {
-        &self.direction_2
-    }
-
-    pub fn duration(&self) -> i16 {
-        self.duration
-    }
-
-    pub fn is_guaranteed(&self) -> bool {
-        self.is_guaranteed
-    }
-}
-
-// ------------------------------------------------------------------------------------------------
 // --- Platform
 // ------------------------------------------------------------------------------------------------
 
@@ -895,10 +660,6 @@ impl Platform {
 
     pub fn sectors(&self) -> &Option<String> {
         &self.sectors
-    }
-
-    pub fn stop_id(&self) -> i32 {
-        self.stop_id
     }
 
     pub fn sloid(&self) -> Ref<'_, String> {
@@ -1115,14 +876,6 @@ impl StopConnection {
         }
     }
 
-    pub fn stop_id_1(&self) -> i32 {
-        self.stop_id_1
-    }
-
-    pub fn stop_id_2(&self) -> i32 {
-        self.stop_id_2
-    }
-
     pub fn duration(&self) -> i16 {
         self.duration
     }
@@ -1177,30 +930,10 @@ impl ThroughService {
             bit_field_id,
         }
     }
-
-    pub fn journey_1_id(&self) -> i32 {
-        self.journey_1_id
-    }
-
-    pub fn journey_1_stop_id(&self) -> i32 {
-        self.journey_1_stop_id
-    }
-
-    pub fn journey_2_id(&self) -> i32 {
-        self.journey_2_id
-    }
-
-    pub fn journey_2_stop_id(&self) -> &Option<i32> {
-        &self.journey_2_stop_id
-    }
-
-    pub fn bit_field_id(&self) -> i32 {
-        self.bit_field_id
-    }
 }
 
 // ------------------------------------------------------------------------------------------------
-// --- Timetable
+// --- TimetableMetadataEntry
 // ------------------------------------------------------------------------------------------------
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -1239,15 +972,206 @@ impl TimetableMetadataEntry {
 }
 
 // ------------------------------------------------------------------------------------------------
+// --- TransferTimeAdministration
+// ------------------------------------------------------------------------------------------------
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TransferTimeAdministration {
+    id: i32,
+    stop_id: Option<i32>, // A None value means that the transfer time applies to all stops if there is no specific entry for the stop and the 2 administrations.
+    administration_1: String,
+    administration_2: String,
+    duration: i16, // Transfer time from administration 1 to administration 2 is in minutes.
+}
+
+impl Model<TransferTimeAdministration> for TransferTimeAdministration {
+    type K = i32;
+
+    fn id(&self) -> Self::K {
+        self.id
+    }
+}
+
+#[allow(unused)]
+impl TransferTimeAdministration {
+    pub fn new(
+        id: i32,
+        stop_id: Option<i32>,
+        administration_1: String,
+        administration_2: String,
+        duration: i16,
+    ) -> Self {
+        Self {
+            id,
+            stop_id,
+            administration_1,
+            administration_2,
+            duration,
+        }
+    }
+
+    pub fn administration_1(&self) -> &str {
+        &self.administration_1
+    }
+
+    pub fn administration_2(&self) -> &str {
+        &self.administration_2
+    }
+
+    pub fn duration(&self) -> i16 {
+        self.duration
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
+// --- TransferTimeJourney
+// ------------------------------------------------------------------------------------------------
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TransferTimeJourney {
+    id: i32,
+    stop_id: i32,
+    journey_id_1: i32,
+    journey_id_2: i32,
+    duration: i16, // Transfer time from journey 1 to journey 2 is in minutes.
+    is_guaranteed: bool,
+    bit_field_id: Option<i32>,
+}
+
+impl Model<TransferTimeJourney> for TransferTimeJourney {
+    type K = i32;
+
+    fn id(&self) -> Self::K {
+        self.id
+    }
+}
+
+#[allow(unused)]
+impl TransferTimeJourney {
+    pub fn new(
+        id: i32,
+        stop_id: i32,
+        journey_id_1: i32,
+        journey_id_2: i32,
+        duration: i16,
+        is_guaranteed: bool,
+        bit_field_id: Option<i32>,
+    ) -> Self {
+        Self {
+            id,
+            stop_id,
+            journey_id_1,
+            journey_id_2,
+            duration,
+            is_guaranteed,
+            bit_field_id,
+        }
+    }
+
+    pub fn duration(&self) -> i16 {
+        self.duration
+    }
+
+    pub fn is_guaranteed(&self) -> bool {
+        self.is_guaranteed
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
+// --- TransferTimeLine
+// ------------------------------------------------------------------------------------------------
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TransferTimeLine {
+    id: i32,
+    stop_id: i32,
+    administration_1: String,
+    transport_type_id_1: i32,
+    line_id_1: Option<String>, // If the value is None, then the transfer time applies to all lines in administration_1.
+    direction_1: Option<DirectionType>, // If the value is None, then the match time applies in both directions.
+    administration_2: String,
+    transport_type_id_2: i32,
+    line_id_2: Option<String>, // If the value is None, then the transfer time applies to all lines in administration_2.
+    direction_2: Option<DirectionType>, // If the value is None, then the match time applies in both directions.
+    duration: i16,                      // Transfer time from line 1 to line 2 is in minutes.
+    is_guaranteed: bool,
+}
+
+impl Model<TransferTimeLine> for TransferTimeLine {
+    type K = i32;
+
+    fn id(&self) -> Self::K {
+        self.id
+    }
+}
+
+#[allow(unused)]
+impl TransferTimeLine {
+    pub fn new(
+        id: i32,
+        stop_id: i32,
+        administration_1: String,
+        transport_type_id_1: i32,
+        line_id_1: Option<String>,
+        direction_1: Option<DirectionType>,
+        administration_2: String,
+        transport_type_id_2: i32,
+        line_id_2: Option<String>,
+        direction_2: Option<DirectionType>,
+        duration: i16,
+        is_guaranteed: bool,
+    ) -> Self {
+        Self {
+            id,
+            stop_id,
+            administration_1,
+            transport_type_id_1,
+            line_id_1,
+            direction_1,
+            administration_2,
+            transport_type_id_2,
+            line_id_2,
+            direction_2,
+            duration,
+            is_guaranteed,
+        }
+    }
+
+    pub fn administration_1(&self) -> &str {
+        &self.administration_1
+    }
+
+    pub fn direction_1(&self) -> &Option<DirectionType> {
+        &self.direction_1
+    }
+
+    pub fn administration_2(&self) -> &str {
+        &self.administration_2
+    }
+
+    pub fn direction_2(&self) -> &Option<DirectionType> {
+        &self.direction_2
+    }
+
+    pub fn duration(&self) -> i16 {
+        self.duration
+    }
+
+    pub fn is_guaranteed(&self) -> bool {
+        self.is_guaranteed
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
 // --- TransportCompany
 // ------------------------------------------------------------------------------------------------
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TransportCompany {
     id: i32,
-    short_name: RefCell<HashMap<String, String>>, // Key: deu, fra, ita or eng.
-    long_name: RefCell<HashMap<String, String>>,  // Key: deu, fra, ita or eng.
-    full_name: RefCell<HashMap<String, String>>,  // Key: deu, fra, ita or eng.
+    short_name: RefCell<HashMap<Language, String>>,
+    long_name: RefCell<HashMap<Language, String>>,
+    full_name: RefCell<HashMap<Language, String>>,
     administrations: Vec<String>,
 }
 
@@ -1272,45 +1196,33 @@ impl TransportCompany {
     }
 
     pub fn short_name(&self, language: Language) -> String {
-        self.short_name
-            .borrow()
-            .get(&language.to_string())
-            .cloned()
-            .unwrap()
+        self.short_name.borrow().get(&language).cloned().unwrap()
     }
 
     pub fn set_short_name(&self, language: Language, value: &str) {
         self.short_name
             .borrow_mut()
-            .insert(language.to_string(), value.to_string());
+            .insert(language, value.to_string());
     }
 
     pub fn long_name(&self, language: Language) -> String {
-        self.long_name
-            .borrow()
-            .get(&language.to_string())
-            .cloned()
-            .unwrap()
+        self.long_name.borrow().get(&language).cloned().unwrap()
     }
 
     pub fn set_long_name(&self, language: Language, value: &str) {
         self.long_name
             .borrow_mut()
-            .insert(language.to_string(), value.to_string());
+            .insert(language, value.to_string());
     }
 
     pub fn full_name(&self, language: Language) -> String {
-        self.full_name
-            .borrow()
-            .get(&language.to_string())
-            .cloned()
-            .unwrap()
+        self.full_name.borrow().get(&language).cloned().unwrap()
     }
 
     pub fn set_full_name(&self, language: Language, value: &str) {
         self.full_name
             .borrow_mut()
-            .insert(language.to_string(), value.to_string());
+            .insert(language, value.to_string());
     }
 
     pub fn administrations(&self) -> &Vec<String> {
@@ -1332,8 +1244,8 @@ pub struct TransportType {
     short_name: String,
     surchage: i16,
     flag: String,
-    product_class_name: RefCell<HashMap<String, String>>,
-    category_name: RefCell<HashMap<String, String>>,
+    product_class_name: RefCell<HashMap<Language, String>>,
+    category_name: RefCell<HashMap<Language, String>>,
 }
 
 impl Model<TransportType> for TransportType {
@@ -1401,7 +1313,7 @@ impl TransportType {
     pub fn product_class_name(&self, language: Language) -> String {
         self.product_class_name
             .borrow()
-            .get(&language.to_string())
+            .get(&language)
             .cloned()
             .unwrap()
     }
@@ -1409,20 +1321,16 @@ impl TransportType {
     pub fn set_product_class_name(&self, language: Language, value: &str) {
         self.product_class_name
             .borrow_mut()
-            .insert(language.to_string(), value.to_string());
+            .insert(language, value.to_string());
     }
 
     pub fn category_name(&self, language: Language) -> String {
-        self.category_name
-            .borrow()
-            .get(&language.to_string())
-            .cloned()
-            .unwrap()
+        self.category_name.borrow().get(&language).cloned().unwrap()
     }
 
     pub fn set_category_name(&self, language: Language, value: &str) {
         self.category_name
             .borrow_mut()
-            .insert(language.to_string(), value.to_string());
+            .insert(language, value.to_string());
     }
 }

@@ -4,7 +4,7 @@
 use std::{error::Error, rc::Rc};
 
 use crate::{
-    models::{Journey, JourneyTransferTime, Model, ResourceIndex},
+    models::{Journey, TransferTimeJourney, Model, ResourceIndex},
     parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
     storage::SimpleResourceStorage, utils::AutoIncrement,
 };
@@ -13,7 +13,7 @@ use super::ParsedValue;
 
 pub fn parse(
     journeys_legacy_pk_index: &ResourceIndex<Journey, (i32, String)>,
-) -> Result<SimpleResourceStorage<JourneyTransferTime>, Box<dyn Error>> {
+) -> Result<SimpleResourceStorage<TransferTimeJourney>, Box<dyn Error>> {
     println!("Parsing UMSTEIGZ...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -55,7 +55,7 @@ fn create_instance(
     mut values: Vec<ParsedValue>,
     auto_increment: &AutoIncrement,
     journeys_legacy_pk_index: &ResourceIndex<Journey, (i32, String)>,
-) -> Rc<JourneyTransferTime> {
+) -> Rc<TransferTimeJourney> {
     let stop_id: i32 = values.remove(0).into();
     let journey_id_1: i32 = values.remove(0).into();
     let administration_1: String = values.remove(0).into();
@@ -77,7 +77,7 @@ fn create_instance(
 
     let is_guaranteed = is_guaranteed == "!";
 
-    Rc::new(JourneyTransferTime::new(
+    Rc::new(TransferTimeJourney::new(
         auto_increment.next(),
         stop_id,
         journey_id_1,

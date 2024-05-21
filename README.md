@@ -42,7 +42,8 @@ TODO :
 * Normaliser le code
 * Ajouter thiserror
 
-Utilisation d'un arbre pour calculer les routes :
+Algorithme de calcul du trajet le plus court :
+* Utilisation d'un arbre pour calculer les routes
 * Seulement les lignes
 * Maximum N changements
 * Seulement les trajets possibles
@@ -55,7 +56,8 @@ Utilisation d'un arbre pour calculer les routes :
 * Utiliser une HashMap pour chaque arrêt contenant le temps le plus court pour l'atteindre, si un trajet arrive à un arrêt après le meilleur de temps => terminated
 
 
-Réorganiser les modèless
 Vérifier getters/setters
 Vérifier les modèles
 Vérifier les parsers
+
+struct "Time"

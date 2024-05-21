@@ -10,7 +10,8 @@ use crate::{
     parsing::{
         ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, RowDefinition, RowParser,
     },
-    storage::SimpleResourceStorage, utils::AutoIncrement,
+    storage::SimpleResourceStorage,
+    utils::AutoIncrement,
 };
 
 use super::ParsedValue;
@@ -144,7 +145,7 @@ fn create_journey_platform(
     let journey_id: i32 = values.remove(0).into();
     let _: String = values.remove(0).into();
     let index: i32 = values.remove(0).into();
-    let hour: Option<i16> = values.remove(0).into();
+    let time: Option<i16> = values.remove(0).into();
     let bit_field_id: Option<i32> = values.remove(0).into();
 
     Rc::new(JourneyPlatform::new(
@@ -153,7 +154,7 @@ fn create_journey_platform(
             .get(&(stop_id, index))
             .unwrap()
             .id(),
-        hour,
+        time,
         bit_field_id,
     ))
 }

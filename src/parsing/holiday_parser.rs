@@ -1,14 +1,15 @@
 // 1 file(s).
 // File(s) read by the parser:
 // FEIERTAG
-use std::{collections::HashMap, error::Error, rc::Rc};
+use std::{collections::HashMap, error::Error, rc::Rc, str::FromStr};
 
 use chrono::NaiveDate;
 
 use crate::{
-    models::Holiday,
+    models::{Holiday, Language},
     parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
-    storage::SimpleResourceStorage, utils::AutoIncrement,
+    storage::SimpleResourceStorage,
+    utils::AutoIncrement,
 };
 
 use super::ParsedValue;
@@ -53,7 +54,7 @@ fn create_instance(mut values: Vec<ParsedValue>, auto_increment: &AutoIncrement)
 // --- Helper Functions
 // ------------------------------------------------------------------------------------------------
 
-fn parse_name_translations(name_translations: String) -> HashMap<String, String> {
+fn parse_name_translations(name_translations: String) -> HashMap<Language, String> {
     name_translations
         .split('>')
         .filter(|&s| !s.is_empty())
@@ -66,7 +67,7 @@ fn parse_name_translations(name_translations: String) -> HashMap<String, String>
             (k, v)
         })
         .fold(HashMap::new(), |mut acc, (k, v)| {
-            acc.insert(k, v);
+            acc.insert(Language::from_str(&k).unwrap(), v);
             acc
         })
 }

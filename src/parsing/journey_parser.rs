@@ -11,7 +11,8 @@ use crate::{
     parsing::{
         ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, RowDefinition, RowParser,
     },
-    storage::SimpleResourceStorage, utils::AutoIncrement,
+    storage::SimpleResourceStorage,
+    utils::AutoIncrement,
 };
 
 use super::ParsedValue;
@@ -124,12 +125,12 @@ pub fn parse(
                     set_transport_type(values, &current_instance, &transport_types_legacy_pk_index)
                 }
                 ROW_C => set_bit_field(values, &current_instance),
-                ROW_D => set_attribute(values, &current_instance, &attributes_legacy_pk_index),
-                ROW_E => set_information_text(values, &current_instance),
+                ROW_D => add_attribute(values, &current_instance, &attributes_legacy_pk_index),
+                ROW_E => add_information_text(values, &current_instance),
                 ROW_F => set_line(values, &current_instance),
                 ROW_G => set_direction(values, &current_instance, directions_legacy_pk_index),
                 ROW_H => set_boarding_or_disembarking_transfer_time(values, &current_instance),
-                ROW_I => set_route(values, &current_instance),
+                ROW_I => add_route_entry(values, &current_instance),
                 _ => unreachable!(),
             };
             None
@@ -206,7 +207,7 @@ fn set_bit_field(mut values: Vec<ParsedValue>, journey: &Rc<Journey>) {
     );
 }
 
-fn set_attribute(
+fn add_attribute(
     mut values: Vec<ParsedValue>,
     journey: &Rc<Journey>,
     attributes_legacy_pk_index: &ResourceIndex<Attribute, String>,
@@ -232,7 +233,7 @@ fn set_attribute(
     );
 }
 
-fn set_information_text(mut values: Vec<ParsedValue>, journey: &Rc<Journey>) {
+fn add_information_text(mut values: Vec<ParsedValue>, journey: &Rc<Journey>) {
     let code: String = values.remove(0).into();
     let from_stop_id: Option<i32> = values.remove(0).into();
     let until_stop_id: Option<i32> = values.remove(0).into();
@@ -289,7 +290,7 @@ fn set_direction(
     journey: &Rc<Journey>,
     directions_legacy_pk_index: &ResourceIndex<Direction, String>,
 ) {
-    let round_trip: String = values.remove(0).into();
+    let direction_type: String = values.remove(0).into();
     let direction_id: String = values.remove(0).into();
     let from_stop_id: Option<i32> = values.remove(0).into();
     let until_stop_id: Option<i32> = values.remove(0).into();
@@ -299,7 +300,16 @@ fn set_direction(
     if direction_id.is_empty() {
         journey.add_metadata_entry(
             JourneyMetadataType::Direction,
-            JourneyMetadataEntry::new(None, None, None, None, None, None, Some(round_trip), None),
+            JourneyMetadataEntry::new(
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                Some(direction_type),
+                None,
+            ),
         );
     } else {
         let direction_id = directions_legacy_pk_index.get(&direction_id).unwrap().id();
@@ -313,7 +323,7 @@ fn set_direction(
                 None,
                 departure_time,
                 arrival_time,
-                Some(round_trip),
+                Some(direction_type),
                 None,
             ),
         );
@@ -347,7 +357,7 @@ fn set_boarding_or_disembarking_transfer_time(mut values: Vec<ParsedValue>, jour
     );
 }
 
-fn set_route(mut values: Vec<ParsedValue>, journey: &Rc<Journey>) {
+fn add_route_entry(mut values: Vec<ParsedValue>, journey: &Rc<Journey>) {
     let stop_id: i32 = values.remove(0).into();
     let arrival_time: Option<i32> = values.remove(0).into();
     let departure_time: Option<i32> = values.remove(0).into();

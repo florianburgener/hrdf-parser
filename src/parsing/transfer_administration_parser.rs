@@ -4,7 +4,7 @@
 use std::{error::Error, rc::Rc};
 
 use crate::{
-    models::AdministrationTransferTime,
+    models::TransferTimeAdministration,
     parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
     storage::SimpleResourceStorage,
     utils::AutoIncrement,
@@ -12,7 +12,7 @@ use crate::{
 
 use super::ParsedValue;
 
-pub fn parse() -> Result<SimpleResourceStorage<AdministrationTransferTime>, Box<dyn Error>> {
+pub fn parse() -> Result<SimpleResourceStorage<TransferTimeAdministration>, Box<dyn Error>> {
     println!("Parsing UMSTEIGV...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -43,13 +43,13 @@ pub fn parse() -> Result<SimpleResourceStorage<AdministrationTransferTime>, Box<
 fn create_instance(
     mut values: Vec<ParsedValue>,
     auto_increment: &AutoIncrement,
-) -> Rc<AdministrationTransferTime> {
+) -> Rc<TransferTimeAdministration> {
     let stop_id: Option<i32> = values.remove(0).into();
     let administration_1: String = values.remove(0).into();
     let administration_2: String = values.remove(0).into();
     let duration: i16 = values.remove(0).into();
 
-    Rc::new(AdministrationTransferTime::new(
+    Rc::new(TransferTimeAdministration::new(
         auto_increment.next(),
         stop_id,
         administration_1,

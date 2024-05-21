@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     models::{
-        AdministrationTransferTime, Attribute, BitField, Direction, Holiday, InformationText,
-        Journey, JourneyPlatform, JourneyTransferTime, Line, LineTransferTime, Platform, Stop,
+        TransferTimeAdministration, Attribute, BitField, Direction, Holiday, InformationText,
+        Journey, JourneyPlatform, TransferTimeJourney, Line, TransferTimeLine, Platform, Stop,
         StopConnection, ThroughService, TimetableMetadataEntry, TransportCompany, TransportType,
     },
     parsing,
@@ -39,9 +39,9 @@ pub struct Hrdf {
     through_service: SimpleResourceStorage<ThroughService>,
 
     // Transfer times.
-    administration_transfer_times: SimpleResourceStorage<AdministrationTransferTime>,
-    journey_transfer_times: SimpleResourceStorage<JourneyTransferTime>,
-    line_transfer_times: SimpleResourceStorage<LineTransferTime>,
+    transfer_times_administration: SimpleResourceStorage<TransferTimeAdministration>,
+    transfer_times_journey: SimpleResourceStorage<TransferTimeJourney>,
+    transfer_times_line: SimpleResourceStorage<TransferTimeLine>,
 }
 
 #[allow(unused)]
@@ -74,11 +74,11 @@ impl Hrdf {
         let through_service = parsing::load_through_service(&journeys_legacy_pk_index)?;
 
         // Transfer times.
-        let administration_transfer_times = parsing::load_administration_transfer_times()?;
-        let journey_transfer_times =
-            parsing::load_journey_transfer_times(&journeys_legacy_pk_index)?;
-        let line_transfer_times =
-            parsing::load_line_transfer_times(&transport_types_legacy_pk_index)?;
+        let transfer_times_administration = parsing::load_transfer_times_administration()?;
+        let transfer_times_journey =
+            parsing::load_transfer_times_journey(&journeys_legacy_pk_index)?;
+        let transfer_times_line =
+            parsing::load_transfer_times_line(&transport_types_legacy_pk_index)?;
 
         let instance = Rc::new(Self {
             // Time-relevant data.
@@ -101,9 +101,9 @@ impl Hrdf {
             platforms,
             through_service,
             // Transfer times.
-            administration_transfer_times,
-            journey_transfer_times,
-            line_transfer_times,
+            transfer_times_administration,
+            transfer_times_journey,
+            transfer_times_line,
         });
 
         // Self::set_parent_references(&instance);
