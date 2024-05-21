@@ -1,4 +1,4 @@
-Progression (36/38) :
+Progression (37/38) :
 * ATTRIBUT
 * ATTRIBUT_DE (fichier pas utilisé dans le code)
 * ATTRIBUT_EN (fichier pas utilisé dans le code)
@@ -32,16 +32,16 @@ Progression (36/38) :
 * METABHF
 * RICHTUNG
 * UMSTEIGB
+* UMSTEIGL
 * UMSTEIGV
 * ZUGART
 * ZEITVS (fichier pas utilisé dans le code)
 
 Fichiers restants :
-* UMSTEIGL
 * UMSTEIGZ
 
 TODO :
-* 2 UMSTEI
+* 1 UMSTEI
 * Normaliser le code
 * Ajouter thiserror
 

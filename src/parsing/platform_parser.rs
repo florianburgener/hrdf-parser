@@ -46,12 +46,10 @@ pub fn parse() -> Result<
     ]);
     let parser = FileParser::new("data/GLEIS", row_parser)?;
 
-    let mut journey_platform_data = Vec::new();
-
-    let mut platforms_legacy_pk_index = HashMap::new();
-
-    let mut bytes_offset = 0;
     let auto_increment = AutoIncrement::new();
+    let mut bytes_offset = 0;
+    let mut journey_platform_data = Vec::new();
+    let mut platforms_legacy_pk_index = HashMap::new();
 
     let platforms = parser
         .parse()

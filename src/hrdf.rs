@@ -5,16 +5,15 @@ use serde::{Deserialize, Serialize};
 use crate::{
     models::{
         AdministrationTransferTime, Attribute, BitField, Direction, Holiday, InformationText,
-        Journey, JourneyPlatform, Line, Platform, Stop, StopConnection, ThroughService,
-        TimetableMetadataEntry, TransportCompany, TransportType,
+        Journey, JourneyPlatform, Line, LineTransferTime, Platform, Stop, StopConnection,
+        ThroughService, TimetableMetadataEntry, TransportCompany, TransportType,
     },
     parsing,
     storage::SimpleResourceStorage,
 };
 
 #[allow(unused)]
-#[derive(Debug)]
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Hrdf {
     // Time-relevant data.
     bit_fields: SimpleResourceStorage<BitField>,
@@ -33,14 +32,15 @@ pub struct Hrdf {
     stops: SimpleResourceStorage<Stop>,
     stop_connections: SimpleResourceStorage<StopConnection>,
 
-    // Transfer times.
-    administration_transfer_times: SimpleResourceStorage<AdministrationTransferTime>,
-
     // Timetable data.
     journeys: SimpleResourceStorage<Journey>,
     journey_platform: SimpleResourceStorage<JourneyPlatform>,
     platforms: SimpleResourceStorage<Platform>,
     through_service: SimpleResourceStorage<ThroughService>,
+
+    // Transfer times.
+    administration_transfer_times: SimpleResourceStorage<AdministrationTransferTime>,
+    line_transfer_times: SimpleResourceStorage<LineTransferTime>,
 }
 
 #[allow(unused)]
@@ -57,24 +57,25 @@ impl Hrdf {
         let information_texts = parsing::load_information_texts()?;
         let lines = parsing::load_lines()?;
         let transport_companies = parsing::load_transport_companies()?;
-        let (transport_types, transport_types_legacy_pk_index) =
-            parsing::load_transport_types()?;
+        let (transport_types, transport_types_legacy_pk_index) = parsing::load_transport_types()?;
 
         // Stop data.
         let stops = parsing::load_stops()?;
         let stop_connections = parsing::load_stop_connections(&attributes_legacy_pk_index)?;
 
-        // Transfer times.
-        let administration_transfer_times = parsing::load_administration_transfer_times()?;
-
         // Timetable data.
-        let (journeys, _) = parsing::load_journeys(
+        let (journeys, journeys_legacy_pk_index) = parsing::load_journeys(
             &transport_types_legacy_pk_index,
             &attributes_legacy_pk_index,
             &directions_legacy_pk_index,
         )?;
         let (journey_platform, platforms) = parsing::load_platforms()?;
-        let through_service = parsing::load_through_service()?;
+        let through_service = parsing::load_through_service(&journeys_legacy_pk_index)?;
+
+        // Transfer times.
+        let administration_transfer_times = parsing::load_administration_transfer_times()?;
+        let line_transfer_times =
+            parsing::load_line_transfer_times(&transport_types_legacy_pk_index)?;
 
         let instance = Rc::new(Self {
             // Time-relevant data.
@@ -91,13 +92,14 @@ impl Hrdf {
             // Stop data.
             stops,
             stop_connections,
-            // Transfer times.
-            administration_transfer_times,
             // Timetable data.
             journeys,
             journey_platform,
             platforms,
             through_service,
+            // Transfer times.
+            administration_transfer_times,
+            line_transfer_times,
         });
 
         // Self::set_parent_references(&instance);

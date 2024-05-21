@@ -43,7 +43,7 @@ pub fn parse() -> Result<SimpleResourceStorage<Stop>, Box<dyn Error>> {
     load_transfer_flags(&pk_index)?;
     println!("Parsing UMSTEIGB...");
     load_transfer_times(&pk_index)?;
-    println!("Parsing METABHF 2/2...");
+    println!("Parsing METABHF 1/2...");
     load_connections(&pk_index)?;
     println!("Parsing BHFART_60...");
     load_descriptions(&pk_index)?;

@@ -106,31 +106,35 @@ pub fn parse(
     ]);
     let parser = FileParser::new("data/FPLAN", row_parser)?;
 
-    let mut rows = Vec::new();
-    let mut legacy_pk_index = HashMap::new();
-    let mut current_instance = Rc::new(Journey::default());
     let auto_increment = AutoIncrement::new();
+    let mut current_instance = Rc::new(Journey::default());
+    let mut legacy_pk_index = HashMap::new();
 
-    // TODO: parser.parse()
-    for (id, _, values) in parser.parse() {
-        match id {
-            ROW_A => {
-                let (instance, k) = create_instance(values, &auto_increment);
-                legacy_pk_index.insert(k, Rc::clone(&instance));
-                rows.push(Rc::clone(&instance));
-                current_instance = instance;
-            }
-            ROW_B => set_transport_type(values, &current_instance, &transport_types_legacy_pk_index),
-            ROW_C => set_bit_field(values, &current_instance),
-            ROW_D => set_attribute(values, &current_instance, &attributes_legacy_pk_index),
-            ROW_E => set_information_text(values, &current_instance),
-            ROW_F => set_line(values, &current_instance),
-            ROW_G => set_direction(values, &current_instance, directions_legacy_pk_index),
-            ROW_H => set_boarding_or_disembarking_transfer_time(values, &current_instance),
-            ROW_I => set_route(values, &current_instance),
-            _ => unreachable!(),
-        }
-    }
+    let rows = parser
+        .parse()
+        .filter_map(|(id, _, values)| {
+            match id {
+                ROW_A => {
+                    let (instance, k) = create_instance(values, &auto_increment);
+                    legacy_pk_index.insert(k, Rc::clone(&instance));
+                    current_instance = Rc::clone(&instance);
+                    return Some(instance);
+                }
+                ROW_B => {
+                    set_transport_type(values, &current_instance, &transport_types_legacy_pk_index)
+                }
+                ROW_C => set_bit_field(values, &current_instance),
+                ROW_D => set_attribute(values, &current_instance, &attributes_legacy_pk_index),
+                ROW_E => set_information_text(values, &current_instance),
+                ROW_F => set_line(values, &current_instance),
+                ROW_G => set_direction(values, &current_instance, directions_legacy_pk_index),
+                ROW_H => set_boarding_or_disembarking_transfer_time(values, &current_instance),
+                ROW_I => set_route(values, &current_instance),
+                _ => unreachable!(),
+            };
+            None
+        })
+        .collect();
 
     Ok((SimpleResourceStorage::new(rows), legacy_pk_index))
 }
@@ -259,11 +263,8 @@ fn set_line(mut values: Vec<ParsedValue>, journey: &Rc<Journey>) {
     let departure_time: Option<i32> = values.remove(0).into();
     let arrival_time: Option<i32> = values.remove(0).into();
 
-    let (resource_id, extra_field1) = if line_designation.chars().next().unwrap() == '#' {
-        (
-            Some(line_designation[1..].parse::<i32>().unwrap()),
-            None,
-        )
+    let (resource_id, extra_field_1) = if line_designation.chars().next().unwrap() == '#' {
+        (Some(line_designation[1..].parse::<i32>().unwrap()), None)
     } else {
         (None, Some(line_designation))
     };
@@ -277,7 +278,7 @@ fn set_line(mut values: Vec<ParsedValue>, journey: &Rc<Journey>) {
             None,
             departure_time,
             arrival_time,
-            extra_field1,
+            extra_field_1,
             None,
         ),
     );

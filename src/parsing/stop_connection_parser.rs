@@ -17,7 +17,7 @@ use super::ParsedValue;
 pub fn parse(
     attributes_legacy_pk_index: &ResourceIndex<Attribute, String>,
 ) -> Result<SimpleResourceStorage<StopConnection>, Box<dyn Error>> {
-    println!("Parsing METABHF 1/2...");
+    println!("Parsing METABHF 2/2...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
     const ROW_C: i32 = 3;
@@ -44,22 +44,14 @@ pub fn parse(
 
     let rows = parser
         .parse()
-        .filter_map(|(id, _, mut values)| {
+        .filter_map(|(id, _, values)| {
             match id {
                 ROW_A => {
                     let instance = create_instance(values, &auto_increment);
                     current_instance = Rc::clone(&instance);
                     return Some(instance);
                 }
-                ROW_B => {
-                    let attribute_designation: String = values.remove(0).into();
-                    current_instance.add_attribute(
-                        attributes_legacy_pk_index
-                            .get(&attribute_designation)
-                            .unwrap()
-                            .id(),
-                    );
-                }
+                ROW_B => add_attribute(values, &current_instance, attributes_legacy_pk_index),
                 ROW_C => (),
                 _ => unreachable!(),
             };
@@ -88,4 +80,17 @@ fn create_instance(
         stop_id_2,
         duration,
     ))
+}
+
+fn add_attribute(
+    mut values: Vec<ParsedValue>,
+    current_instance: &Rc<StopConnection>,
+    attributes_legacy_pk_index: &ResourceIndex<Attribute, String>,
+) {
+    let attribute_designation: String = values.remove(0).into();
+    let attribute_id = attributes_legacy_pk_index
+        .get(&attribute_designation)
+        .unwrap()
+        .id();
+    current_instance.add_attribute(attribute_id);
 }
