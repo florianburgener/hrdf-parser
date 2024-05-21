@@ -622,6 +622,76 @@ impl JourneyPlatform {
 }
 
 // ------------------------------------------------------------------------------------------------
+// --- JourneyTransferTime
+// ------------------------------------------------------------------------------------------------
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct JourneyTransferTime {
+    id: i32,
+    stop_id: i32,
+    journey_id_1: i32,
+    journey_id_2: i32,
+    duration: i16, // Transfer time from journey 1 to journey 2 is in minutes.
+    is_guaranteed: bool,
+    bit_field_id: Option<i32>,
+}
+
+impl Model<JourneyTransferTime> for JourneyTransferTime {
+    type K = i32;
+
+    fn id(&self) -> Self::K {
+        self.id
+    }
+}
+
+#[allow(unused)]
+impl JourneyTransferTime {
+    pub fn new(
+        id: i32,
+        stop_id: i32,
+        journey_id_1: i32,
+        journey_id_2: i32,
+        duration: i16,
+        is_guaranteed: bool,
+        bit_field_id: Option<i32>,
+    ) -> Self {
+        Self {
+            id,
+            stop_id,
+            journey_id_1,
+            journey_id_2,
+            duration,
+            is_guaranteed,
+            bit_field_id,
+        }
+    }
+
+    pub fn stop_id(&self) -> i32 {
+        self.stop_id
+    }
+
+    pub fn journey_id_1(&self) -> i32 {
+        self.journey_id_1
+    }
+
+    pub fn journey_id_2(&self) -> i32 {
+        self.journey_id_2
+    }
+
+    pub fn duration(&self) -> i16 {
+        self.duration
+    }
+
+    pub fn is_guaranteed(&self) -> bool {
+        self.is_guaranteed
+    }
+
+    pub fn bit_field_id(&self) -> &Option<i32> {
+        &self.bit_field_id
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
 // --- Language
 // ------------------------------------------------------------------------------------------------
 

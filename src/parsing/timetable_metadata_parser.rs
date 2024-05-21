@@ -39,19 +39,19 @@ pub fn parse() -> Result<SimpleResourceStorage<TimetableMetadataEntry>, Box<dyn 
 
     let start_date: String = data.remove(0).into();
     let end_date: String = data.remove(0).into();
-    let metadata: String = data.remove(0).into();
+    let other_data: String = data.remove(0).into();
 
     let start_date = NaiveDate::parse_from_str(&start_date, "%d.%m.%Y")?;
     let end_date = NaiveDate::parse_from_str(&end_date, "%d.%m.%Y")?;
-    let metadata: Vec<String> = metadata.split('$').map(String::from).collect();
+    let other_data: Vec<String> = other_data.split('$').map(String::from).collect();
 
     let rows = vec![
         ("start_date", start_date.to_string()),
         ("end_date", end_date.to_string()),
-        ("name", metadata[0].to_owned()),
-        ("created_at", metadata[1].to_owned()),
-        ("version", metadata[2].to_owned()),
-        ("provider", metadata[3].to_owned()),
+        ("name", other_data[0].to_owned()),
+        ("created_at", other_data[1].to_owned()),
+        ("version", other_data[2].to_owned()),
+        ("provider", other_data[3].to_owned()),
     ];
 
     let auto_increment = AutoIncrement::new();
@@ -59,13 +59,11 @@ pub fn parse() -> Result<SimpleResourceStorage<TimetableMetadataEntry>, Box<dyn 
     let rows = rows
         .iter()
         .map(|(key, value)| {
-            let instance = Rc::new(TimetableMetadataEntry::new(
+            Rc::new(TimetableMetadataEntry::new(
                 auto_increment.next(),
                 key.to_string(),
                 value.to_owned(),
-            ));
-
-            instance
+            ))
         })
         .collect();
 

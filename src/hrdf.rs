@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
     models::{
         AdministrationTransferTime, Attribute, BitField, Direction, Holiday, InformationText,
-        Journey, JourneyPlatform, Line, LineTransferTime, Platform, Stop, StopConnection,
-        ThroughService, TimetableMetadataEntry, TransportCompany, TransportType,
+        Journey, JourneyPlatform, JourneyTransferTime, Line, LineTransferTime, Platform, Stop,
+        StopConnection, ThroughService, TimetableMetadataEntry, TransportCompany, TransportType,
     },
     parsing,
     storage::SimpleResourceStorage,
@@ -40,6 +40,7 @@ pub struct Hrdf {
 
     // Transfer times.
     administration_transfer_times: SimpleResourceStorage<AdministrationTransferTime>,
+    journey_transfer_times: SimpleResourceStorage<JourneyTransferTime>,
     line_transfer_times: SimpleResourceStorage<LineTransferTime>,
 }
 
@@ -74,6 +75,8 @@ impl Hrdf {
 
         // Transfer times.
         let administration_transfer_times = parsing::load_administration_transfer_times()?;
+        let journey_transfer_times =
+            parsing::load_journey_transfer_times(&journeys_legacy_pk_index)?;
         let line_transfer_times =
             parsing::load_line_transfer_times(&transport_types_legacy_pk_index)?;
 
@@ -99,6 +102,7 @@ impl Hrdf {
             through_service,
             // Transfer times.
             administration_transfer_times,
+            journey_transfer_times,
             line_transfer_times,
         });
 
