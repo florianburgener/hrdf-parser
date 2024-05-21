@@ -3,12 +3,28 @@ mod models;
 mod parsing;
 mod storage;
 
-use std::error::Error;
+use std::{
+    error::Error,
+    fs::{self},
+    path::Path,
+};
 
 use crate::hrdf::Hrdf;
 
 pub fn run() -> Result<(), Box<dyn Error>> {
-    let hrdf = Hrdf::new()?;
+    const CACHED_PATH: &str = "data.cache";
+
+    let hrdf = if Path::new(CACHED_PATH).exists() {
+        let data = fs::read(CACHED_PATH)?;
+        bincode::deserialize(&data).unwrap()
+    } else {
+        let hrdf = Hrdf::new()?;
+
+        let data = bincode::serialize(&hrdf).unwrap();
+        fs::write(CACHED_PATH, data)?;
+
+        hrdf
+    };
 
     println!();
     println!("------------------------------------------------------------------------------------------------");
@@ -16,6 +32,7 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     println!("------------------------------------------------------------------------------------------------");
     println!();
 
+    println!("{} journeys", hrdf.journeys().rows().len());
     println!("{} platforms", hrdf.platforms().rows().len());
     println!("{} stops", hrdf.stops().rows().len());
 

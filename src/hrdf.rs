@@ -1,5 +1,7 @@
 use std::{error::Error, rc::Rc};
 
+use serde::{Deserialize, Serialize};
+
 use crate::{
     models::{
         AdministrationTransferTime, Attribute, BitField, Direction, Holiday, InformationText,
@@ -12,6 +14,7 @@ use crate::{
 
 #[allow(unused)]
 #[derive(Debug)]
+#[derive(Serialize, Deserialize)]
 pub struct Hrdf {
     // Time-relevant data.
     bit_fields: SimpleResourceStorage<BitField>,
@@ -106,6 +109,10 @@ impl Hrdf {
     //         stop.set_parent_reference(&instance);
     //     }
     // }
+
+    pub fn journeys(&self) -> &SimpleResourceStorage<Journey> {
+        return &self.journeys;
+    }
 
     pub fn platforms(&self) -> &SimpleResourceStorage<Platform> {
         return &self.platforms;

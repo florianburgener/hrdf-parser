@@ -44,3 +44,15 @@ TODO :
 * 2 UMSTEI
 * Normaliser le code
 * Ajouter thiserror
+
+Utilisation d'un arbre pour calculer les routes :
+* Seulement les lignes
+* Maximum N changements
+* Seulement les trajets possibles
+* Pas de route sur 2 ou plusieurs jours
+* Si une solution est trouvée, alors il faut arrêter certains path s'ils arrivent plus tard
+* Prendre toutes les lignes différentes de la ligne actuel dans les 2 directions
+* Prendre le trajet le plus tôt possible
+* On ne revient pas sur ces pas
+* Ne pas considérer les arrêts où les changements sont désactivés
+* Utiliser une HashMap pour chaque arrêt contenant le temps le plus court pour l'atteindre, si un trajet arrive à un arrêt après le meilleur de temps => terminated

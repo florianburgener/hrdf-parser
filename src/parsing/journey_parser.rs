@@ -85,14 +85,14 @@ pub fn parse(
             ColumnDefinition::new(37, 42, ExpectedType::OptionInteger32),
         ]),
         // *CI
-        RowDefinition::new(ROW_H, Box::new(FastRowMatcher::new(1, 2, "*CI", true)), vec![
+        RowDefinition::new(ROW_H, Box::new(FastRowMatcher::new(1, 3, "*CI", true)), vec![
             ColumnDefinition::new(1, 3, ExpectedType::String),
             ColumnDefinition::new(5, 8, ExpectedType::Integer32),
             ColumnDefinition::new(10, 16, ExpectedType::OptionInteger32),
             ColumnDefinition::new(18, 24, ExpectedType::OptionInteger32),
         ]),
         // *CO
-        RowDefinition::new(ROW_H, Box::new(FastRowMatcher::new(1, 2, "*CO", true)), vec![
+        RowDefinition::new(ROW_H, Box::new(FastRowMatcher::new(1, 3, "*CO", true)), vec![
             ColumnDefinition::new(1, 3, ExpectedType::String),
             ColumnDefinition::new(5, 8, ExpectedType::Integer32),
             ColumnDefinition::new(10, 16, ExpectedType::OptionInteger32),
@@ -115,10 +115,6 @@ pub fn parse(
     for (id, _, values) in parser.parse() {
         match id {
             ROW_A => {
-                if auto_increment.value() == 1 {
-                    break;
-                }
-
                 let (instance, k) = create_instance(values, &auto_increment);
                 legacy_pk_index.insert(k, Rc::clone(&instance));
                 rows.push(Rc::clone(&instance));
@@ -136,7 +132,6 @@ pub fn parse(
         }
     }
 
-    println!("{:#?}", rows);
     Ok((SimpleResourceStorage::new(rows), legacy_pk_index))
 }
 
@@ -261,8 +256,8 @@ fn set_line(mut values: Vec<ParsedValue>, journey: &Rc<Journey>) {
     let line_designation: String = values.remove(0).into();
     let from_stop_id: Option<i32> = values.remove(0).into();
     let until_stop_id: Option<i32> = values.remove(0).into();
-    let departure_time: i32 = values.remove(0).into();
-    let arrival_time: i32 = values.remove(0).into();
+    let departure_time: Option<i32> = values.remove(0).into();
+    let arrival_time: Option<i32> = values.remove(0).into();
 
     let (resource_id, extra_field1) = if line_designation.chars().next().unwrap() == '#' {
         (
@@ -280,8 +275,8 @@ fn set_line(mut values: Vec<ParsedValue>, journey: &Rc<Journey>) {
             until_stop_id,
             resource_id,
             None,
-            Some(departure_time),
-            Some(arrival_time),
+            departure_time,
+            arrival_time,
             extra_field1,
             None,
         ),
@@ -326,9 +321,9 @@ fn set_direction(
 
 fn set_boarding_or_disembarking_transfer_time(mut values: Vec<ParsedValue>, journey: &Rc<Journey>) {
     let ci_co: String = values.remove(0).into();
+    let transfer_time: i32 = values.remove(0).into();
     let from_stop_id: Option<i32> = values.remove(0).into();
     let until_stop_id: Option<i32> = values.remove(0).into();
-    let transfer_time: i32 = values.remove(0).into();
 
     let metadata_type = if ci_co == "*CI" {
         JourneyMetadataType::TransferTimeBoarding

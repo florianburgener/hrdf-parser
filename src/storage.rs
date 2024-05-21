@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use crate::models::{Model, ResourceCollection, ResourceIndex};
 
 // ------------------------------------------------------------------------------------------------
@@ -5,6 +7,7 @@ use crate::models::{Model, ResourceCollection, ResourceIndex};
 // ------------------------------------------------------------------------------------------------
 
 #[derive(Debug)]
+#[derive(Serialize, Deserialize)]
 pub struct SimpleResourceStorage<M: Model<M>> {
     rows: ResourceCollection<M>,
     pk_index: ResourceIndex<M, M::K>,

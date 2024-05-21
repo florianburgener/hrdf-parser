@@ -6,6 +6,7 @@ use std::{
 };
 
 use chrono::NaiveDate;
+use serde::{Deserialize, Serialize};
 use strum_macros::{self, Display, EnumString};
 
 // ------------------------------------------------------------------------------------------------
@@ -23,6 +24,7 @@ impl AutoIncrement {
         }
     }
 
+    #[allow(unused)]
     pub fn value(&self) -> i32 {
         *self.value.borrow()
     }
@@ -39,7 +41,7 @@ impl AutoIncrement {
 
 pub trait Model<M: Model<M>> {
     // Primary key type.
-    type K: Eq + Hash;
+    type K: Eq + Hash + Serialize + for<'a> Deserialize<'a>;
 
     fn id(&self) -> M::K;
 
@@ -63,6 +65,7 @@ pub type ResourceIndex<M, K = i32> = HashMap<K, Rc<M>>;
 // ------------------------------------------------------------------------------------------------
 
 #[derive(Debug)]
+#[derive(Serialize, Deserialize)]
 pub struct AdministrationTransferTime {
     id: i32,
     stop_id: Option<i32>, // A None value means that the transfer time applies to all stops if there is no specific entry for the stop and the 2 administrations.
@@ -119,6 +122,7 @@ impl AdministrationTransferTime {
 // ------------------------------------------------------------------------------------------------
 
 #[derive(Debug)]
+#[derive(Serialize, Deserialize)]
 pub struct Attribute {
     id: i32,
     designation: String,
@@ -191,6 +195,7 @@ impl Attribute {
 // ------------------------------------------------------------------------------------------------
 
 #[derive(Debug)]
+#[derive(Serialize, Deserialize)]
 pub struct BitField {
     id: i32,
     bits: Vec<u8>,
@@ -220,6 +225,7 @@ impl BitField {
 // ------------------------------------------------------------------------------------------------
 
 #[derive(Debug, Default)]
+#[derive(Serialize, Deserialize)]
 pub struct Color {
     r: i16,
     g: i16,
@@ -250,6 +256,7 @@ impl Color {
 // ------------------------------------------------------------------------------------------------
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Serialize, Deserialize)]
 pub enum CoordinateType {
     #[default]
     LV95,
@@ -257,6 +264,7 @@ pub enum CoordinateType {
 }
 
 #[derive(Debug, Default)]
+#[derive(Serialize, Deserialize)]
 pub struct Coordinate {
     coordinate_type: CoordinateType,
     x: f64,
@@ -305,6 +313,7 @@ impl Coordinate {
 // ------------------------------------------------------------------------------------------------
 
 #[derive(Debug)]
+#[derive(Serialize, Deserialize)]
 pub struct Direction {
     id: i32,
     name: String,
@@ -334,6 +343,7 @@ impl Direction {
 // ------------------------------------------------------------------------------------------------
 
 #[derive(Debug)]
+#[derive(Serialize, Deserialize)]
 pub struct Holiday {
     id: i32,
     date: NaiveDate,
@@ -368,6 +378,7 @@ impl Holiday {
 // ------------------------------------------------------------------------------------------------
 
 #[derive(Debug)]
+#[derive(Serialize, Deserialize)]
 pub struct InformationText {
     id: i32,
     content: RefCell<HashMap<String, String>>, // Key: deu, fra, ita or eng.
@@ -410,6 +421,7 @@ impl InformationText {
 // ------------------------------------------------------------------------------------------------
 
 #[derive(Debug, Default)]
+#[derive(Serialize, Deserialize)]
 pub struct Journey {
     id: i32,
     administration: String,
@@ -456,6 +468,7 @@ impl Journey {
 }
 
 #[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize)]
 pub enum JourneyMetadataType {
     TransportType,
     BitField,
@@ -468,6 +481,7 @@ pub enum JourneyMetadataType {
 }
 
 #[derive(Debug)]
+#[derive(Serialize, Deserialize)]
 pub struct JourneyMetadataEntry {
     from_stop_id: Option<i32>,
     until_stop_id: Option<i32>,
@@ -537,6 +551,7 @@ impl JourneyMetadataEntry {
 }
 
 #[derive(Debug)]
+#[derive(Serialize, Deserialize)]
 pub struct JourneyRouteEntry {
     stop_id: i32,
     arrival_time: Option<i32>,
@@ -571,6 +586,7 @@ impl JourneyRouteEntry {
 // ------------------------------------------------------------------------------------------------
 
 #[derive(Debug)]
+#[derive(Serialize, Deserialize)]
 pub struct JourneyPlatform {
     journey_id: i32,
     platform_id: i32,
@@ -644,6 +660,7 @@ pub enum Language {
 // ------------------------------------------------------------------------------------------------
 
 #[derive(Debug, Default)]
+#[derive(Serialize, Deserialize)]
 pub struct Line {
     id: i32,
     name: String,
@@ -706,6 +723,7 @@ impl Line {
 // ------------------------------------------------------------------------------------------------
 
 #[derive(Debug)]
+#[derive(Serialize, Deserialize)]
 pub struct Platform {
     id: i32,
     name: String,
@@ -780,6 +798,7 @@ impl Platform {
 // ------------------------------------------------------------------------------------------------
 
 #[derive(Debug)]
+#[derive(Serialize, Deserialize)]
 pub struct Stop {
     id: i32,
     name: String,
@@ -936,6 +955,7 @@ impl Stop {
 // ------------------------------------------------------------------------------------------------
 
 #[derive(Debug, Default)]
+#[derive(Serialize, Deserialize)]
 pub struct StopConnection {
     id: i32,
     stop_id_1: i32,
@@ -990,6 +1010,7 @@ impl StopConnection {
 // ------------------------------------------------------------------------------------------------
 
 #[derive(Debug)]
+#[derive(Serialize, Deserialize)]
 pub struct ThroughService {
     id: i32,
     journey_1_id: i32,
@@ -1067,6 +1088,7 @@ impl ThroughService {
 // ------------------------------------------------------------------------------------------------
 
 #[derive(Debug)]
+#[derive(Serialize, Deserialize)]
 pub struct TimetableMetadataEntry {
     id: i32,
     key: String,
@@ -1106,6 +1128,7 @@ impl TimetableMetadataEntry {
 // ------------------------------------------------------------------------------------------------
 
 #[derive(Debug)]
+#[derive(Serialize, Deserialize)]
 pub struct TransportCompany {
     id: i32,
     short_name: RefCell<HashMap<String, String>>, // Key: deu, fra, ita or eng.
@@ -1186,6 +1209,7 @@ impl TransportCompany {
 // ------------------------------------------------------------------------------------------------
 
 #[derive(Debug, Default)]
+#[derive(Serialize, Deserialize)]
 pub struct TransportType {
     id: i32,
     designation: String,
