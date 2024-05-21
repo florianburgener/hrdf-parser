@@ -10,32 +10,6 @@ use serde::{Deserialize, Serialize};
 use strum_macros::{self, Display, EnumString};
 
 // ------------------------------------------------------------------------------------------------
-// --- AutoIncrement
-// ------------------------------------------------------------------------------------------------
-
-pub struct AutoIncrement {
-    value: RefCell<i32>,
-}
-
-impl AutoIncrement {
-    pub fn new() -> Self {
-        Self {
-            value: RefCell::new(0),
-        }
-    }
-
-    #[allow(unused)]
-    pub fn value(&self) -> i32 {
-        *self.value.borrow()
-    }
-
-    pub fn next(&self) -> i32 {
-        *self.value.borrow_mut() += 1;
-        *self.value.borrow()
-    }
-}
-
-// ------------------------------------------------------------------------------------------------
 // --- Model
 // ------------------------------------------------------------------------------------------------
 
@@ -789,7 +763,7 @@ pub struct LineTransferTime {
     transport_type_id_2: i32,
     line_id_2: Option<String>, // If the value is None, then the transfer time applies to all lines in administration_2.
     direction_2: Option<String>, // If the value is None, then the match time applies in both directions.
-    duration: i16, // Transfer time from line 1 to line 2 is in minutes.
+    duration: i16,               // Transfer time from line 1 to line 2 is in minutes.
     is_guaranteed: bool,
 }
 

@@ -6,9 +6,9 @@ use std::{collections::HashMap, error::Error, rc::Rc};
 use chrono::NaiveDate;
 
 use crate::{
-    models::{AutoIncrement, Holiday},
+    models::Holiday,
     parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
-    storage::SimpleResourceStorage,
+    storage::SimpleResourceStorage, utils::AutoIncrement,
 };
 
 use super::ParsedValue;

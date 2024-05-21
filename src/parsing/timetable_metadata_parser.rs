@@ -6,9 +6,9 @@ use std::{error::Error, rc::Rc};
 use chrono::NaiveDate;
 
 use crate::{
-    models::{AutoIncrement, TimetableMetadataEntry},
+    models::TimetableMetadataEntry,
     parsing::{AdvancedRowMatcher, FastRowMatcher, ParsedValue, RowDefinition, RowParser},
-    storage::SimpleResourceStorage,
+    storage::SimpleResourceStorage, utils::AutoIncrement,
 };
 
 use super::{ColumnDefinition, ExpectedType, FileParser};

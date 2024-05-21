@@ -4,9 +4,9 @@
 use std::{error::Error, rc::Rc};
 
 use crate::{
-    models::{AutoIncrement, Journey, JourneyTransferTime, Model, ResourceIndex},
+    models::{Journey, JourneyTransferTime, Model, ResourceIndex},
     parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
-    storage::SimpleResourceStorage,
+    storage::SimpleResourceStorage, utils::AutoIncrement,
 };
 
 use super::ParsedValue;

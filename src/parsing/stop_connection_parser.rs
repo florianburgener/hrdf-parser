@@ -4,12 +4,12 @@
 use std::{error::Error, rc::Rc};
 
 use crate::{
-    models::{Attribute, AutoIncrement, Model, ResourceIndex, StopConnection},
+    models::{Attribute, Model, ResourceIndex, StopConnection},
     parsing::{
         AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser,
         RowDefinition, RowParser,
     },
-    storage::SimpleResourceStorage,
+    storage::SimpleResourceStorage, utils::AutoIncrement,
 };
 
 use super::ParsedValue;

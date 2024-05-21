@@ -11,7 +11,13 @@ use crate::{
 
 use super::ParsedValue;
 
-pub fn parse() -> Result<(SimpleResourceStorage<Direction>, ResourceIndex<Direction, String>), Box<dyn Error>> {
+pub fn parse() -> Result<
+    (
+        SimpleResourceStorage<Direction>,
+        ResourceIndex<Direction, String>,
+    ),
+    Box<dyn Error>,
+> {
     println!("Parsing RICHTUNG...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -45,8 +51,7 @@ fn create_instance(mut values: Vec<ParsedValue>) -> (Rc<Direction>, String) {
     let id_str: String = values.remove(0).into();
     let name: String = values.remove(0).into();
 
-    let id = remove_first_char(&id_str);
-    let id = id.parse::<i32>().unwrap();
+    let id = remove_first_char(&id_str).parse::<i32>().unwrap();
 
     (Rc::new(Direction::new(id, name)), id_str)
 }

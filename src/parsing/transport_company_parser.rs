@@ -14,6 +14,10 @@ use crate::{
 use super::{FileParser, ParsedValue};
 
 pub fn parse() -> Result<SimpleResourceStorage<TransportCompany>, Box<dyn Error>> {
+    println!("Parsing BETRIEB_DE...");
+    println!("Parsing BETRIEB_EN...");
+    println!("Parsing BETRIEB_FR...");
+    println!("Parsing BETRIEB_IT...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
 

@@ -6,11 +6,11 @@
 use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{
-    models::{AutoIncrement, Coordinate, CoordinateType, JourneyPlatform, Model, Platform},
+    models::{Coordinate, CoordinateType, JourneyPlatform, Model, Platform},
     parsing::{
         ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, RowDefinition, RowParser,
     },
-    storage::SimpleResourceStorage,
+    storage::SimpleResourceStorage, utils::AutoIncrement,
 };
 
 use super::ParsedValue;

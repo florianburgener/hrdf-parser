@@ -7,12 +7,12 @@
 use std::{collections::HashMap, error::Error, rc::Rc, str::FromStr};
 
 use crate::{
-    models::{Attribute, AutoIncrement, Language, ResourceIndex},
+    models::{Attribute, Language, ResourceIndex},
     parsing::{
         AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser,
         RowDefinition, RowParser,
     },
-    storage::SimpleResourceStorage,
+    storage::SimpleResourceStorage, utils::AutoIncrement,
 };
 
 use super::ParsedValue;

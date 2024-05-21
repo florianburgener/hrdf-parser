@@ -5,13 +5,13 @@ use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{
     models::{
-        Attribute, AutoIncrement, Direction, Journey, JourneyMetadataEntry, JourneyMetadataType,
+        Attribute, Direction, Journey, JourneyMetadataEntry, JourneyMetadataType,
         JourneyRouteEntry, Model, ResourceIndex, TransportType,
     },
     parsing::{
         ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, RowDefinition, RowParser,
     },
-    storage::SimpleResourceStorage,
+    storage::SimpleResourceStorage, utils::AutoIncrement,
 };
 
 use super::ParsedValue;

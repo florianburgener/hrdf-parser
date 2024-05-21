@@ -4,12 +4,13 @@
 use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{
-    models::{AutoIncrement, Language, ResourceIndex, TransportType},
+    models::{Language, ResourceIndex, TransportType},
     parsing::{
         AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, RowDefinition,
         RowParser,
     },
     storage::SimpleResourceStorage,
+    utils::AutoIncrement,
 };
 
 use super::{FileParser, ParsedValue};

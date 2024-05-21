@@ -2,6 +2,7 @@ mod hrdf;
 mod models;
 mod parsing;
 mod storage;
+mod utils;
 
 use std::{
     error::Error,

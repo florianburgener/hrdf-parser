@@ -53,3 +53,9 @@ Utilisation d'un arbre pour calculer les routes :
 * On ne revient pas sur ces pas
 * Ne pas considérer les arrêts où les changements sont désactivés
 * Utiliser une HashMap pour chaque arrêt contenant le temps le plus court pour l'atteindre, si un trajet arrive à un arrêt après le meilleur de temps => terminated
+
+
+Réorganiser les modèless
+Vérifier getters/setters
+Vérifier les modèles
+Vérifier les parsers
