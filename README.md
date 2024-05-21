@@ -34,14 +34,11 @@ Progression (37/38) :
 * UMSTEIGB
 * UMSTEIGL
 * UMSTEIGV
+* UMSTEIGZ
 * ZUGART
 * ZEITVS (fichier pas utilisé dans le code)
 
-Fichiers restants :
-* UMSTEIGZ
-
 TODO :
-* 1 UMSTEI
 * Normaliser le code
 * Ajouter thiserror
 
