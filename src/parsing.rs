@@ -16,7 +16,6 @@ mod transfer_line_parser;
 mod transport_company_parser;
 mod transport_type_parser;
 
-
 pub use attribute_parser::parse as load_attributes;
 pub use bit_field_parser::parse as load_bit_fields;
 pub use direction_parser::parse as load_directions;
@@ -48,7 +47,7 @@ pub enum ExpectedType {
     Integer16,
     Integer32,
     String,
-    OptionInteger16,
+    // OptionInteger16,
     OptionInteger32,
 }
 
@@ -98,14 +97,14 @@ impl From<ParsedValue> for String {
     }
 }
 
-impl From<ParsedValue> for Option<i16> {
-    fn from(value: ParsedValue) -> Self {
-        match value {
-            ParsedValue::OptionInteger16(x) => x,
-            _ => panic!("Failed to convert ParsedValue to Option<i16>"),
-        }
-    }
-}
+// impl From<ParsedValue> for Option<i16> {
+//     fn from(value: ParsedValue) -> Self {
+//         match value {
+//             ParsedValue::OptionInteger16(x) => x,
+//             _ => panic!("Failed to convert ParsedValue to Option<i16>"),
+//         }
+//     }s
+// }
 
 impl From<ParsedValue> for Option<i32> {
     fn from(value: ParsedValue) -> Self {
@@ -282,9 +281,9 @@ impl RowParser {
                     ExpectedType::Integer16 => ParsedValue::Integer16(value.parse().unwrap()),
                     ExpectedType::Integer32 => ParsedValue::Integer32(value.parse().unwrap()),
                     ExpectedType::String => ParsedValue::String(value.parse().unwrap()),
-                    ExpectedType::OptionInteger16 => {
-                        ParsedValue::OptionInteger16(value.parse().ok())
-                    }
+                    // ExpectedType::OptionInteger16 => {
+                    //     ParsedValue::OptionInteger16(value.parse().ok())
+                    // }
                     ExpectedType::OptionInteger32 => {
                         ParsedValue::OptionInteger32(value.parse().ok())
                     }

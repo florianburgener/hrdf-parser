@@ -69,7 +69,7 @@ pub fn parse() -> Result<
     let auto_increment = AutoIncrement::new();
     let mut current_instance = Rc::new(TransportType::default());
     let mut current_language = Language::default();
-    let mut legacy_pk_index = HashMap::new();
+    let mut original_primary_index = HashMap::new();
     let mut product_class_id_dict = HashMap::new();
 
     let rows = parser
@@ -79,7 +79,7 @@ pub fn parse() -> Result<
                 ROW_A => {
                     let (instance, k) = create_instance(values, &auto_increment);
                     current_instance = Rc::clone(&instance);
-                    legacy_pk_index.insert(k, Rc::clone(&instance));
+                    original_primary_index.insert(k, Rc::clone(&instance));
                     product_class_id_dict
                         .entry(current_instance.product_class_id())
                         .or_insert(Vec::new())
@@ -96,7 +96,7 @@ pub fn parse() -> Result<
         })
         .collect();
 
-    Ok((SimpleResourceStorage::new(rows), legacy_pk_index))
+    Ok((SimpleResourceStorage::new(rows), original_primary_index))
 }
 
 // ------------------------------------------------------------------------------------------------

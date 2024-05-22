@@ -39,7 +39,6 @@ Progression (38/38) :
 * ZEITVS (fichier pas utilisé dans le code)
 
 TODO :
-* Normaliser le code
 * Ajouter thiserror
 
 Algorithme de calcul du trajet le plus court :
@@ -54,10 +53,3 @@ Algorithme de calcul du trajet le plus court :
 * On ne revient pas sur ces pas
 * Ne pas considérer les arrêts où les changements sont désactivés
 * Utiliser une HashMap pour chaque arrêt contenant le temps le plus court pour l'atteindre, si un trajet arrive à un arrêt après le meilleur de temps => terminated
-
-
-Vérifier getters/setters
-Vérifier les modèles
-Vérifier les parsers
-
-struct "Time"

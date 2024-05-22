@@ -29,18 +29,18 @@ pub fn parse() -> Result<
     ]);
     let parser = FileParser::new("data/RICHTUNG", row_parser)?;
 
-    let mut legacy_pk_index = HashMap::new();
+    let mut original_primary_index = HashMap::new();
 
     let rows = parser
         .parse()
         .filter_map(|(_, _, values)| {
             let (instance, k) = create_instance(values);
-            legacy_pk_index.insert(k, Rc::clone(&instance));
+            original_primary_index.insert(k, Rc::clone(&instance));
             Some(instance)
         })
         .collect();
 
-    Ok((SimpleResourceStorage::new(rows), legacy_pk_index))
+    Ok((SimpleResourceStorage::new(rows), original_primary_index))
 }
 
 // ------------------------------------------------------------------------------------------------

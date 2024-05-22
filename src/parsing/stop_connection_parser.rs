@@ -9,13 +9,14 @@ use crate::{
         AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser,
         RowDefinition, RowParser,
     },
-    storage::SimpleResourceStorage, utils::AutoIncrement,
+    storage::SimpleResourceStorage,
+    utils::AutoIncrement,
 };
 
 use super::ParsedValue;
 
 pub fn parse(
-    attributes_legacy_pk_index: &ResourceIndex<Attribute, String>,
+    attributes_original_primary_index: &ResourceIndex<Attribute, String>,
 ) -> Result<SimpleResourceStorage<StopConnection>, Box<dyn Error>> {
     println!("Parsing METABHF 2/2...");
     const ROW_A: i32 = 1;
@@ -51,7 +52,7 @@ pub fn parse(
                     current_instance = Rc::clone(&instance);
                     return Some(instance);
                 }
-                ROW_B => add_attribute(values, &current_instance, attributes_legacy_pk_index),
+                ROW_B => add_attribute(values, &current_instance, attributes_original_primary_index),
                 ROW_C => (),
                 _ => unreachable!(),
             };
@@ -85,10 +86,10 @@ fn create_instance(
 fn add_attribute(
     mut values: Vec<ParsedValue>,
     current_instance: &Rc<StopConnection>,
-    attributes_legacy_pk_index: &ResourceIndex<Attribute, String>,
+    attributes_original_primary_index: &ResourceIndex<Attribute, String>,
 ) {
     let attribute_designation: String = values.remove(0).into();
-    let attribute_id = attributes_legacy_pk_index
+    let attribute_id = attributes_original_primary_index
         .get(&attribute_designation)
         .unwrap()
         .id();

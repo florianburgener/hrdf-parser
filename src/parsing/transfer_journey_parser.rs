@@ -4,15 +4,16 @@
 use std::{error::Error, rc::Rc};
 
 use crate::{
-    models::{Journey, TransferTimeJourney, Model, ResourceIndex},
+    models::{Journey, Model, ResourceIndex, TransferTimeJourney},
     parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
-    storage::SimpleResourceStorage, utils::AutoIncrement,
+    storage::SimpleResourceStorage,
+    utils::AutoIncrement,
 };
 
 use super::ParsedValue;
 
 pub fn parse(
-    journeys_legacy_pk_index: &ResourceIndex<Journey, (i32, String)>,
+    journeys_original_primary_index: &ResourceIndex<Journey, (i32, String)>,
 ) -> Result<SimpleResourceStorage<TransferTimeJourney>, Box<dyn Error>> {
     println!("Parsing UMSTEIGZ...");
     #[rustfmt::skip]
@@ -39,7 +40,7 @@ pub fn parse(
             Some(create_instance(
                 values,
                 &auto_increment,
-                journeys_legacy_pk_index,
+                journeys_original_primary_index,
             ))
         })
         .collect();
@@ -54,7 +55,7 @@ pub fn parse(
 fn create_instance(
     mut values: Vec<ParsedValue>,
     auto_increment: &AutoIncrement,
-    journeys_legacy_pk_index: &ResourceIndex<Journey, (i32, String)>,
+    journeys_original_primary_index: &ResourceIndex<Journey, (i32, String)>,
 ) -> Rc<TransferTimeJourney> {
     let stop_id: i32 = values.remove(0).into();
     let journey_id_1: i32 = values.remove(0).into();
@@ -65,12 +66,12 @@ fn create_instance(
     let is_guaranteed: String = values.remove(0).into();
     let bit_field_id: Option<i32> = values.remove(0).into();
 
-    let journey_id_1 = journeys_legacy_pk_index
+    let journey_id_1 = journeys_original_primary_index
         .get(&(journey_id_1, administration_1))
         .unwrap()
         .id();
 
-    let journey_id_2 = journeys_legacy_pk_index
+    let journey_id_2 = journeys_original_primary_index
         .get(&(journey_id_2, administration_2))
         .unwrap()
         .id();

@@ -12,7 +12,8 @@ use crate::{
         AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser,
         RowDefinition, RowParser,
     },
-    storage::SimpleResourceStorage, utils::AutoIncrement,
+    storage::SimpleResourceStorage,
+    utils::AutoIncrement,
 };
 
 use super::ParsedValue;
@@ -58,7 +59,7 @@ pub fn parse() -> Result<
 
     let auto_increment = AutoIncrement::new();
     let mut current_language = Language::default();
-    let mut legacy_pk_index = HashMap::new();
+    let mut original_primary_index = HashMap::new();
 
     let rows = parser
         .parse()
@@ -66,19 +67,19 @@ pub fn parse() -> Result<
             match id {
                 ROW_A => {
                     let (instance, k) = create_instance(values, &auto_increment);
-                    legacy_pk_index.insert(k, Rc::clone(&instance));
+                    original_primary_index.insert(k, Rc::clone(&instance));
                     return Some(instance);
                 }
                 ROW_B => (),
                 ROW_C => update_current_language(values, &mut current_language),
-                ROW_D => set_description(values, &legacy_pk_index, current_language),
+                ROW_D => set_description(values, &original_primary_index, current_language),
                 _ => unreachable!(),
             };
             None
         })
         .collect();
 
-    Ok((SimpleResourceStorage::new(rows), legacy_pk_index))
+    Ok((SimpleResourceStorage::new(rows), original_primary_index))
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -106,13 +107,13 @@ fn create_instance(
 
 fn set_description(
     mut values: Vec<ParsedValue>,
-    legacy_pk_index: &ResourceIndex<Attribute, String>,
+    original_primary_index: &ResourceIndex<Attribute, String>,
     language: Language,
 ) {
     let legacy_id: String = values.remove(0).into();
     let description: String = values.remove(0).into();
 
-    legacy_pk_index
+    original_primary_index
         .get(&legacy_id)
         .unwrap()
         .set_description(language, &description);

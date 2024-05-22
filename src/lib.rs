@@ -15,8 +15,7 @@ use crate::hrdf::Hrdf;
 pub fn run() -> Result<(), Box<dyn Error>> {
     const CACHED_PATH: &str = "data.cache";
 
-    // TODO: remove "&& false".
-    let hrdf = if Path::new(CACHED_PATH).exists() && false {
+    let hrdf = if Path::new(CACHED_PATH).exists() {
         println!("Reading from cache...");
         let data = fs::read(CACHED_PATH)?;
         bincode::deserialize(&data).unwrap()

@@ -4,15 +4,16 @@
 use std::{error::Error, rc::Rc, str::FromStr};
 
 use crate::{
-    models::{DirectionType, TransferTimeLine, Model, ResourceIndex, TransportType},
+    models::{DirectionType, Model, ResourceIndex, TransferTimeLine, TransportType},
     parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
-    storage::SimpleResourceStorage, utils::AutoIncrement,
+    storage::SimpleResourceStorage,
+    utils::AutoIncrement,
 };
 
 use super::ParsedValue;
 
 pub fn parse(
-    transport_types_legacy_pk_index: &ResourceIndex<TransportType, String>,
+    transport_types_original_primary_index: &ResourceIndex<TransportType, String>,
 ) -> Result<SimpleResourceStorage<TransferTimeLine>, Box<dyn Error>> {
     println!("Parsing UMSTEIGL...");
     #[rustfmt::skip]
@@ -42,7 +43,7 @@ pub fn parse(
             Some(create_instance(
                 values,
                 &auto_increment,
-                transport_types_legacy_pk_index,
+                transport_types_original_primary_index,
             ))
         })
         .collect();
@@ -57,7 +58,7 @@ pub fn parse(
 fn create_instance(
     mut values: Vec<ParsedValue>,
     auto_increment: &AutoIncrement,
-    transport_types_legacy_pk_index: &ResourceIndex<TransportType, String>,
+    transport_types_original_primary_index: &ResourceIndex<TransportType, String>,
 ) -> Rc<TransferTimeLine> {
     let stop_id: i32 = values.remove(0).into();
     let administration_1: String = values.remove(0).into();
@@ -71,7 +72,7 @@ fn create_instance(
     let duration: i16 = values.remove(0).into();
     let is_guaranteed: String = values.remove(0).into();
 
-    let transport_type_id_1 = transport_types_legacy_pk_index
+    let transport_type_id_1 = transport_types_original_primary_index
         .get(&transport_type_id_1)
         .unwrap()
         .id();
@@ -88,7 +89,7 @@ fn create_instance(
         Some(DirectionType::from_str(&direction_1).unwrap())
     };
 
-    let transport_type_id_2 = transport_types_legacy_pk_index
+    let transport_type_id_2 = transport_types_original_primary_index
         .get(&transport_type_id_2)
         .unwrap()
         .id();

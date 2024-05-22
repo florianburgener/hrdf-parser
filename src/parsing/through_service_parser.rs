@@ -6,13 +6,14 @@ use std::{error::Error, rc::Rc};
 use crate::{
     models::{Journey, Model, ResourceIndex, ThroughService},
     parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
-    storage::SimpleResourceStorage, utils::AutoIncrement,
+    storage::SimpleResourceStorage,
+    utils::AutoIncrement,
 };
 
 use super::ParsedValue;
 
 pub fn parse(
-    journeys_legacy_pk_index: &ResourceIndex<Journey, (i32, String)>,
+    journeys_original_primary_index: &ResourceIndex<Journey, (i32, String)>,
 ) -> Result<SimpleResourceStorage<ThroughService>, Box<dyn Error>> {
     println!("Parsing DURCHBI...");
     #[rustfmt::skip]
@@ -38,7 +39,7 @@ pub fn parse(
             Some(create_instance(
                 values,
                 &auto_increment,
-                journeys_legacy_pk_index,
+                journeys_original_primary_index,
             ))
         })
         .collect();
@@ -53,7 +54,7 @@ pub fn parse(
 fn create_instance(
     mut values: Vec<ParsedValue>,
     auto_increment: &AutoIncrement,
-    journeys_legacy_pk_index: &ResourceIndex<Journey, (i32, String)>,
+    journeys_original_primary_index: &ResourceIndex<Journey, (i32, String)>,
 ) -> Rc<ThroughService> {
     let journey_1_id: i32 = values.remove(0).into();
     let journey_1_administration: String = values.remove(0).into();
@@ -63,12 +64,12 @@ fn create_instance(
     let bit_field_id: i32 = values.remove(0).into();
     let journey_2_stop_id: Option<i32> = values.remove(0).into();
 
-    let journey_1_id = journeys_legacy_pk_index
+    let journey_1_id = journeys_original_primary_index
         .get(&(journey_1_id, journey_1_administration))
         .unwrap()
         .id();
 
-    let journey_2_id = journeys_legacy_pk_index
+    let journey_2_id = journeys_original_primary_index
         .get(&(journey_2_id, journey_2_administration))
         .unwrap()
         .id();

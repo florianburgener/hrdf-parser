@@ -6,7 +6,7 @@
 use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{
-    models::{Coordinate, CoordinateType, JourneyPlatform, Model, Platform},
+    models::{Coordinate, CoordinateType, JourneyPlatform, Model, Platform, Time},
     parsing::{
         ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, RowDefinition, RowParser,
     },
@@ -35,7 +35,7 @@ pub fn parse() -> Result<
             ColumnDefinition::new(9, 14, ExpectedType::Integer32),
             ColumnDefinition::new(16, 21, ExpectedType::String),
             ColumnDefinition::new(24, 30, ExpectedType::Integer32), // Should be 23-30, but here the # character is ignored.
-            ColumnDefinition::new(32, 35, ExpectedType::OptionInteger16),
+            ColumnDefinition::new(32, 35, ExpectedType::OptionInteger32),
             ColumnDefinition::new(37, 42, ExpectedType::OptionInteger32),
         ]),
         // This row is used to create a Platform instance.
@@ -50,7 +50,7 @@ pub fn parse() -> Result<
     let auto_increment = AutoIncrement::new();
     let mut bytes_offset = 0;
     let mut journey_platform_data = Vec::new();
-    let mut platforms_legacy_pk_index = HashMap::new();
+    let mut platforms_original_primary_index = HashMap::new();
 
     let platforms = parser
         .parse()
@@ -62,7 +62,7 @@ pub fn parse() -> Result<
                 }
                 ROW_B => {
                     let (instance, k) = create_platform(values, &auto_increment);
-                    platforms_legacy_pk_index.insert(k, Rc::clone(&instance));
+                    platforms_original_primary_index.insert(k, Rc::clone(&instance));
                     return Some(instance);
                 }
                 _ => unreachable!(),
@@ -73,15 +73,15 @@ pub fn parse() -> Result<
 
     let journey_platform = journey_platform_data
         .into_iter()
-        .map(|values| create_journey_platform(values, &platforms_legacy_pk_index))
+        .map(|values| create_journey_platform(values, &platforms_original_primary_index))
         .collect();
 
     println!("Parsing GLEIS_LV95...");
     #[rustfmt::skip]
-    load_coordinates_for_platforms(CoordinateType::LV95, bytes_offset, &platforms_legacy_pk_index)?;
+    load_coordinates_for_platforms(CoordinateType::LV95, bytes_offset, &platforms_original_primary_index)?;
     println!("Parsing GLEIS_WGS84...");
     #[rustfmt::skip]
-    load_coordinates_for_platforms(CoordinateType::WGS84, bytes_offset, &platforms_legacy_pk_index)?;
+    load_coordinates_for_platforms(CoordinateType::WGS84, bytes_offset, &platforms_original_primary_index)?;
 
     Ok((
         SimpleResourceStorage::new(journey_platform),
@@ -92,7 +92,7 @@ pub fn parse() -> Result<
 fn load_coordinates_for_platforms(
     coordinate_type: CoordinateType,
     bytes_offset: u64,
-    platforms_legacy_pk_index: &HashMap<(i32, i32), Rc<Platform>>,
+    platforms_original_primary_index: &HashMap<(i32, i32), Rc<Platform>>,
 ) -> Result<(), Box<dyn Error>> {
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -124,9 +124,11 @@ fn load_coordinates_for_platforms(
     let parser = FileParser::new_with_bytes_offset(&path, row_parser, bytes_offset)?;
 
     parser.parse().for_each(|(id, _, values)| match id {
-        ROW_A => return,
-        ROW_B => set_sloid_of_platform(values, coordinate_type, platforms_legacy_pk_index),
-        ROW_C => set_coordinate_of_platform(values, coordinate_type, platforms_legacy_pk_index),
+        ROW_A => {}
+        ROW_B => set_sloid_of_platform(values, coordinate_type, platforms_original_primary_index),
+        ROW_C => {
+            set_coordinate_of_platform(values, coordinate_type, platforms_original_primary_index)
+        }
         _ => unreachable!(),
     });
 
@@ -139,18 +141,20 @@ fn load_coordinates_for_platforms(
 
 fn create_journey_platform(
     mut values: Vec<ParsedValue>,
-    platforms_legacy_pk_index: &HashMap<(i32, i32), Rc<Platform>>,
+    platforms_original_primary_index: &HashMap<(i32, i32), Rc<Platform>>,
 ) -> Rc<JourneyPlatform> {
     let stop_id: i32 = values.remove(0).into();
     let journey_id: i32 = values.remove(0).into();
     let _: String = values.remove(0).into();
     let index: i32 = values.remove(0).into();
-    let time: Option<i16> = values.remove(0).into();
+    let time: Option<i32> = values.remove(0).into();
     let bit_field_id: Option<i32> = values.remove(0).into();
+
+    let time = time.map(|x| Time::from(x));
 
     Rc::new(JourneyPlatform::new(
         journey_id,
-        platforms_legacy_pk_index
+        platforms_original_primary_index
             .get(&(stop_id, index))
             .unwrap()
             .id(),
@@ -176,7 +180,7 @@ fn create_platform(
 fn set_sloid_of_platform(
     mut values: Vec<ParsedValue>,
     coordinate_type: CoordinateType,
-    platforms_legacy_pk_index: &HashMap<(i32, i32), Rc<Platform>>,
+    platforms_original_primary_index: &HashMap<(i32, i32), Rc<Platform>>,
 ) {
     // The SLOID is processed only when loading LV95 coordinates.
     if coordinate_type == CoordinateType::LV95 {
@@ -184,7 +188,7 @@ fn set_sloid_of_platform(
         let index: i32 = values.remove(0).into();
         let sloid: String = values.remove(0).into();
 
-        platforms_legacy_pk_index
+        platforms_original_primary_index
             .get(&(stop_id, index))
             .unwrap()
             .set_sloid(sloid);
@@ -194,7 +198,7 @@ fn set_sloid_of_platform(
 fn set_coordinate_of_platform(
     mut values: Vec<ParsedValue>,
     coordinate_type: CoordinateType,
-    platforms_legacy_pk_index: &HashMap<(i32, i32), Rc<Platform>>,
+    platforms_original_primary_index: &HashMap<(i32, i32), Rc<Platform>>,
 ) {
     let stop_id: i32 = values.remove(0).into();
     let index: i32 = values.remove(0).into();
@@ -209,7 +213,9 @@ fn set_coordinate_of_platform(
     }
 
     let coordinate = Coordinate::new(coordinate_type, xy1, xy2, altitude);
-    let platform = platforms_legacy_pk_index.get(&(stop_id, index)).unwrap();
+    let platform = platforms_original_primary_index
+        .get(&(stop_id, index))
+        .unwrap();
 
     match coordinate_type {
         CoordinateType::LV95 => platform.set_lv95_coordinate(coordinate),

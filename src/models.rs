@@ -19,7 +19,7 @@ pub trait Model<M: Model<M>> {
 
     fn id(&self) -> M::K;
 
-    fn create_pk_index(rows: &ResourceCollection<M>) -> ResourceIndex<M, M::K> {
+    fn create_primary_index(rows: &ResourceCollection<M>) -> ResourceIndex<M, M::K> {
         rows.iter().fold(HashMap::new(), |mut acc, item| {
             acc.insert(item.id(), Rc::clone(item));
             acc
@@ -415,8 +415,8 @@ pub struct JourneyMetadataEntry {
     until_stop_id: Option<i32>,
     resource_id: Option<i32>,
     bit_field_id: Option<i32>,
-    departure_time: Option<i32>,
-    arrival_time: Option<i32>,
+    departure_time: Option<Time>,
+    arrival_time: Option<Time>,
     extra_field_1: Option<String>,
     extra_field_2: Option<i32>,
 }
@@ -428,8 +428,8 @@ impl JourneyMetadataEntry {
         until_stop_id: Option<i32>,
         resource_id: Option<i32>,
         bit_field_id: Option<i32>,
-        departure_time: Option<i32>,
-        arrival_time: Option<i32>,
+        departure_time: Option<Time>,
+        arrival_time: Option<Time>,
         extra_field_1: Option<String>,
         extra_field_2: Option<i32>,
     ) -> Self {
@@ -445,11 +445,11 @@ impl JourneyMetadataEntry {
         }
     }
 
-    pub fn departure_time(&self) -> &Option<i32> {
+    pub fn departure_time(&self) -> &Option<Time> {
         &self.departure_time
     }
 
-    pub fn arrival_time(&self) -> &Option<i32> {
+    pub fn arrival_time(&self) -> &Option<Time> {
         &self.arrival_time
     }
 
@@ -469,13 +469,14 @@ impl JourneyMetadataEntry {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct JourneyRouteEntry {
     stop_id: i32,
-    arrival_time: Option<i32>,
-    departure_time: Option<i32>,
+    arrival_time: Option<Time>,
+    departure_time: Option<Time>,
+    // TODO: add time type.
 }
 
 #[allow(unused)]
 impl JourneyRouteEntry {
-    pub fn new(stop_id: i32, arrival_time: Option<i32>, departure_time: Option<i32>) -> Self {
+    pub fn new(stop_id: i32, arrival_time: Option<Time>, departure_time: Option<Time>) -> Self {
         Self {
             stop_id,
             arrival_time,
@@ -483,11 +484,11 @@ impl JourneyRouteEntry {
         }
     }
 
-    pub fn arrival_time(&self) -> &Option<i32> {
+    pub fn arrival_time(&self) -> &Option<Time> {
         &self.arrival_time
     }
 
-    pub fn departure_time(&self) -> &Option<i32> {
+    pub fn departure_time(&self) -> &Option<Time> {
         &self.departure_time
     }
 }
@@ -500,7 +501,7 @@ impl JourneyRouteEntry {
 pub struct JourneyPlatform {
     journey_id: i32,
     platform_id: i32,
-    time: Option<i16>,
+    time: Option<Time>,
     bit_field_id: Option<i32>,
 }
 
@@ -517,7 +518,7 @@ impl JourneyPlatform {
     pub fn new(
         journey_id: i32,
         platform_id: i32,
-        time: Option<i16>,
+        time: Option<Time>,
         bit_field_id: Option<i32>,
     ) -> Self {
         Self {
@@ -528,7 +529,7 @@ impl JourneyPlatform {
         }
     }
 
-    pub fn time(&self) -> &Option<i16> {
+    pub fn time(&self) -> &Option<Time> {
         &self.time
     }
 }
@@ -929,6 +930,42 @@ impl ThroughService {
             journey_2_stop_id,
             bit_field_id,
         }
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
+// --- Time
+// ------------------------------------------------------------------------------------------------
+
+#[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct Time {
+    hour: i8,
+    minute: i8,
+}
+
+impl Time {
+    pub fn new(hour: i8, minute: i8) -> Self {
+        Self { hour, minute }
+    }
+}
+
+impl From<i32> for Time {
+    fn from(value: i32) -> Self {
+        let value = value.abs();
+        Time::new(
+            i8::try_from(value / 100).unwrap(),
+            i8::try_from(value % 100).unwrap(),
+        )
+    }
+}
+
+impl PartialOrd for Time {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        match self.hour.partial_cmp(&other.hour) {
+            Some(core::cmp::Ordering::Equal) => {}
+            ord => return ord,
+        }
+        self.minute.partial_cmp(&other.minute)
     }
 }
 

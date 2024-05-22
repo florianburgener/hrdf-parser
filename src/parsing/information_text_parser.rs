@@ -31,18 +31,18 @@ pub fn parse() -> Result<SimpleResourceStorage<InformationText>, Box<dyn Error>>
         .filter_map(|(_, _, values)| Some(create_instance(values)))
         .collect();
 
-    let pk_index = InformationText::create_pk_index(&rows);
+    let primary_index = InformationText::create_primary_index(&rows);
 
-    load_content(&pk_index, Language::German)?;
-    load_content(&pk_index, Language::English)?;
-    load_content(&pk_index, Language::French)?;
-    load_content(&pk_index, Language::Italian)?;
+    load_content(&primary_index, Language::German)?;
+    load_content(&primary_index, Language::English)?;
+    load_content(&primary_index, Language::French)?;
+    load_content(&primary_index, Language::Italian)?;
 
     Ok(SimpleResourceStorage::new(rows))
 }
 
 fn load_content(
-    pk_index: &ResourceIndex<InformationText>,
+    primary_index: &ResourceIndex<InformationText>,
     language: Language,
 ) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
@@ -64,7 +64,7 @@ fn load_content(
 
     parser
         .parse()
-        .for_each(|(_, _, values)| set_content(values, pk_index, language));
+        .for_each(|(_, _, values)| set_content(values, primary_index, language));
 
     Ok(())
 }
@@ -81,13 +81,13 @@ fn create_instance(mut values: Vec<ParsedValue>) -> Rc<InformationText> {
 
 fn set_content(
     mut values: Vec<ParsedValue>,
-    pk_index: &ResourceIndex<InformationText>,
+    primary_index: &ResourceIndex<InformationText>,
     language: Language,
 ) {
     let id: i32 = values.remove(0).into();
     let description: String = values.remove(0).into();
 
-    pk_index
+    primary_index
         .get(&id)
         .unwrap()
         .set_content(language, &description);

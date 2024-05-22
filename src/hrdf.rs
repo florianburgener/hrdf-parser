@@ -4,9 +4,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     models::{
-        TransferTimeAdministration, Attribute, BitField, Direction, Holiday, InformationText,
-        Journey, JourneyPlatform, TransferTimeJourney, Line, TransferTimeLine, Platform, Stop,
-        StopConnection, ThroughService, TimetableMetadataEntry, TransportCompany, TransportType,
+        Attribute, BitField, Direction, Holiday, InformationText, Journey, JourneyPlatform, Line,
+        Platform, Stop, StopConnection, ThroughService, TimetableMetadataEntry,
+        TransferTimeAdministration, TransferTimeJourney, TransferTimeLine, TransportCompany,
+        TransportType,
     },
     parsing,
     storage::SimpleResourceStorage,
@@ -53,32 +54,33 @@ impl Hrdf {
         let timetable_metadata = parsing::load_timetable_metadata()?;
 
         // Master data.
-        let (attributes, attributes_legacy_pk_index) = parsing::load_attributes()?;
-        let (directions, directions_legacy_pk_index) = parsing::load_directions()?;
+        let (attributes, attributes_original_primary_index) = parsing::load_attributes()?;
+        let (directions, directions_original_primary_index) = parsing::load_directions()?;
         let information_texts = parsing::load_information_texts()?;
         let lines = parsing::load_lines()?;
         let transport_companies = parsing::load_transport_companies()?;
-        let (transport_types, transport_types_legacy_pk_index) = parsing::load_transport_types()?;
+        let (transport_types, transport_types_original_primary_index) =
+            parsing::load_transport_types()?;
 
         // Stop data.
         let stops = parsing::load_stops()?;
-        let stop_connections = parsing::load_stop_connections(&attributes_legacy_pk_index)?;
+        let stop_connections = parsing::load_stop_connections(&attributes_original_primary_index)?;
 
         // Timetable data.
-        let (journeys, journeys_legacy_pk_index) = parsing::load_journeys(
-            &transport_types_legacy_pk_index,
-            &attributes_legacy_pk_index,
-            &directions_legacy_pk_index,
+        let (journeys, journeys_original_primary_index) = parsing::load_journeys(
+            &transport_types_original_primary_index,
+            &attributes_original_primary_index,
+            &directions_original_primary_index,
         )?;
         let (journey_platform, platforms) = parsing::load_platforms()?;
-        let through_service = parsing::load_through_service(&journeys_legacy_pk_index)?;
+        let through_service = parsing::load_through_service(&journeys_original_primary_index)?;
 
         // Transfer times.
         let transfer_times_administration = parsing::load_transfer_times_administration()?;
         let transfer_times_journey =
-            parsing::load_transfer_times_journey(&journeys_legacy_pk_index)?;
+            parsing::load_transfer_times_journey(&journeys_original_primary_index)?;
         let transfer_times_line =
-            parsing::load_transfer_times_line(&transport_types_legacy_pk_index)?;
+            parsing::load_transfer_times_line(&transport_types_original_primary_index)?;
 
         let instance = Rc::new(Self {
             // Time-relevant data.
