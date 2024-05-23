@@ -11,7 +11,7 @@ use crate::{
     parsing::{
         ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, RowDefinition, RowParser,
     },
-    storage::SimpleResourceStorage,
+    storage::JourneyStorage,
     utils::AutoIncrement,
 };
 
@@ -21,13 +21,7 @@ pub fn parse(
     transport_types_original_primary_index: &ResourceIndex<TransportType, String>,
     attributes_original_primary_index: &ResourceIndex<Attribute, String>,
     directions_original_primary_index: &ResourceIndex<Direction, String>,
-) -> Result<
-    (
-        SimpleResourceStorage<Journey>,
-        ResourceIndex<Journey, (i32, String)>,
-    ),
-    Box<dyn Error>,
-> {
+) -> Result<(JourneyStorage, ResourceIndex<Journey, (i32, String)>), Box<dyn Error>> {
     println!("Parsing FPLAN...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -127,10 +121,16 @@ pub fn parse(
                     &transport_types_original_primary_index,
                 ),
                 ROW_C => set_bit_field(values, &current_instance),
-                ROW_D => add_attribute(values, &current_instance, &attributes_original_primary_index),
+                ROW_D => add_attribute(
+                    values,
+                    &current_instance,
+                    &attributes_original_primary_index,
+                ),
                 ROW_E => add_information_text(values, &current_instance),
                 ROW_F => set_line(values, &current_instance),
-                ROW_G => set_direction(values, &current_instance, directions_original_primary_index),
+                ROW_G => {
+                    set_direction(values, &current_instance, directions_original_primary_index)
+                }
                 ROW_H => set_boarding_or_disembarking_transfer_time(values, &current_instance),
                 ROW_I => add_route_entry(values, &current_instance),
                 _ => unreachable!(),
@@ -139,7 +139,7 @@ pub fn parse(
         })
         .collect();
 
-    Ok((SimpleResourceStorage::new(rows), original_primary_index))
+    Ok((JourneyStorage::new(rows), original_primary_index))
 }
 
 // ------------------------------------------------------------------------------------------------

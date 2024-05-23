@@ -8,12 +8,13 @@ use chrono::NaiveDate;
 use crate::{
     models::TimetableMetadataEntry,
     parsing::{AdvancedRowMatcher, FastRowMatcher, ParsedValue, RowDefinition, RowParser},
-    storage::SimpleResourceStorage, utils::AutoIncrement,
+    storage::TimetableMetadataStorage,
+    utils::AutoIncrement,
 };
 
 use super::{ColumnDefinition, ExpectedType, FileParser};
 
-pub fn parse() -> Result<SimpleResourceStorage<TimetableMetadataEntry>, Box<dyn Error>> {
+pub fn parse() -> Result<TimetableMetadataStorage, Box<dyn Error>> {
     println!("Parsing ECKDATEN...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -67,5 +68,5 @@ pub fn parse() -> Result<SimpleResourceStorage<TimetableMetadataEntry>, Box<dyn 
         })
         .collect();
 
-    Ok(SimpleResourceStorage::new(rows))
+    Ok(TimetableMetadataStorage::new(rows))
 }

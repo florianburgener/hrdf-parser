@@ -4,13 +4,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     models::{
-        Attribute, BitField, Direction, Holiday, InformationText, Journey, JourneyPlatform, Line,
-        Platform, Stop, StopConnection, ThroughService, TimetableMetadataEntry,
-        TransferTimeAdministration, TransferTimeJourney, TransferTimeLine, TransportCompany,
-        TransportType,
+        Attribute, BitField, Direction, Holiday, InformationText, JourneyPlatform, Line, Platform,
+        Stop, StopConnection, ThroughService, TransferTimeAdministration, TransferTimeJourney,
+        TransferTimeLine, TransportCompany, TransportType,
     },
     parsing,
-    storage::SimpleResourceStorage,
+    storage::{JourneyStorage, SimpleResourceStorage, TimetableMetadataStorage},
 };
 
 #[allow(unused)]
@@ -19,7 +18,7 @@ pub struct Hrdf {
     // Time-relevant data.
     bit_fields: SimpleResourceStorage<BitField>,
     holidays: SimpleResourceStorage<Holiday>,
-    timetable_metadata: SimpleResourceStorage<TimetableMetadataEntry>,
+    timetable_metadata: TimetableMetadataStorage,
 
     // Master data.
     attributes: SimpleResourceStorage<Attribute>,
@@ -34,7 +33,7 @@ pub struct Hrdf {
     stop_connections: SimpleResourceStorage<StopConnection>,
 
     // Timetable data.
-    journeys: SimpleResourceStorage<Journey>,
+    journeys: JourneyStorage,
     journey_platform: SimpleResourceStorage<JourneyPlatform>,
     platforms: SimpleResourceStorage<Platform>,
     through_service: SimpleResourceStorage<ThroughService>,
@@ -108,17 +107,39 @@ impl Hrdf {
             transfer_times_line,
         });
 
-        // Self::set_parent_references(&instance);
+        instance.set_references(&instance);
+        instance.build_indexes();
         Ok(instance)
     }
 
-    // fn set_parent_references(instance: &Rc<Hrdf>) {
-    //     for stop in &instance.stops {
-    //         stop.set_parent_reference(&instance);
-    //     }
-    // }
+    fn build_indexes(&self) {
+        self.timetable_metadata().set_find_by_key_index(self);
+        self.journeys().set_operating_journeys_index(self);
+    }
 
-    pub fn journeys(&self) -> &SimpleResourceStorage<Journey> {
+    pub fn set_references(&self, instance: &Rc<Hrdf>) {
+        self.journeys
+            .rows()
+            .iter()
+            .for_each(|item| item.set_hrdf(instance));
+    }
+
+    pub fn remove_references(&self) {
+        self.journeys
+            .rows()
+            .iter()
+            .for_each(|item| item.remove_hrdf());
+    }
+
+    pub fn bit_fields(&self) -> &SimpleResourceStorage<BitField> {
+        return &self.bit_fields;
+    }
+
+    pub fn timetable_metadata(&self) -> &TimetableMetadataStorage {
+        return &self.timetable_metadata;
+    }
+
+    pub fn journeys(&self) -> &JourneyStorage {
         return &self.journeys;
     }
 
