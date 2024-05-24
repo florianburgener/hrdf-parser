@@ -6,14 +6,11 @@ use std::{collections::HashMap, error::Error, rc::Rc};
 use crate::{
     models::{Language, ResourceIndex, TransportType},
     parsing::{
-        AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, RowDefinition,
-        RowParser,
+        AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, ParsedValue, RowDefinition, RowParser
     },
     storage::SimpleResourceStorage,
     utils::AutoIncrement,
 };
-
-use super::{FileParser, ParsedValue};
 
 pub fn parse() -> Result<
     (
@@ -88,7 +85,7 @@ pub fn parse() -> Result<
                 }
                 ROW_B => update_current_language(values, &mut current_language),
                 ROW_C => set_product_class_name(values, &product_class_id_dict, current_language),
-                ROW_D => (),
+                ROW_D => {}
                 ROW_E => set_category_name(values, &current_instance, current_language),
                 _ => unreachable!(),
             };

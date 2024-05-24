@@ -5,11 +5,9 @@ use std::{error::Error, rc::Rc};
 
 use crate::{
     models::BitField,
-    parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
+    parsing::{ColumnDefinition, ExpectedType, FileParser, ParsedValue, RowDefinition, RowParser},
     storage::SimpleResourceStorage,
 };
-
-use super::ParsedValue;
 
 pub fn parse() -> Result<SimpleResourceStorage<BitField>, Box<dyn Error>> {
     println!("Parsing BITFELD...");
@@ -25,7 +23,7 @@ pub fn parse() -> Result<SimpleResourceStorage<BitField>, Box<dyn Error>> {
 
     let rows = parser
         .parse()
-        .filter_map(|(_, _, values)| Some(create_instance(values)))
+        .map(|(_, _, values)| create_instance(values))
         .collect();
 
     Ok(SimpleResourceStorage::new(rows))

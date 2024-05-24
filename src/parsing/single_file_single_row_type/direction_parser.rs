@@ -5,11 +5,9 @@ use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{
     models::{Direction, ResourceIndex},
-    parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
+    parsing::{ColumnDefinition, ExpectedType, FileParser, ParsedValue, RowDefinition, RowParser},
     storage::SimpleResourceStorage,
 };
-
-use super::ParsedValue;
 
 pub fn parse() -> Result<
     (
@@ -33,10 +31,10 @@ pub fn parse() -> Result<
 
     let rows = parser
         .parse()
-        .filter_map(|(_, _, values)| {
+        .map(|(_, _, values)| {
             let (instance, k) = create_instance(values);
             original_primary_index.insert(k, Rc::clone(&instance));
-            Some(instance)
+            instance
         })
         .collect();
 

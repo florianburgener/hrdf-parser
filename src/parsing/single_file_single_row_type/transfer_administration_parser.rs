@@ -5,12 +5,10 @@ use std::{error::Error, rc::Rc};
 
 use crate::{
     models::TransferTimeAdministration,
-    parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
+    parsing::{ColumnDefinition, ExpectedType, FileParser, ParsedValue, RowDefinition, RowParser},
     storage::SimpleResourceStorage,
     utils::AutoIncrement,
 };
-
-use super::ParsedValue;
 
 pub fn parse() -> Result<SimpleResourceStorage<TransferTimeAdministration>, Box<dyn Error>> {
     println!("Parsing UMSTEIGV...");
@@ -30,7 +28,7 @@ pub fn parse() -> Result<SimpleResourceStorage<TransferTimeAdministration>, Box<
 
     let rows = parser
         .parse()
-        .filter_map(|(_, _, values)| Some(create_instance(values, &auto_increment)))
+        .map(|(_, _, values)| create_instance(values, &auto_increment))
         .collect();
 
     Ok(SimpleResourceStorage::new(rows))

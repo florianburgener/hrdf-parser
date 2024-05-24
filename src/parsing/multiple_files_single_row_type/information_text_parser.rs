@@ -5,11 +5,9 @@ use std::{error::Error, rc::Rc};
 
 use crate::{
     models::{InformationText, Language, Model, ResourceIndex},
-    parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
+    parsing::{ColumnDefinition, ExpectedType, FileParser, ParsedValue, RowDefinition, RowParser},
     storage::SimpleResourceStorage,
 };
-
-use super::ParsedValue;
 
 pub fn parse() -> Result<SimpleResourceStorage<InformationText>, Box<dyn Error>> {
     println!("Parsing INFOTEXT_DE...");
@@ -28,7 +26,7 @@ pub fn parse() -> Result<SimpleResourceStorage<InformationText>, Box<dyn Error>>
 
     let rows = parser
         .parse()
-        .filter_map(|(_, _, values)| Some(create_instance(values)))
+        .map(|(_, _, values)| create_instance(values))
         .collect();
 
     let primary_index = InformationText::create_primary_index(&rows);

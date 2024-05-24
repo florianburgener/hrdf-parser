@@ -9,13 +9,11 @@ use crate::{
         JourneyRouteEntry, Model, ResourceIndex, Time, TransportType,
     },
     parsing::{
-        ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, RowDefinition, RowParser,
+        ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, ParsedValue, RowDefinition, RowParser
     },
     storage::JourneyStorage,
     utils::AutoIncrement,
 };
-
-use super::ParsedValue;
 
 pub fn parse(
     transport_types_original_primary_index: &ResourceIndex<TransportType, String>,

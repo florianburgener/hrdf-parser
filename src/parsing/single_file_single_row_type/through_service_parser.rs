@@ -5,12 +5,10 @@ use std::{error::Error, rc::Rc};
 
 use crate::{
     models::{Journey, Model, ResourceIndex, ThroughService},
-    parsing::{ColumnDefinition, ExpectedType, FileParser, RowDefinition, RowParser},
+    parsing::{ColumnDefinition, ExpectedType, FileParser, ParsedValue, RowDefinition, RowParser},
     storage::SimpleResourceStorage,
     utils::AutoIncrement,
 };
-
-use super::ParsedValue;
 
 pub fn parse(
     journeys_original_primary_index: &ResourceIndex<Journey, (i32, String)>,
@@ -35,12 +33,8 @@ pub fn parse(
 
     let rows = parser
         .parse()
-        .filter_map(|(_, _, values)| {
-            Some(create_instance(
-                values,
-                &auto_increment,
-                journeys_original_primary_index,
-            ))
+        .map(|(_, _, values)| {
+            create_instance(values, &auto_increment, journeys_original_primary_index)
         })
         .collect();
 

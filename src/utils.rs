@@ -4,6 +4,8 @@
 
 use std::cell::RefCell;
 
+use chrono::NaiveDate;
+
 pub struct AutoIncrement {
     value: RefCell<i32>,
 }
@@ -19,4 +21,8 @@ impl AutoIncrement {
         *self.value.borrow_mut() += 1;
         *self.value.borrow()
     }
+}
+
+pub fn count_days_between_two_dates(date_1: NaiveDate, date_2: NaiveDate) -> usize {
+    usize::try_from((date_2 - date_1).num_days()).unwrap() + 1
 }

@@ -1,12 +1,170 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, error::Error, rc::Rc};
 
 use chrono::{Days, NaiveDate};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    hrdf::Hrdf,
-    models::{Journey, Model, ResourceCollection, ResourceIndex, TimetableMetadataEntry},
+    models::{
+        Attribute, BitField, Direction, Holiday, InformationText, JourneyPlatform, Line, Platform,
+        Stop, StopConnection, ThroughService, TransferTimeAdministration, TransferTimeJourney,
+        TransferTimeLine, TransportCompany, TransportType,
+    },
+    parsing,
 };
+use crate::{
+    models::{Journey, Model, ResourceCollection, ResourceIndex, TimetableMetadataEntry},
+    utils::count_days_between_two_dates,
+};
+
+// ------------------------------------------------------------------------------------------------
+// --- DataStorage
+// ------------------------------------------------------------------------------------------------
+
+#[allow(unused)]
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DataStorage {
+    // Time-relevant data.
+    bit_fields: SimpleResourceStorage<BitField>,
+    holidays: SimpleResourceStorage<Holiday>,
+    timetable_metadata: TimetableMetadataStorage,
+
+    // Master data.
+    attributes: SimpleResourceStorage<Attribute>,
+    information_texts: SimpleResourceStorage<InformationText>,
+    directions: SimpleResourceStorage<Direction>,
+    lines: SimpleResourceStorage<Line>,
+    transport_companies: SimpleResourceStorage<TransportCompany>,
+    transport_types: SimpleResourceStorage<TransportType>,
+
+    // Stop data.
+    stops: SimpleResourceStorage<Stop>,
+    stop_connections: SimpleResourceStorage<StopConnection>,
+
+    // Timetable data.
+    journeys: JourneyStorage,
+    journey_platform: SimpleResourceStorage<JourneyPlatform>,
+    platforms: SimpleResourceStorage<Platform>,
+    through_service: SimpleResourceStorage<ThroughService>,
+
+    // Transfer times.
+    transfer_times_administration: SimpleResourceStorage<TransferTimeAdministration>,
+    transfer_times_journey: SimpleResourceStorage<TransferTimeJourney>,
+    transfer_times_line: SimpleResourceStorage<TransferTimeLine>,
+}
+
+#[allow(unused)]
+impl DataStorage {
+    pub fn new() -> Result<Rc<RefCell<Self>>, Box<dyn Error>> {
+        // Time-relevant data.
+        let bit_fields = parsing::load_bit_fields()?;
+        let holidays = parsing::load_holidays()?;
+        let timetable_metadata = parsing::load_timetable_metadata()?;
+
+        // Master data.
+        let (attributes, attributes_original_primary_index) = parsing::load_attributes()?;
+        let (directions, directions_original_primary_index) = parsing::load_directions()?;
+        let information_texts = parsing::load_information_texts()?;
+        let lines = parsing::load_lines()?;
+        let transport_companies = parsing::load_transport_companies()?;
+        let (transport_types, transport_types_original_primary_index) =
+            parsing::load_transport_types()?;
+
+        // Stop data.
+        let stops = parsing::load_stops()?;
+        let stop_connections = parsing::load_stop_connections(&attributes_original_primary_index)?;
+
+        // Timetable data.
+        let (journeys, journeys_original_primary_index) = parsing::load_journeys(
+            &transport_types_original_primary_index,
+            &attributes_original_primary_index,
+            &directions_original_primary_index,
+        )?;
+        let (journey_platform, platforms) = parsing::load_platforms(&journeys_original_primary_index)?;
+        let through_service = parsing::load_through_service(&journeys_original_primary_index)?;
+
+        // Transfer times.
+        let transfer_times_administration = parsing::load_transfer_times_administration()?;
+        let transfer_times_journey =
+            parsing::load_transfer_times_journey(&journeys_original_primary_index)?;
+        let transfer_times_line =
+            parsing::load_transfer_times_line(&transport_types_original_primary_index)?;
+
+        let instance = Rc::new(RefCell::new(Self {
+            // Time-relevant data.
+            bit_fields,
+            holidays,
+            timetable_metadata,
+            // Master data.
+            attributes,
+            information_texts,
+            directions,
+            lines,
+            transport_companies,
+            transport_types,
+            // Stop data.
+            stops,
+            stop_connections,
+            // Timetable data.
+            journeys,
+            journey_platform,
+            platforms,
+            through_service,
+            // Transfer times.
+            transfer_times_administration,
+            transfer_times_journey,
+            transfer_times_line,
+        }));
+
+        instance.borrow().set_references(&instance);
+        Self::build_indexes(&instance);
+        Ok(instance)
+    }
+
+    pub fn set_references(&self, instance: &Rc<RefCell<DataStorage>>) {
+        self.journeys
+            .rows()
+            .iter()
+            .for_each(|item| item.set_data_storage_reference(instance));
+    }
+
+    pub fn remove_references(&self) {
+        self.journeys
+            .rows()
+            .iter()
+            .for_each(|item| item.remove_data_storage_reference());
+    }
+
+    fn build_indexes(instance: &Rc<RefCell<DataStorage>>) {
+        let journeys_by_day = instance
+            .borrow()
+            .journeys()
+            .create_journeys_by_day(&instance.borrow().timetable_metadata);
+        instance
+            .borrow_mut()
+            .journeys
+            .set_journeys_by_day(journeys_by_day);
+    }
+
+    pub fn bit_fields(&self) -> &SimpleResourceStorage<BitField> {
+        return &self.bit_fields;
+    }
+
+    pub fn timetable_metadata(&self) -> &TimetableMetadataStorage {
+        return &self.timetable_metadata;
+    }
+
+    pub fn journeys(&self) -> &JourneyStorage {
+        return &self.journeys;
+    }
+
+    pub fn platforms(&self) -> &SimpleResourceStorage<Platform> {
+        return &self.platforms;
+    }
+
+    pub fn stops(&self) -> &SimpleResourceStorage<Stop> {
+        &self.stops
+    }
+}
 
 // ------------------------------------------------------------------------------------------------
 // --- SimpleResourceStorage
@@ -50,19 +208,29 @@ impl<M: Model<M>> SimpleResourceStorage<M> {
 pub struct TimetableMetadataStorage {
     rows: ResourceCollection<TimetableMetadataEntry>,
     primary_index: ResourceIndex<TimetableMetadataEntry>,
-    find_by_key_index: RefCell<ResourceIndex<TimetableMetadataEntry, String>>,
+    timetable_metadata_entry_by_key: ResourceIndex<TimetableMetadataEntry, String>,
 }
 
 #[allow(unused)]
 impl TimetableMetadataStorage {
     pub fn new(rows: ResourceCollection<TimetableMetadataEntry>) -> Self {
         let primary_index = TimetableMetadataEntry::create_primary_index(&rows);
+        let timetable_metadata_entry_by_key = Self::create_timetable_metadata_entry_by_key(&rows);
 
         Self {
             rows,
             primary_index,
-            find_by_key_index: RefCell::new(HashMap::new()),
+            timetable_metadata_entry_by_key,
         }
+    }
+
+    fn create_timetable_metadata_entry_by_key(
+        rows: &ResourceCollection<TimetableMetadataEntry>,
+    ) -> ResourceIndex<TimetableMetadataEntry, String> {
+        rows.iter().fold(HashMap::new(), |mut acc, item| {
+            acc.insert(item.key().to_owned(), Rc::clone(&item));
+            acc
+        })
     }
 
     pub fn rows(&self) -> &ResourceCollection<TimetableMetadataEntry> {
@@ -74,29 +242,15 @@ impl TimetableMetadataStorage {
     }
 
     pub fn find_by_key(&self, k: &str) -> Rc<TimetableMetadataEntry> {
-        Rc::clone(self.find_by_key_index.borrow().get(k).unwrap())
+        Rc::clone(self.timetable_metadata_entry_by_key.get(k).unwrap())
     }
 
-    pub fn set_find_by_key_index(&self, _: &Hrdf) {
-        *self.find_by_key_index.borrow_mut() =
-            self.rows().iter().fold(HashMap::new(), |mut acc, item| {
-                acc.insert(item.key().to_owned(), Rc::clone(&item));
-                acc
-            });
+    pub fn start_date(&self) -> NaiveDate {
+        self.find_by_key("start_date").value_as_NaiveDate()
     }
 
-    pub fn start_date(&self) -> Rc<TimetableMetadataEntry> {
-        self.find_by_key("start_date")
-    }
-
-    pub fn end_date(&self) -> Rc<TimetableMetadataEntry> {
-        self.find_by_key("end_date")
-    }
-
-    pub fn num_days_between_start_and_end_date(&self) -> usize {
-        let x = (self.end_date().value_as_NaiveDate() - self.start_date().value_as_NaiveDate())
-            .num_days();
-        usize::try_from(x).unwrap() + 1
+    pub fn end_date(&self) -> NaiveDate {
+        self.find_by_key("end_date").value_as_NaiveDate()
     }
 }
 
@@ -108,7 +262,7 @@ impl TimetableMetadataStorage {
 pub struct JourneyStorage {
     rows: ResourceCollection<Journey>,
     primary_index: ResourceIndex<Journey>,
-    operating_journeys_index: RefCell<HashMap<NaiveDate, Vec<Rc<Journey>>>>,
+    journeys_by_day: HashMap<NaiveDate, Vec<Rc<Journey>>>,
 }
 
 #[allow(unused)]
@@ -119,7 +273,7 @@ impl JourneyStorage {
         Self {
             rows,
             primary_index,
-            operating_journeys_index: RefCell::new(HashMap::new()),
+            journeys_by_day: HashMap::new(),
         }
     }
 
@@ -131,11 +285,12 @@ impl JourneyStorage {
         &self.primary_index
     }
 
-    pub fn set_operating_journeys_index(&self, hrdf: &Hrdf) {
-        let start_date = hrdf.timetable_metadata().start_date().value_as_NaiveDate();
-        let num_days = hrdf
-            .timetable_metadata()
-            .num_days_between_start_and_end_date();
+    pub fn create_journeys_by_day(
+        &self,
+        timetable_metadata: &TimetableMetadataStorage,
+    ) -> HashMap<NaiveDate, Vec<Rc<Journey>>> {
+        let start_date = timetable_metadata.start_date();
+        let num_days = count_days_between_two_dates(start_date, timetable_metadata.end_date());
 
         let dates: Vec<NaiveDate> = (0..num_days)
             .into_iter()
@@ -146,8 +301,7 @@ impl JourneyStorage {
             })
             .collect();
 
-        // *self.operating_journeys_index.borrow_mut() =
-        let x = self.rows().iter().fold(HashMap::new(), |mut acc, item| {
+        self.rows().iter().fold(HashMap::new(), |mut acc, item| {
             let bit_field = item.bit_field();
             let indexes: Vec<usize> = if let Some(bit_field) = bit_field {
                 bit_field
@@ -162,16 +316,18 @@ impl JourneyStorage {
             };
 
             indexes.into_iter().for_each(|i| {
-                acc.entry(dates[i].to_owned())
+                acc.entry(dates[i])
                     .or_insert(Vec::new())
                     .push(Rc::clone(&item));
-                let x = acc.get(&dates[i]).unwrap();
-                // println!("{} {} {} {}", acc.len(), mem::size_of_val(&acc), &acc.get(&dates[i]).unwrap().len(), mem::size_of_val(acc.get(&dates[i]).unwrap()));
             });
 
             acc
-        });
-        println!("Done {}", x.len());
-        *self.operating_journeys_index.borrow_mut() = x;
+        })
+    }
+
+    pub fn set_journeys_by_day(&mut self, journeys_by_day: HashMap<NaiveDate, Vec<Rc<Journey>>>) {
+        println!("A");
+        self.journeys_by_day = journeys_by_day;
+        println!("Done");
     }
 }

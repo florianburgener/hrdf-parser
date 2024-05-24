@@ -5,7 +5,7 @@ mod routing;
 mod storage;
 mod utils;
 
-use std::{error::Error, fs, path::Path, rc::Rc, thread::sleep, time::Duration};
+use std::{error::Error, path::Path};
 
 use crate::{hrdf::Hrdf, models::Time};
 
@@ -14,21 +14,13 @@ pub fn run() -> Result<(), Box<dyn Error>> {
 
     let hrdf = if Path::new(CACHED_PATH).exists() && false {
         println!("Reading from cache...");
-        let data = fs::read(CACHED_PATH)?;
-        let hrdf: Rc<Hrdf> = bincode::deserialize(&data).unwrap();
-        hrdf.set_references(&hrdf);
-        hrdf
+        Hrdf::load_from_cache()?
     } else {
         println!("Building cache...");
-        let hrdf = Hrdf::new()?;
-        hrdf.remove_references();
-
-        let data = bincode::serialize(&hrdf).unwrap();
-        fs::write(CACHED_PATH, data)?;
-
-        hrdf
+        // Hrdf::new()?.build_cache()?
+        Hrdf::new()?
     };
-    sleep(Duration::from_secs(30));
+    // sleep(Duration::from_secs(30));
 
     println!();
     println!("------------------------------------------------------------------------------------------------");
@@ -36,9 +28,9 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     println!("------------------------------------------------------------------------------------------------");
     println!();
 
-    println!("{} journeys", hrdf.journeys().rows().len());
-    println!("{} platforms", hrdf.platforms().rows().len());
-    println!("{} stops", hrdf.stops().rows().len());
+    println!("{} journeys", hrdf.data_storage().journeys().rows().len());
+    println!("{} platforms", hrdf.data_storage().platforms().rows().len());
+    println!("{} stops", hrdf.data_storage().stops().rows().len());
 
     hrdf.plan_trip(8592688, 8508134, Time::new(14, 12));
 

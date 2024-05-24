@@ -6,14 +6,11 @@ use std::{error::Error, rc::Rc};
 use crate::{
     models::{Attribute, Model, ResourceIndex, StopConnection},
     parsing::{
-        AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser,
-        RowDefinition, RowParser,
+        AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, ParsedValue, RowDefinition, RowParser
     },
     storage::SimpleResourceStorage,
     utils::AutoIncrement,
 };
-
-use super::ParsedValue;
 
 pub fn parse(
     attributes_original_primary_index: &ResourceIndex<Attribute, String>,

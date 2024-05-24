@@ -8,11 +8,12 @@ use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{
     models::{Coordinate, CoordinateType, Model, ResourceIndex, Stop},
-    parsing::{AdvancedRowMatcher, FastRowMatcher},
+    parsing::{
+        AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser,
+        ParsedValue, RowDefinition, RowParser,
+    },
     storage::SimpleResourceStorage,
 };
-
-use super::{ColumnDefinition, ExpectedType, FileParser, ParsedValue, RowDefinition, RowParser};
 
 pub fn parse() -> Result<SimpleResourceStorage<Stop>, Box<dyn Error>> {
     println!("Parsing BAHNHOF...");
@@ -28,7 +29,7 @@ pub fn parse() -> Result<SimpleResourceStorage<Stop>, Box<dyn Error>> {
 
     let rows = parser
         .parse()
-        .filter_map(|(_, _, values)| Some(create_instance(values)))
+        .map(|(_, _, values)| create_instance(values))
         .collect();
 
     let primary_index = Stop::create_primary_index(&rows);

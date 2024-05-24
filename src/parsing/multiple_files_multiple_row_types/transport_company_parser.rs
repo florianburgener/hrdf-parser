@@ -7,11 +7,9 @@ use regex::Regex;
 
 use crate::{
     models::{Language, Model, ResourceIndex, TransportCompany},
-    parsing::{ColumnDefinition, ExpectedType, FastRowMatcher, RowDefinition, RowParser},
+    parsing::{ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, ParsedValue, RowDefinition, RowParser},
     storage::SimpleResourceStorage,
 };
-
-use super::{FileParser, ParsedValue};
 
 pub fn parse() -> Result<SimpleResourceStorage<TransportCompany>, Box<dyn Error>> {
     println!("Parsing BETRIEB_DE...");

@@ -9,7 +9,7 @@ use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use strum_macros::{self, Display, EnumString};
 
-use crate::hrdf::Hrdf;
+use crate::storage::DataStorage;
 
 // ------------------------------------------------------------------------------------------------
 // --- Model
@@ -345,7 +345,7 @@ impl InformationText {
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Journey {
-    hrdf: RefCell<Weak<Hrdf>>,
+    data_storage: RefCell<Weak<RefCell<DataStorage>>>,
     id: i32,
     administration: String,
     metadata: RefCell<HashMap<JourneyMetadataType, RefCell<Vec<JourneyMetadataEntry>>>>,
@@ -364,7 +364,7 @@ impl Model<Journey> for Journey {
 impl Journey {
     pub fn new(id: i32, administration: String) -> Self {
         Self {
-            hrdf: RefCell::new(Weak::new()),
+            data_storage: RefCell::new(Weak::new()),
             id,
             administration,
             metadata: RefCell::new(HashMap::new()),
@@ -372,16 +372,16 @@ impl Journey {
         }
     }
 
-    fn hrdf(&self) -> Rc<Hrdf> {
-        self.hrdf.borrow().upgrade().unwrap()
+    fn data_storage(&self) -> Rc<RefCell<DataStorage>> {
+        self.data_storage.borrow().upgrade().unwrap()
     }
 
-    pub fn set_hrdf(&self, hrdf: &Rc<Hrdf>) {
-        *self.hrdf.borrow_mut() = Rc::downgrade(hrdf);
+    pub fn set_data_storage_reference(&self, hrdf: &Rc<RefCell<DataStorage>>) {
+        *self.data_storage.borrow_mut() = Rc::downgrade(hrdf);
     }
 
-    pub fn remove_hrdf(&self) {
-        *self.hrdf.borrow_mut() = Weak::new();
+    pub fn remove_data_storage_reference(&self) {
+        *self.data_storage.borrow_mut() = Weak::new();
     }
 
     pub fn administration(&self) -> &str {
@@ -395,9 +395,9 @@ impl Journey {
             .unwrap()
             .borrow()[0];
 
-        entry
-            .bit_field_id
-            .map(|bit_field_id| Rc::clone(&self.hrdf().bit_fields().find_by_id(bit_field_id)))
+        entry.bit_field_id.map(|bit_field_id| {
+            Rc::clone(&self.data_storage().borrow().bit_fields().find_by_id(bit_field_id))
+        })
     }
 
     pub fn add_metadata_entry(&self, k: JourneyMetadataType, v: JourneyMetadataEntry) {

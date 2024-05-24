@@ -7,12 +7,10 @@ use chrono::NaiveDate;
 
 use crate::{
     models::TimetableMetadataEntry,
-    parsing::{AdvancedRowMatcher, FastRowMatcher, ParsedValue, RowDefinition, RowParser},
+    parsing::{AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, ParsedValue, RowDefinition, RowParser},
     storage::TimetableMetadataStorage,
     utils::AutoIncrement,
 };
-
-use super::{ColumnDefinition, ExpectedType, FileParser};
 
 pub fn parse() -> Result<TimetableMetadataStorage, Box<dyn Error>> {
     println!("Parsing ECKDATEN...");
@@ -30,7 +28,6 @@ pub fn parse() -> Result<TimetableMetadataStorage, Box<dyn Error>> {
             ColumnDefinition::new(1, -1, ExpectedType::String),
         ]),
     ]);
-
     let parser = FileParser::new("data/ECKDATEN", row_parser)?;
 
     let mut data: Vec<ParsedValue> = parser

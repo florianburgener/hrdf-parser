@@ -9,14 +9,11 @@ use std::{collections::HashMap, error::Error, rc::Rc, str::FromStr};
 use crate::{
     models::{Attribute, Language, ResourceIndex},
     parsing::{
-        AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser,
-        RowDefinition, RowParser,
+        AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, ParsedValue, RowDefinition, RowParser
     },
     storage::SimpleResourceStorage,
     utils::AutoIncrement,
 };
-
-use super::ParsedValue;
 
 pub fn parse() -> Result<
     (

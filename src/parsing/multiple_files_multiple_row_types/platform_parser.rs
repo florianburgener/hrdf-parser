@@ -6,17 +6,20 @@
 use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{
-    models::{Coordinate, CoordinateType, JourneyPlatform, Model, Platform, Time},
+    models::{
+        Coordinate, CoordinateType, Journey, JourneyPlatform, Model, Platform, ResourceIndex, Time,
+    },
     parsing::{
-        ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, RowDefinition, RowParser,
+        ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, ParsedValue, RowDefinition,
+        RowParser,
     },
     storage::SimpleResourceStorage,
     utils::AutoIncrement,
 };
 
-use super::ParsedValue;
-
-pub fn parse() -> Result<
+pub fn parse(
+    journeys_original_primary_index: &ResourceIndex<Journey, (i32, String)>,
+) -> Result<
     (
         SimpleResourceStorage<JourneyPlatform>,
         SimpleResourceStorage<Platform>,
@@ -73,7 +76,13 @@ pub fn parse() -> Result<
 
     let journey_platform = journey_platform_data
         .into_iter()
-        .map(|values| create_journey_platform(values, &platforms_original_primary_index))
+        .map(|values| {
+            create_journey_platform(
+                values,
+                journeys_original_primary_index,
+                &platforms_original_primary_index,
+            )
+        })
         .collect();
 
     println!("Parsing GLEIS_LV95...");
@@ -141,23 +150,31 @@ fn load_coordinates_for_platforms(
 
 fn create_journey_platform(
     mut values: Vec<ParsedValue>,
+    journeys_original_primary_index: &ResourceIndex<Journey, (i32, String)>,
     platforms_original_primary_index: &HashMap<(i32, i32), Rc<Platform>>,
 ) -> Rc<JourneyPlatform> {
     let stop_id: i32 = values.remove(0).into();
     let journey_id: i32 = values.remove(0).into();
-    let _: String = values.remove(0).into();
+    let administration: String = values.remove(0).into();
     let index: i32 = values.remove(0).into();
     let time: Option<i32> = values.remove(0).into();
     let bit_field_id: Option<i32> = values.remove(0).into();
+
+    let journey_id = journeys_original_primary_index
+        .get(&(journey_id, administration))
+        .unwrap()
+        .id();
+
+    let platform_id = platforms_original_primary_index
+        .get(&(stop_id, index))
+        .unwrap()
+        .id();
 
     let time = time.map(|x| Time::from(x));
 
     Rc::new(JourneyPlatform::new(
         journey_id,
-        platforms_original_primary_index
-            .get(&(stop_id, index))
-            .unwrap()
-            .id(),
+        platform_id,
         time,
         bit_field_id,
     ))

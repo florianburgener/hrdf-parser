@@ -6,12 +6,10 @@ use std::{error::Error, rc::Rc};
 use crate::{
     models::{Color, Line},
     parsing::{
-        ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, RowDefinition, RowParser,
+        ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, ParsedValue, RowDefinition, RowParser
     },
     storage::SimpleResourceStorage,
 };
-
-use super::ParsedValue;
 
 pub fn parse() -> Result<SimpleResourceStorage<Line>, Box<dyn Error>> {
     println!("Parsing LINIE...");
