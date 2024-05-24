@@ -9,17 +9,18 @@ use crate::{
         JourneyRouteEntry, Model, ResourceIndex, Time, TransportType,
     },
     parsing::{
-        ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, ParsedValue, RowDefinition, RowParser
+        ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, ParsedValue, RowDefinition,
+        RowParser,
     },
     storage::JourneyStorage,
     utils::AutoIncrement,
 };
 
 pub fn parse(
-    transport_types_original_primary_index: &ResourceIndex<TransportType, String>,
-    attributes_original_primary_index: &ResourceIndex<Attribute, String>,
-    directions_original_primary_index: &ResourceIndex<Direction, String>,
-) -> Result<(JourneyStorage, ResourceIndex<Journey, (i32, String)>), Box<dyn Error>> {
+    transport_types_original_primary_index: &ResourceIndex<String, TransportType>,
+    attributes_original_primary_index: &ResourceIndex<String, Attribute>,
+    directions_original_primary_index: &ResourceIndex<String, Direction>,
+) -> Result<(JourneyStorage, ResourceIndex<(i32, String), Journey>), Box<dyn Error>> {
     println!("Parsing FPLAN...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -160,8 +161,8 @@ fn create_instance(
 
 fn set_transport_type(
     mut values: Vec<ParsedValue>,
-    journey: &Rc<Journey>,
-    transport_types_original_primary_index: &ResourceIndex<TransportType, String>,
+    journey: &Journey,
+    transport_types_original_primary_index: &ResourceIndex<String, TransportType>,
 ) {
     let designation: String = values.remove(0).into();
     let from_stop_id: Option<i32> = values.remove(0).into();
@@ -187,7 +188,7 @@ fn set_transport_type(
     );
 }
 
-fn set_bit_field(mut values: Vec<ParsedValue>, journey: &Rc<Journey>) {
+fn set_bit_field(mut values: Vec<ParsedValue>, journey: &Journey) {
     let from_stop_id: Option<i32> = values.remove(0).into();
     let until_stop_id: Option<i32> = values.remove(0).into();
     let bit_field_id: Option<i32> = values.remove(0).into();
@@ -209,8 +210,8 @@ fn set_bit_field(mut values: Vec<ParsedValue>, journey: &Rc<Journey>) {
 
 fn add_attribute(
     mut values: Vec<ParsedValue>,
-    journey: &Rc<Journey>,
-    attributes_original_primary_index: &ResourceIndex<Attribute, String>,
+    journey: &Journey,
+    attributes_original_primary_index: &ResourceIndex<String, Attribute>,
 ) {
     let designation: String = values.remove(0).into();
     let from_stop_id: Option<i32> = values.remove(0).into();
@@ -236,7 +237,7 @@ fn add_attribute(
     );
 }
 
-fn add_information_text(mut values: Vec<ParsedValue>, journey: &Rc<Journey>) {
+fn add_information_text(mut values: Vec<ParsedValue>, journey: &Journey) {
     let code: String = values.remove(0).into();
     let from_stop_id: Option<i32> = values.remove(0).into();
     let until_stop_id: Option<i32> = values.remove(0).into();
@@ -263,7 +264,7 @@ fn add_information_text(mut values: Vec<ParsedValue>, journey: &Rc<Journey>) {
     );
 }
 
-fn set_line(mut values: Vec<ParsedValue>, journey: &Rc<Journey>) {
+fn set_line(mut values: Vec<ParsedValue>, journey: &Journey) {
     let line_designation: String = values.remove(0).into();
     let from_stop_id: Option<i32> = values.remove(0).into();
     let until_stop_id: Option<i32> = values.remove(0).into();
@@ -296,8 +297,8 @@ fn set_line(mut values: Vec<ParsedValue>, journey: &Rc<Journey>) {
 
 fn set_direction(
     mut values: Vec<ParsedValue>,
-    journey: &Rc<Journey>,
-    directions_original_primary_index: &ResourceIndex<Direction, String>,
+    journey: &Journey,
+    directions_original_primary_index: &ResourceIndex<String, Direction>,
 ) {
     let direction_type: String = values.remove(0).into();
     let direction_id: String = values.remove(0).into();
@@ -335,7 +336,7 @@ fn set_direction(
     );
 }
 
-fn set_boarding_or_disembarking_transfer_time(mut values: Vec<ParsedValue>, journey: &Rc<Journey>) {
+fn set_boarding_or_disembarking_transfer_time(mut values: Vec<ParsedValue>, journey: &Journey) {
     let ci_co: String = values.remove(0).into();
     let transfer_time: i32 = values.remove(0).into();
     let from_stop_id: Option<i32> = values.remove(0).into();
@@ -362,7 +363,7 @@ fn set_boarding_or_disembarking_transfer_time(mut values: Vec<ParsedValue>, jour
     );
 }
 
-fn add_route_entry(mut values: Vec<ParsedValue>, journey: &Rc<Journey>) {
+fn add_route_entry(mut values: Vec<ParsedValue>, journey: &Journey) {
     let stop_id: i32 = values.remove(0).into();
     let arrival_time: Option<i32> = values.remove(0).into();
     let departure_time: Option<i32> = values.remove(0).into();

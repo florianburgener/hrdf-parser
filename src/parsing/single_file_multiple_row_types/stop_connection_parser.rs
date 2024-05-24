@@ -13,7 +13,7 @@ use crate::{
 };
 
 pub fn parse(
-    attributes_original_primary_index: &ResourceIndex<Attribute, String>,
+    attributes_original_primary_index: &ResourceIndex<String, Attribute>,
 ) -> Result<SimpleResourceStorage<StopConnection>, Box<dyn Error>> {
     println!("Parsing METABHF 2/2...");
     const ROW_A: i32 = 1;
@@ -82,8 +82,8 @@ fn create_instance(
 
 fn add_attribute(
     mut values: Vec<ParsedValue>,
-    current_instance: &Rc<StopConnection>,
-    attributes_original_primary_index: &ResourceIndex<Attribute, String>,
+    current_instance: &StopConnection,
+    attributes_original_primary_index: &ResourceIndex<String, Attribute>,
 ) {
     let attribute_designation: String = values.remove(0).into();
     let attribute_id = attributes_original_primary_index

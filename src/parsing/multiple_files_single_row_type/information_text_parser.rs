@@ -40,7 +40,7 @@ pub fn parse() -> Result<SimpleResourceStorage<InformationText>, Box<dyn Error>>
 }
 
 fn load_content(
-    primary_index: &ResourceIndex<InformationText>,
+    primary_index: &ResourceIndex<i32, InformationText>,
     language: Language,
 ) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
@@ -79,7 +79,7 @@ fn create_instance(mut values: Vec<ParsedValue>) -> Rc<InformationText> {
 
 fn set_content(
     mut values: Vec<ParsedValue>,
-    primary_index: &ResourceIndex<InformationText>,
+    primary_index: &ResourceIndex<i32, InformationText>,
     language: Language,
 ) {
     let id: i32 = values.remove(0).into();

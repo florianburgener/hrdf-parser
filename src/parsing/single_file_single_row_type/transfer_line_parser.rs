@@ -11,7 +11,7 @@ use crate::{
 };
 
 pub fn parse(
-    transport_types_original_primary_index: &ResourceIndex<TransportType, String>,
+    transport_types_original_primary_index: &ResourceIndex<String, TransportType>,
 ) -> Result<SimpleResourceStorage<TransferTimeLine>, Box<dyn Error>> {
     println!("Parsing UMSTEIGL...");
     #[rustfmt::skip]
@@ -56,7 +56,7 @@ pub fn parse(
 fn create_instance(
     mut values: Vec<ParsedValue>,
     auto_increment: &AutoIncrement,
-    transport_types_original_primary_index: &ResourceIndex<TransportType, String>,
+    transport_types_original_primary_index: &ResourceIndex<String, TransportType>,
 ) -> Rc<TransferTimeLine> {
     let stop_id: i32 = values.remove(0).into();
     let administration_1: String = values.remove(0).into();

@@ -11,7 +11,7 @@ use crate::{
 };
 
 pub fn parse(
-    journeys_original_primary_index: &ResourceIndex<Journey, (i32, String)>,
+    journeys_original_primary_index: &ResourceIndex<(i32, String), Journey>,
 ) -> Result<SimpleResourceStorage<ThroughService>, Box<dyn Error>> {
     println!("Parsing DURCHBI...");
     #[rustfmt::skip]
@@ -48,7 +48,7 @@ pub fn parse(
 fn create_instance(
     mut values: Vec<ParsedValue>,
     auto_increment: &AutoIncrement,
-    journeys_original_primary_index: &ResourceIndex<Journey, (i32, String)>,
+    journeys_original_primary_index: &ResourceIndex<(i32, String), Journey>,
 ) -> Rc<ThroughService> {
     let journey_1_id: i32 = values.remove(0).into();
     let journey_1_administration: String = values.remove(0).into();

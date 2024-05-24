@@ -54,7 +54,7 @@ pub fn parse() -> Result<SimpleResourceStorage<TransportCompany>, Box<dyn Error>
 }
 
 fn load_designations(
-    primary_index: &ResourceIndex<TransportCompany>,
+    primary_index: &ResourceIndex<i32, TransportCompany>,
     language: Language,
 ) -> Result<(), Box<dyn Error>> {
     const ROW_A: i32 = 1;
@@ -102,7 +102,7 @@ fn create_instance(mut values: Vec<ParsedValue>) -> Rc<TransportCompany> {
 
 fn set_designations(
     mut values: Vec<ParsedValue>,
-    primary_index: &ResourceIndex<TransportCompany>,
+    primary_index: &ResourceIndex<i32, TransportCompany>,
     language: Language,
 ) {
     let id: i32 = values.remove(0).into();

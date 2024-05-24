@@ -18,7 +18,7 @@ use crate::{
 };
 
 pub fn parse(
-    journeys_original_primary_index: &ResourceIndex<Journey, (i32, String)>,
+    journeys_original_primary_index: &ResourceIndex<(i32, String), Journey>,
 ) -> Result<
     (
         SimpleResourceStorage<JourneyPlatform>,
@@ -150,7 +150,7 @@ fn load_coordinates_for_platforms(
 
 fn create_journey_platform(
     mut values: Vec<ParsedValue>,
-    journeys_original_primary_index: &ResourceIndex<Journey, (i32, String)>,
+    journeys_original_primary_index: &ResourceIndex<(i32, String), Journey>,
     platforms_original_primary_index: &HashMap<(i32, i32), Rc<Platform>>,
 ) -> Rc<JourneyPlatform> {
     let stop_id: i32 = values.remove(0).into();

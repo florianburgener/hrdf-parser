@@ -21,7 +21,7 @@ pub trait Model<M: Model<M>> {
 
     fn id(&self) -> M::K;
 
-    fn create_primary_index(rows: &ResourceCollection<M>) -> ResourceIndex<M, M::K> {
+    fn create_primary_index(rows: &ResourceCollection<M>) -> ResourceIndex<M::K, M> {
         rows.iter().fold(HashMap::new(), |mut acc, item| {
             acc.insert(item.id(), Rc::clone(item));
             acc
@@ -34,7 +34,7 @@ pub type ResourceCollection<M> = Vec<Rc<M>>;
 
 /// M = Model type.
 /// K = Key type.
-pub type ResourceIndex<M, K = i32> = HashMap<K, Rc<M>>;
+pub type ResourceIndex<K, M> = HashMap<K, Rc<M>>;
 
 // ------------------------------------------------------------------------------------------------
 // --- Attribute
@@ -345,7 +345,7 @@ impl InformationText {
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Journey {
-    data_storage: RefCell<Weak<RefCell<DataStorage>>>,
+    data_storage: RefCell<Weak<DataStorage>>,
     id: i32,
     administration: String,
     metadata: RefCell<HashMap<JourneyMetadataType, RefCell<Vec<JourneyMetadataEntry>>>>,
@@ -372,12 +372,12 @@ impl Journey {
         }
     }
 
-    fn data_storage(&self) -> Rc<RefCell<DataStorage>> {
+    fn data_storage(&self) -> Rc<DataStorage> {
         self.data_storage.borrow().upgrade().unwrap()
     }
 
-    pub fn set_data_storage_reference(&self, hrdf: &Rc<RefCell<DataStorage>>) {
-        *self.data_storage.borrow_mut() = Rc::downgrade(hrdf);
+    pub fn set_data_storage_reference(&self, data_storage: &Rc<DataStorage>) {
+        *self.data_storage.borrow_mut() = Rc::downgrade(data_storage);
     }
 
     pub fn remove_data_storage_reference(&self) {
@@ -396,7 +396,7 @@ impl Journey {
             .borrow()[0];
 
         entry.bit_field_id.map(|bit_field_id| {
-            Rc::clone(&self.data_storage().borrow().bit_fields().find_by_id(bit_field_id))
+            Rc::clone(&self.data_storage().bit_fields().find(bit_field_id))
         })
     }
 
@@ -407,6 +407,10 @@ impl Journey {
             .or_insert(RefCell::new(Vec::new()))
             .borrow_mut()
             .push(v);
+    }
+
+    pub fn route(&self) -> Ref<Vec<JourneyRouteEntry>> {
+        self.route.borrow()
     }
 
     pub fn add_route_entry(&self, entry: JourneyRouteEntry) {
@@ -510,6 +514,10 @@ impl JourneyRouteEntry {
             arrival_time,
             departure_time,
         }
+    }
+
+    pub fn stop_id(&self) -> i32 {
+        self.stop_id
     }
 
     pub fn arrival_time(&self) -> &Option<Time> {

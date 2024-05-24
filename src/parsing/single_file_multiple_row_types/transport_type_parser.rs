@@ -15,7 +15,7 @@ use crate::{
 pub fn parse() -> Result<
     (
         SimpleResourceStorage<TransportType>,
-        ResourceIndex<TransportType, String>,
+        ResourceIndex<String, TransportType>,
     ),
     Box<dyn Error>,
 > {
@@ -142,7 +142,7 @@ fn set_product_class_name(
 
 fn set_category_name(
     mut values: Vec<ParsedValue>,
-    current_instance: &Rc<TransportType>,
+    current_instance: &TransportType,
     language: Language,
 ) {
     let _: i32 = values.remove(0).into();

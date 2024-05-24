@@ -18,7 +18,7 @@ use crate::{
 pub fn parse() -> Result<
     (
         SimpleResourceStorage<Attribute>,
-        ResourceIndex<Attribute, String>,
+        ResourceIndex<String, Attribute>,
     ),
     Box<dyn Error>,
 > {
@@ -104,7 +104,7 @@ fn create_instance(
 
 fn set_description(
     mut values: Vec<ParsedValue>,
-    original_primary_index: &ResourceIndex<Attribute, String>,
+    original_primary_index: &ResourceIndex<String, Attribute>,
     language: Language,
 ) {
     let legacy_id: String = values.remove(0).into();

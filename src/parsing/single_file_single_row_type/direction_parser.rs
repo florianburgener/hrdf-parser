@@ -12,7 +12,7 @@ use crate::{
 pub fn parse() -> Result<
     (
         SimpleResourceStorage<Direction>,
-        ResourceIndex<Direction, String>,
+        ResourceIndex<String, Direction>,
     ),
     Box<dyn Error>,
 > {

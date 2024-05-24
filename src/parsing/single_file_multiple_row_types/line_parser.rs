@@ -78,13 +78,13 @@ fn create_instance(mut values: Vec<ParsedValue>) -> Rc<Line> {
     Rc::new(Line::new(id, name))
 }
 
-fn set_short_name(mut values: Vec<ParsedValue>, line: &Rc<Line>) {
+fn set_short_name(mut values: Vec<ParsedValue>, line: &Line) {
     let short_name: String = values.remove(0).into();
 
     line.set_short_name(short_name);
 }
 
-fn set_text_color(mut values: Vec<ParsedValue>, line: &Rc<Line>) {
+fn set_text_color(mut values: Vec<ParsedValue>, line: &Line) {
     let r: i16 = values.remove(0).into();
     let g: i16 = values.remove(0).into();
     let b: i16 = values.remove(0).into();
@@ -92,7 +92,7 @@ fn set_text_color(mut values: Vec<ParsedValue>, line: &Rc<Line>) {
     line.set_text_color(Color::new(r, g, b));
 }
 
-fn set_background_color(mut values: Vec<ParsedValue>, line: &Rc<Line>) {
+fn set_background_color(mut values: Vec<ParsedValue>, line: &Line) {
     let r: i16 = values.remove(0).into();
     let g: i16 = values.remove(0).into();
     let b: i16 = values.remove(0).into();
