@@ -6,9 +6,7 @@
 use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{
-    models::{
-        Coordinate, CoordinateType, Journey, JourneyPlatform, Model, Platform, ResourceIndex, Time,
-    },
+    models::{Coordinate, CoordinateType, JourneyPlatform, Model, Platform, Time},
     parsing::{
         ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, ParsedValue, RowDefinition,
         RowParser,
@@ -18,7 +16,7 @@ use crate::{
 };
 
 pub fn parse(
-    journeys_original_primary_index: &ResourceIndex<(i32, String), Journey>,
+    journeys_original_primary_index: &HashMap<(i32, String), i32>,
 ) -> Result<
     (
         SimpleResourceStorage<JourneyPlatform>,
@@ -150,7 +148,7 @@ fn load_coordinates_for_platforms(
 
 fn create_journey_platform(
     mut values: Vec<ParsedValue>,
-    journeys_original_primary_index: &ResourceIndex<(i32, String), Journey>,
+    journeys_original_primary_index: &HashMap<(i32, String), i32>,
     platforms_original_primary_index: &HashMap<(i32, i32), Rc<Platform>>,
 ) -> Rc<JourneyPlatform> {
     let stop_id: i32 = values.remove(0).into();
@@ -160,10 +158,9 @@ fn create_journey_platform(
     let time: Option<i32> = values.remove(0).into();
     let bit_field_id: Option<i32> = values.remove(0).into();
 
-    let journey_id = journeys_original_primary_index
+    let journey_id = *journeys_original_primary_index
         .get(&(journey_id, administration))
-        .unwrap()
-        .id();
+        .unwrap();
 
     let platform_id = platforms_original_primary_index
         .get(&(stop_id, index))

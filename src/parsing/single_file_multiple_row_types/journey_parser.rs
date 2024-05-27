@@ -1,7 +1,7 @@
 // 1 file(s).
 // File(s) read by the parser:
 // FPLAN
-use std::{collections::HashMap, error::Error, rc::Rc};
+use std::{collections::HashMap, error::Error};
 
 use crate::{
     models::{
@@ -20,7 +20,7 @@ pub fn parse(
     transport_types_original_primary_index: &ResourceIndex<String, TransportType>,
     attributes_original_primary_index: &ResourceIndex<String, Attribute>,
     directions_original_primary_index: &ResourceIndex<String, Direction>,
-) -> Result<(JourneyStorage, ResourceIndex<(i32, String), Journey>), Box<dyn Error>> {
+) -> Result<(JourneyStorage, HashMap<(i32, String), i32>), Box<dyn Error>> {
     println!("Parsing FPLAN...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -101,45 +101,82 @@ pub fn parse(
     let parser = FileParser::new("data/FPLAN", row_parser)?;
 
     let auto_increment = AutoIncrement::new();
-    let mut current_instance = Rc::new(Journey::default());
     let mut original_primary_index = HashMap::new();
 
-    let rows = parser
-        .parse()
-        .filter_map(|(id, _, values)| {
-            match id {
-                ROW_A => {
-                    let (instance, k) = create_instance(values, &auto_increment);
-                    original_primary_index.insert(k, Rc::clone(&instance));
-                    current_instance = Rc::clone(&instance);
-                    return Some(instance);
-                }
-                ROW_B => set_transport_type(
-                    values,
-                    &current_instance,
-                    &transport_types_original_primary_index,
-                ),
-                ROW_C => set_bit_field(values, &current_instance),
-                ROW_D => add_attribute(
-                    values,
-                    &current_instance,
-                    &attributes_original_primary_index,
-                ),
-                ROW_E => add_information_text(values, &current_instance),
-                ROW_F => set_line(values, &current_instance),
-                ROW_G => {
-                    set_direction(values, &current_instance, directions_original_primary_index)
-                }
-                ROW_H => set_boarding_or_disembarking_transfer_time(values, &current_instance),
-                ROW_I => add_route_entry(values, &current_instance),
-                _ => unreachable!(),
-            };
-            None
-        })
-        .collect();
+    let mut data = Vec::new();
 
-    Ok((JourneyStorage::new(rows), original_primary_index))
+    for (id, _, values) in parser.parse() {
+        match id {
+            ROW_A => {
+                let (instance, k) = create_instance(values, &auto_increment);
+                original_primary_index.insert(k, instance.id());
+                data.push(instance);
+            }
+            ROW_B => set_transport_type(
+                values,
+                data.last_mut().unwrap(),
+                &transport_types_original_primary_index,
+            ),
+            ROW_C => set_bit_field(values, data.last_mut().unwrap()),
+            ROW_D => add_attribute(
+                values,
+                data.last_mut().unwrap(),
+                &attributes_original_primary_index,
+            ),
+            ROW_E => add_information_text(values, data.last_mut().unwrap()),
+            ROW_F => set_line(values, data.last_mut().unwrap()),
+            ROW_G => set_direction(
+                values,
+                data.last_mut().unwrap(),
+                directions_original_primary_index,
+            ),
+            ROW_H => set_boarding_or_disembarking_transfer_time(values, data.last_mut().unwrap()),
+            ROW_I => add_route_entry(values, data.last_mut().unwrap()),
+            _ => unreachable!(),
+        }
+    }
+
+    let data = data.into_iter().fold(HashMap::new(), |mut acc, item| {
+        acc.insert(item.id(), item);
+        acc
+    });
+
+    Ok((JourneyStorage::new(data), original_primary_index))
 }
+
+// let data = parser
+//     .parse()
+//     .filter_map(|(id, _, values)| {
+//         match id {
+//             ROW_A => {
+//                 let (instance, k) = create_instance(values, &auto_increment);
+//                 original_primary_index.insert(k, Rc::clone(&instance));
+//                 current_instance = Rc::clone(&instance);
+//                 return Some(instance);
+//             }
+//             ROW_B => set_transport_type(
+//                 values,
+//                 &current_instance,
+//                 &transport_types_original_primary_index,
+//             ),
+//             ROW_C => set_bit_field(values, &current_instance),
+//             ROW_D => add_attribute(
+//                 values,
+//                 &current_instance,
+//                 &attributes_original_primary_index,
+//             ),
+//             ROW_E => add_information_text(values, &current_instance),
+//             ROW_F => set_line(values, &current_instance),
+//             ROW_G => {
+//                 set_direction(values, &current_instance, directions_original_primary_index)
+//             }
+//             ROW_H => set_boarding_or_disembarking_transfer_time(values, &current_instance),
+//             ROW_I => add_route_entry(values, &current_instance),
+//             _ => unreachable!(),
+//         };
+//         None
+//     })
+//     .collect();
 
 // ------------------------------------------------------------------------------------------------
 // --- Data Processing Functions
@@ -148,20 +185,17 @@ pub fn parse(
 fn create_instance(
     mut values: Vec<ParsedValue>,
     auto_increment: &AutoIncrement,
-) -> (Rc<Journey>, (i32, String)) {
+) -> (Journey, (i32, String)) {
     let legacy_id: i32 = values.remove(0).into();
     let administration: String = values.remove(0).into();
 
-    let instance = Rc::new(Journey::new(
-        auto_increment.next(),
-        administration.to_owned(),
-    ));
+    let instance = Journey::new(auto_increment.next(), administration.to_owned());
     (instance, (legacy_id, administration))
 }
 
 fn set_transport_type(
     mut values: Vec<ParsedValue>,
-    journey: &Journey,
+    journey: &mut Journey,
     transport_types_original_primary_index: &ResourceIndex<String, TransportType>,
 ) {
     let designation: String = values.remove(0).into();

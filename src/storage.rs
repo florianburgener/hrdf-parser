@@ -59,7 +59,7 @@ pub struct DataStorage {
 
 #[allow(unused)]
 impl DataStorage {
-    pub fn new() -> Result<Rc<Self>, Box<dyn Error>> {
+    pub fn new() -> Result<Rc<RefCell<Self>>, Box<dyn Error>> {
         // Time-relevant data.
         let bit_fields = parsing::load_bit_fields()?;
         let holidays = parsing::load_holidays()?;
@@ -95,7 +95,7 @@ impl DataStorage {
         let transfer_times_line =
             parsing::load_transfer_times_line(&transport_types_original_primary_index)?;
 
-        let instance = Rc::new(Self {
+        let instance = Rc::new(RefCell::new(Self {
             // Time-relevant data.
             bit_fields,
             holidays,
@@ -119,45 +119,56 @@ impl DataStorage {
             transfer_times_administration,
             transfer_times_journey,
             transfer_times_line,
-        });
+        }));
 
-        instance.set_references(&instance);
-        instance.build_indexes();
+        instance.borrow_mut().set_references(&instance);
+        Self::build_indexes(&instance);
         Ok(instance)
     }
 
-    pub fn set_references(&self, instance: &Rc<DataStorage>) {
+    pub fn set_references(&mut self, instance: &Rc<RefCell<DataStorage>>) {
         self.journeys
-            .rows()
-            .iter()
+            .entries_mut()
+            .into_iter()
             .for_each(|item| item.set_data_storage_reference(instance));
     }
 
-    pub fn remove_references(&self) {
+    pub fn remove_references(&mut self) {
         self.journeys
-            .rows()
-            .iter()
+            .entries_mut()
+            .into_iter()
             .for_each(|item| item.remove_data_storage_reference());
     }
 
-    fn build_indexes(&self) {
-        self.journeys().build_journeys_by_day(self);
+    fn build_indexes(data_storage: &Rc<RefCell<DataStorage>>) {
+        let journeys_by_day = data_storage
+            .borrow()
+            .journeys()
+            .create_journeys_by_day(data_storage.borrow());
+        data_storage
+            .borrow_mut()
+            .journeys_mut()
+            .set_journeys_by_day(journeys_by_day);
     }
 
     pub fn bit_fields(&self) -> &SimpleResourceStorage<BitField> {
-        return &self.bit_fields;
+        &self.bit_fields
     }
 
     pub fn timetable_metadata(&self) -> &TimetableMetadataStorage {
-        return &self.timetable_metadata;
+        &self.timetable_metadata
     }
 
     pub fn journeys(&self) -> &JourneyStorage {
-        return &self.journeys;
+        &self.journeys
+    }
+
+    fn journeys_mut(&mut self) -> &mut JourneyStorage {
+        &mut self.journeys
     }
 
     pub fn platforms(&self) -> &SimpleResourceStorage<Platform> {
-        return &self.platforms;
+        &self.platforms
     }
 
     pub fn stops(&self) -> &SimpleResourceStorage<Stop> {
@@ -194,8 +205,9 @@ impl<M: Model<M>> SimpleResourceStorage<M> {
         &self.primary_index
     }
 
-    pub fn find(&self, k: M::K) -> Rc<M> {
-        Rc::clone(self.primary_index().get(&k).unwrap())
+    pub fn find(&self, k: M::K) -> &M {
+        &self.primary_index().get(&k).unwrap()
+        // Rc::clone(self.primary_index().get(&k).unwrap())
     }
 }
 
@@ -259,30 +271,72 @@ impl TimetableMetadataStorage {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct JourneyStorage {
-    rows: ResourceCollection<Journey>,
-    primary_index: ResourceIndex<i32, Journey>,
-    journeys_by_day: RefCell<HashMap<NaiveDate, HashSet<i32>>>,
+    data: HashMap<i32, Journey>,
     journeys_by_stop_id: HashMap<i32, HashSet<i32>>,
+    journeys_by_day: HashMap<NaiveDate, HashSet<i32>>,
 }
 
 #[allow(unused)]
 impl JourneyStorage {
-    pub fn new(rows: ResourceCollection<Journey>) -> Self {
-        let primary_index = Journey::create_primary_index(&rows);
-        let journeys_by_stop_id = Self::create_journeys_by_stop_id(&rows);
+    pub fn new(data: HashMap<i32, Journey>) -> Self {
+        let journeys_by_stop_id = Self::create_journeys_by_stop_id(&data);
 
         Self {
-            rows,
-            primary_index,
-            journeys_by_day: RefCell::new(HashMap::default()),
+            data,
             journeys_by_stop_id,
+            journeys_by_day: HashMap::new(),
         }
     }
 
-    fn create_journeys_by_stop_id(
-        rows: &ResourceCollection<Journey>,
-    ) -> HashMap<i32, HashSet<i32>> {
-        rows.iter().fold(HashMap::new(), |mut acc, journey| {
+    // Getters/Setters
+
+    pub fn data(&self) -> &HashMap<i32, Journey> {
+        &self.data
+    }
+
+    fn data_mut(&mut self) -> &mut HashMap<i32, Journey> {
+        &mut self.data
+    }
+
+    pub fn journeys_by_stop_id(&self) -> &HashMap<i32, HashSet<i32>> {
+        &self.journeys_by_stop_id
+    }
+
+    pub fn journeys_by_day(&self) -> &HashMap<NaiveDate, HashSet<i32>> {
+        &self.journeys_by_day
+    }
+
+    pub fn set_journeys_by_day(&mut self, value: HashMap<NaiveDate, HashSet<i32>>) {
+        self.journeys_by_day = value;
+    }
+
+    // Functions
+
+    pub fn entries(&self) -> Vec<&Journey> {
+        self.data().values().map(|j| j).collect()
+    }
+
+    pub fn entries_mut(&mut self) -> Vec<&mut Journey> {
+        self.data_mut().values_mut().map(|j| j).collect()
+    }
+
+    pub fn find(&self, id: i32) -> &Journey {
+        self.data().get(&id).unwrap()
+    }
+
+    pub fn find_by_day(&self, day: NaiveDate) -> &HashSet<i32> {
+        self.journeys_by_day().get(&day).unwrap()
+    }
+
+    pub fn find_by_stop_id(&self, stop_id: i32) -> &HashSet<i32> {
+        self.journeys_by_stop_id().get(&stop_id).unwrap()
+    }
+}
+
+// Functions that create indexes.
+impl JourneyStorage {
+    fn create_journeys_by_stop_id(data: &HashMap<i32, Journey>) -> HashMap<i32, HashSet<i32>> {
+        data.values().fold(HashMap::new(), |mut acc, journey| {
             journey.route().iter().for_each(|route_entry| {
                 acc.entry(route_entry.stop_id())
                     .or_insert(HashSet::new())
@@ -292,15 +346,10 @@ impl JourneyStorage {
         })
     }
 
-    pub fn rows(&self) -> &ResourceCollection<Journey> {
-        &self.rows
-    }
-
-    pub fn primary_index(&self) -> &ResourceIndex<i32, Journey> {
-        &self.primary_index
-    }
-
-    pub fn build_journeys_by_day(&self, data_storage: &DataStorage) {
+    pub fn create_journeys_by_day(
+        &self,
+        data_storage: Ref<DataStorage>,
+    ) -> HashMap<NaiveDate, HashSet<i32>> {
         let timetable_metadata = data_storage.timetable_metadata();
         let start_date = timetable_metadata.start_date();
         let num_days = count_days_between_two_dates(start_date, timetable_metadata.end_date());
@@ -314,54 +363,27 @@ impl JourneyStorage {
             })
             .collect();
 
-        *self.journeys_by_day.borrow_mut() =
-            self.rows().iter().fold(HashMap::new(), |mut acc, item| {
-                let bit_field = item.bit_field();
-                let indexes: Vec<usize> = if let Some(bit_field) = bit_field {
-                    bit_field
-                        .bits()
-                        .iter()
-                        .enumerate()
-                        .filter(|(i, &x)| *i < num_days && x == 1)
-                        .map(|(i, _)| i)
-                        .collect()
-                } else {
-                    (0..num_days).collect()
-                };
+        self.data().values().fold(HashMap::new(), |mut acc, item| {
+            let bit_field = item.bit_field();
+            let indexes: Vec<usize> = if let Some(bit_field) = bit_field {
+                bit_field
+                    .bits()
+                    .iter()
+                    .enumerate()
+                    .filter(|(i, &x)| *i < num_days && x == 1)
+                    .map(|(i, _)| i)
+                    .collect()
+            } else {
+                (0..num_days).collect()
+            };
 
-                indexes.into_iter().for_each(|i| {
-                    acc.entry(dates[i])
-                        .or_insert(HashSet::new())
-                        .insert(item.id());
-                });
-
-                acc
+            indexes.into_iter().for_each(|i| {
+                acc.entry(dates[i])
+                    .or_insert(HashSet::new())
+                    .insert(item.id());
             });
-    }
 
-    pub fn journeys_by_day(&self) -> Ref<HashMap<NaiveDate, HashSet<i32>>> {
-        self.journeys_by_day.borrow()
-    }
-
-    pub fn find_journeys_for_specific_day(&self, day: NaiveDate) -> HashSet<i32> {
-        self.journeys_by_day
-            .borrow()
-            .get(&day)
-            .unwrap()
-            .iter()
-            .cloned()
-            .collect()
-    }
-
-    pub fn find_journeys_for_specific_stop_id(&self, stop_id: i32) -> &HashSet<i32> {
-        self.journeys_by_stop_id.get(&stop_id).unwrap()
-    }
-
-    pub fn find(&self, k: i32) -> Rc<Journey> {
-        Rc::clone(self.primary_index().get(&k).unwrap())
-    }
-
-    pub fn get(&self, ids: HashSet<i32>) -> ResourceCollection<Journey> {
-        ids.into_iter().map(|id| self.find(id)).collect()
+            acc
+        })
     }
 }

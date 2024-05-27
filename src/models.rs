@@ -2,7 +2,7 @@ use std::{
     cell::{Ref, RefCell},
     collections::HashMap,
     hash::Hash,
-    rc::{Rc, Weak},
+    rc::Rc,
 };
 
 use chrono::NaiveDate;
@@ -345,7 +345,7 @@ impl InformationText {
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Journey {
-    data_storage: RefCell<Weak<DataStorage>>,
+    data_storage: Option<Rc<RefCell<DataStorage>>>,
     id: i32,
     administration: String,
     metadata: RefCell<HashMap<JourneyMetadataType, RefCell<Vec<JourneyMetadataEntry>>>>,
@@ -364,7 +364,7 @@ impl Model<Journey> for Journey {
 impl Journey {
     pub fn new(id: i32, administration: String) -> Self {
         Self {
-            data_storage: RefCell::new(Weak::new()),
+            data_storage: None,
             id,
             administration,
             metadata: RefCell::new(HashMap::new()),
@@ -372,23 +372,23 @@ impl Journey {
         }
     }
 
-    fn data_storage(&self) -> Rc<DataStorage> {
-        self.data_storage.borrow().upgrade().unwrap()
+    fn data_storage(&self) -> Ref<DataStorage> {
+        self.data_storage.as_ref().unwrap().borrow()
     }
 
-    pub fn set_data_storage_reference(&self, data_storage: &Rc<DataStorage>) {
-        *self.data_storage.borrow_mut() = Rc::downgrade(data_storage);
+    pub fn set_data_storage_reference(&mut self, data_storage: &Rc<RefCell<DataStorage>>) {
+        self.data_storage = Some(Rc::clone(data_storage));
     }
 
-    pub fn remove_data_storage_reference(&self) {
-        *self.data_storage.borrow_mut() = Weak::new();
+    pub fn remove_data_storage_reference(&mut self) {
+        self.data_storage = None;
     }
 
     pub fn administration(&self) -> &str {
         &self.administration
     }
 
-    pub fn bit_field(&self) -> Option<Rc<BitField>> {
+    pub fn bit_field(&self) -> Option<Ref<BitField>> {
         let metadata = self.metadata.borrow();
         let entry = &metadata
             .get(&JourneyMetadataType::BitField)
@@ -396,7 +396,7 @@ impl Journey {
             .borrow()[0];
 
         entry.bit_field_id.map(|bit_field_id| {
-            Rc::clone(&self.data_storage().bit_fields().find(bit_field_id))
+            Ref::map(self.data_storage(), |d| d.bit_fields().find(bit_field_id))
         })
     }
 

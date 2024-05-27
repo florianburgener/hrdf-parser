@@ -1,4 +1,9 @@
-use std::{error::Error, fs, rc::Rc};
+use std::{
+    cell::{Ref, RefCell},
+    error::Error,
+    fs,
+    rc::Rc,
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -8,7 +13,7 @@ const CACHED_PATH: &str = "data.cache";
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Hrdf {
-    data_storage: Rc<DataStorage>,
+    data_storage: Rc<RefCell<DataStorage>>,
 }
 
 impl Hrdf {
@@ -19,18 +24,22 @@ impl Hrdf {
         Ok(instance)
     }
 
-    pub fn data_storage(&self) -> &DataStorage {
-        &self.data_storage
+    // Getters/Setters
+
+    pub fn data_storage(&self) -> Ref<DataStorage> {
+        self.data_storage.borrow()
     }
 
-    // ---
+    // Functions
 
     fn set_data_storage_references(&self) {
-        self.data_storage().set_references(&self.data_storage);
+        self.data_storage
+            .borrow_mut()
+            .set_references(&self.data_storage);
     }
 
     fn remove_data_storage_references(&self) {
-        self.data_storage().remove_references();
+        self.data_storage.borrow_mut().remove_references();
     }
 
     pub fn build_cache(self) -> Result<Self, Box<dyn Error>> {

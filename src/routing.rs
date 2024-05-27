@@ -1,10 +1,10 @@
-use std::time::Instant;
+use std::{cell::Ref, collections::HashSet, time::Instant};
 
 use chrono::NaiveDate;
 
 use crate::{
     hrdf::Hrdf,
-    models::{Journey, ResourceCollection, Time},
+    models::{Journey, Time},
 };
 
 impl Hrdf {
@@ -22,26 +22,26 @@ impl Hrdf {
 
         let now = Instant::now();
         let mut x = 0;
-        for _ in 0..100 {
+        for _ in 0..1000 {
             let journeys = self.get_operating_journeys(departure_date, departure_stop_id);
             x += journeys.len();
         }
-        let elapsed = now.elapsed() / 100;
+        let elapsed = now.elapsed() / 1000;
         println!("Elapsed: {:.2?}", elapsed);
 
         println!("{}", x);
     }
 
-    fn get_operating_journeys(&self, date: NaiveDate, stop_id: i32) -> ResourceCollection<Journey> {
+    fn get_operating_journeys(&self, date: NaiveDate, stop_id: i32) -> Vec<Ref<Journey>> {
         let data_storage = self.data_storage();
-        let journeys = data_storage.journeys();
 
-        let journeys_by_day = journeys.journeys_by_day();
-        let journeys_1 = journeys_by_day.get(&date).unwrap();
-        let journeys_2 = journeys.find_journeys_for_specific_stop_id(stop_id);
+        let journeys_1 = data_storage.journeys().find_by_day(date);
+        let journeys_2 = data_storage.journeys().find_by_stop_id(stop_id);
 
-        let ids = journeys_1.intersection(&journeys_2).cloned().collect();
+        let ids: HashSet<i32> = journeys_1.intersection(&journeys_2).cloned().collect();
 
-        data_storage.journeys().get(ids)
+        ids.into_iter()
+            .map(|id| Ref::map(self.data_storage(), |d| d.journeys().find(id)))
+            .collect()
     }
 }

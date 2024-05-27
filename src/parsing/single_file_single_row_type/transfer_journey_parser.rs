@@ -1,17 +1,17 @@
 // 1 file(s).
 // File(s) read by the parser:
 // UMSTEIGZ
-use std::{error::Error, rc::Rc};
+use std::{collections::HashMap, error::Error, rc::Rc};
 
 use crate::{
-    models::{Journey, Model, ResourceIndex, TransferTimeJourney},
+    models::TransferTimeJourney,
     parsing::{ColumnDefinition, ExpectedType, FileParser, ParsedValue, RowDefinition, RowParser},
     storage::SimpleResourceStorage,
     utils::AutoIncrement,
 };
 
 pub fn parse(
-    journeys_original_primary_index: &ResourceIndex<(i32, String), Journey>,
+    journeys_original_primary_index: &HashMap<(i32, String), i32>,
 ) -> Result<SimpleResourceStorage<TransferTimeJourney>, Box<dyn Error>> {
     println!("Parsing UMSTEIGZ...");
     #[rustfmt::skip]
@@ -49,7 +49,7 @@ pub fn parse(
 fn create_instance(
     mut values: Vec<ParsedValue>,
     auto_increment: &AutoIncrement,
-    journeys_original_primary_index: &ResourceIndex<(i32, String), Journey>,
+    journeys_original_primary_index: &HashMap<(i32, String), i32>,
 ) -> Rc<TransferTimeJourney> {
     let stop_id: i32 = values.remove(0).into();
     let journey_id_1: i32 = values.remove(0).into();
@@ -60,15 +60,13 @@ fn create_instance(
     let is_guaranteed: String = values.remove(0).into();
     let bit_field_id: Option<i32> = values.remove(0).into();
 
-    let journey_id_1 = journeys_original_primary_index
+    let journey_id_1 = *journeys_original_primary_index
         .get(&(journey_id_1, administration_1))
-        .unwrap()
-        .id();
+        .unwrap();
 
-    let journey_id_2 = journeys_original_primary_index
+    let journey_id_2 = *journeys_original_primary_index
         .get(&(journey_id_2, administration_2))
-        .unwrap()
-        .id();
+        .unwrap();
 
     let is_guaranteed = is_guaranteed == "!";
 
