@@ -53,3 +53,11 @@ Algorithme de calcul du trajet le plus court :
 * On ne revient pas sur ces pas
 * Ne pas considérer les arrêts où les changements sont désactivés
 * Utiliser une HashMap pour chaque arrêt contenant le temps le plus court pour l'atteindre, si un trajet arrive à un arrêt après le meilleur de temps => terminated
+
+---
+
+* Si possible éviter Rc / RefCell
+* Si on doit passer un Rc pour ensuiter Rc::clone alors &Rc<_> est acceptable
+* Pour renvoyer une référence depuis un Rc, & et -> &_
+* Pour renvoyer une référence depuis un RefCell, .borrow() et -> Ref<_>
+* Utiliser Ref::map() pour renvoyer une référence sur un élément interne d'un Ref<_>
