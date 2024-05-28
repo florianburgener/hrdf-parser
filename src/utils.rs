@@ -6,14 +6,14 @@ use std::cell::RefCell;
 
 use chrono::NaiveDate;
 
-#[macro_export]
-macro_rules! resolve_ids {
-    ($self:expr, $ids:expr, $resource_storage:ident) => {{
-        $ids.into_iter()
-            .map(|id| Ref::map($self.data_storage(), |d| d.$resource_storage().find(id)))
-            .collect::<Vec<_>>()
-    }};
-}
+// #[macro_export]
+// macro_rules! resolve_ids {
+//     ($self:expr, $ids:expr, $resource_storage:ident) => {{
+//         $ids.into_iter()
+//             .map(|id| Ref::map($self.data_storage(), |d| d.$resource_storage().find(id)))
+//             .collect::<Vec<_>>()
+//     }};
+// }
 
 pub struct AutoIncrement {
     value: RefCell<i32>,

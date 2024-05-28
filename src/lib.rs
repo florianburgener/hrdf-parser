@@ -32,13 +32,16 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     println!("------------------------------------------------------------------------------------------------");
     println!();
 
-    println!("{} journeys", hrdf.data_storage().journeys().entries().len());
+    println!(
+        "{} journeys",
+        hrdf.data_storage().journeys().entries().len()
+    );
     // println!("{} platforms", hrdf.data_storage().platforms().items().len());
     // println!("{} stops", hrdf.data_storage().stops().items().len());
 
     let departure_date = NaiveDate::from_ymd_opt(2023, 02, 03).unwrap();
     // Chancy=8592688
-    hrdf.plan_trip(8587418, 8508134, departure_date, Time::new(14, 12));
+    hrdf.plan_trip(8592688, 8508134, departure_date, Time::new(14, 12));
 
     Ok(())
 }

@@ -386,6 +386,10 @@ impl Journey {
         &self.route
     }
 
+    pub fn route_mut(&mut self) -> &mut Vec<JourneyRouteEntry> {
+        &mut self.route
+    }
+
     // Functions
 
     pub fn add_metadata_entry(&mut self, k: JourneyMetadataType, v: JourneyMetadataEntry) {
@@ -462,6 +466,12 @@ impl JourneyMetadataEntry {
         }
     }
 
+    // Getters/Setters
+
+    fn resource_id(&self) -> &Option<i32> {
+        &self.resource_id
+    }
+
     pub fn departure_time(&self) -> &Option<Time> {
         &self.departure_time
     }
@@ -477,6 +487,8 @@ impl JourneyMetadataEntry {
     pub fn extra_field_2(&self) -> &Option<i32> {
         &self.extra_field_2
     }
+
+    // Functions
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -485,20 +497,26 @@ impl JourneyMetadataEntry {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct JourneyRouteEntry {
+    data_storage: Option<Rc<RefCell<DataStorage>>>,
     stop_id: i32,
     arrival_time: Option<Time>,
     departure_time: Option<Time>,
 }
 
+impl_HasDataStorage!(JourneyRouteEntry);
+
 #[allow(unused)]
 impl JourneyRouteEntry {
     pub fn new(stop_id: i32, arrival_time: Option<Time>, departure_time: Option<Time>) -> Self {
         Self {
+            data_storage: None,
             stop_id,
             arrival_time,
             departure_time,
         }
     }
+
+    // Getters/Setters
 
     pub fn stop_id(&self) -> i32 {
         self.stop_id
@@ -510,6 +528,12 @@ impl JourneyRouteEntry {
 
     pub fn departure_time(&self) -> &Option<Time> {
         &self.departure_time
+    }
+
+    // Functions
+
+    pub fn stop(&self) -> Ref<Stop> {
+        Ref::map(self.data_storage(), |d| d.stops().find(self.stop_id()))
     }
 }
 

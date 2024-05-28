@@ -123,17 +123,20 @@ impl DataStorage {
     }
 
     pub fn set_references(&mut self, data_storage: &Rc<RefCell<DataStorage>>) {
-        self.journeys
-            .entries_mut()
-            .into_iter()
-            .for_each(|item| item.set_data_storage_reference(data_storage));
+        self.journeys.entries_mut().into_iter().for_each(|journey| {
+            journey.set_data_storage_reference(data_storage);
+            journey
+                .route_mut()
+                .iter_mut()
+                .for_each(|route_entry| route_entry.set_data_storage_reference(data_storage));
+        });
     }
 
     pub fn remove_references(&mut self) {
         self.journeys
             .entries_mut()
             .into_iter()
-            .for_each(|item| item.remove_data_storage_reference());
+            .for_each(|journey| journey.remove_data_storage_reference());
     }
 
     fn build_indexes(data_storage: &Rc<RefCell<DataStorage>>) {
