@@ -4,7 +4,7 @@ use chrono::NaiveDate;
 
 use crate::{
     hrdf::Hrdf,
-    models::{Journey, Time},
+    models::{Journey, Time}, resolve_ids,
 };
 
 impl Hrdf {
@@ -39,9 +39,6 @@ impl Hrdf {
         let journeys_2 = data_storage.journeys().find_by_stop_id(stop_id);
 
         let ids: HashSet<i32> = journeys_1.intersection(&journeys_2).cloned().collect();
-
-        ids.into_iter()
-            .map(|id| Ref::map(self.data_storage(), |d| d.journeys().find(id)))
-            .collect()
+        resolve_ids!(self, ids, journeys)
     }
 }

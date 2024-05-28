@@ -12,6 +12,36 @@ use strum_macros::{self, Display, EnumString};
 use crate::storage::DataStorage;
 
 // ------------------------------------------------------------------------------------------------
+// --- HasDataStorage
+// ------------------------------------------------------------------------------------------------
+
+pub trait HasDataStorage {
+    fn data_storage(&self) -> Ref<DataStorage>;
+
+    fn set_data_storage_reference(&mut self, data_storage: &Rc<RefCell<DataStorage>>);
+
+    fn remove_data_storage_reference(&mut self);
+}
+
+macro_rules! impl_HasDataStorage {
+    ($m:ty) => {
+        impl HasDataStorage for $m {
+            fn data_storage(&self) -> Ref<DataStorage> {
+                self.data_storage.as_ref().unwrap().borrow()
+            }
+
+            fn set_data_storage_reference(&mut self, data_storage: &Rc<RefCell<DataStorage>>) {
+                self.data_storage = Some(Rc::clone(data_storage));
+            }
+
+            fn remove_data_storage_reference(&mut self) {
+                self.data_storage = None;
+            }
+        }
+    };
+}
+
+// ------------------------------------------------------------------------------------------------
 // --- Model
 // ------------------------------------------------------------------------------------------------
 
@@ -27,6 +57,25 @@ pub trait Model<M: Model<M>> {
             acc
         })
     }
+
+    fn vec_to_map(data: Vec<M>) -> HashMap<M::K, M> {
+        data.into_iter().fold(HashMap::new(), |mut acc, item| {
+            acc.insert(item.id(), item);
+            acc
+        })
+    }
+}
+
+macro_rules! impl_Model {
+    ($m:ty) => {
+        impl Model<$m> for $m {
+            type K = i32;
+
+            fn id(&self) -> Self::K {
+                self.id
+            }
+        }
+    };
 }
 
 /// M = Model type.
@@ -50,13 +99,7 @@ pub struct Attribute {
     description: RefCell<HashMap<Language, String>>,
 }
 
-impl Model<Attribute> for Attribute {
-    type K = i32;
-
-    fn id(&self) -> Self::K {
-        self.id
-    }
-}
+impl_Model!(Attribute);
 
 #[allow(unused)]
 impl Attribute {
@@ -114,13 +157,7 @@ pub struct BitField {
     bits: Vec<u8>,
 }
 
-impl Model<BitField> for BitField {
-    type K = i32;
-
-    fn id(&self) -> Self::K {
-        self.id
-    }
-}
+impl_Model!(BitField);
 
 #[allow(unused)]
 impl BitField {
@@ -232,13 +269,7 @@ pub struct Direction {
     name: String,
 }
 
-impl Model<Direction> for Direction {
-    type K = i32;
-
-    fn id(&self) -> Self::K {
-        self.id
-    }
-}
+impl_Model!(Direction);
 
 #[allow(unused)]
 impl Direction {
@@ -278,13 +309,7 @@ pub struct Holiday {
     name: HashMap<Language, String>,
 }
 
-impl Model<Holiday> for Holiday {
-    type K = i32;
-
-    fn id(&self) -> Self::K {
-        self.id
-    }
-}
+impl_Model!(Holiday);
 
 #[allow(unused)]
 impl Holiday {
@@ -311,13 +336,7 @@ pub struct InformationText {
     content: RefCell<HashMap<Language, String>>,
 }
 
-impl Model<InformationText> for InformationText {
-    type K = i32;
-
-    fn id(&self) -> Self::K {
-        self.id
-    }
-}
+impl_Model!(InformationText);
 
 #[allow(unused)]
 impl InformationText {
@@ -348,17 +367,12 @@ pub struct Journey {
     data_storage: Option<Rc<RefCell<DataStorage>>>,
     id: i32,
     administration: String,
-    metadata: RefCell<HashMap<JourneyMetadataType, RefCell<Vec<JourneyMetadataEntry>>>>,
-    route: RefCell<Vec<JourneyRouteEntry>>,
+    metadata: HashMap<JourneyMetadataType, Vec<JourneyMetadataEntry>>,
+    route: Vec<JourneyRouteEntry>,
 }
 
-impl Model<Journey> for Journey {
-    type K = i32;
-
-    fn id(&self) -> Self::K {
-        self.id
-    }
-}
+impl_HasDataStorage!(Journey);
+impl_Model!(Journey);
 
 #[allow(unused)]
 impl Journey {
@@ -367,57 +381,42 @@ impl Journey {
             data_storage: None,
             id,
             administration,
-            metadata: RefCell::new(HashMap::new()),
-            route: RefCell::new(Vec::new()),
+            metadata: HashMap::new(),
+            route: Vec::new(),
         }
     }
 
-    fn data_storage(&self) -> Ref<DataStorage> {
-        self.data_storage.as_ref().unwrap().borrow()
-    }
-
-    pub fn set_data_storage_reference(&mut self, data_storage: &Rc<RefCell<DataStorage>>) {
-        self.data_storage = Some(Rc::clone(data_storage));
-    }
-
-    pub fn remove_data_storage_reference(&mut self) {
-        self.data_storage = None;
-    }
+    // Getters/Setters
 
     pub fn administration(&self) -> &str {
         &self.administration
     }
 
+    fn metadata(&self) -> &HashMap<JourneyMetadataType, Vec<JourneyMetadataEntry>> {
+        &self.metadata
+    }
+
+    pub fn route(&self) -> &Vec<JourneyRouteEntry> {
+        &self.route
+    }
+
+    // Functions
+
+    pub fn add_metadata_entry(&mut self, k: JourneyMetadataType, v: JourneyMetadataEntry) {
+        self.metadata.entry(k).or_insert(Vec::new()).push(v);
+    }
+
+    pub fn add_route_entry(&mut self, entry: JourneyRouteEntry) {
+        self.route.push(entry);
+    }
+
     pub fn bit_field(&self) -> Option<Ref<BitField>> {
-        let metadata = self.metadata.borrow();
-        let entry = &metadata
-            .get(&JourneyMetadataType::BitField)
-            .unwrap()
-            .borrow()[0];
+        let entry = &self.metadata().get(&JourneyMetadataType::BitField).unwrap()[0];
 
         entry.bit_field_id.map(|bit_field_id| {
             Ref::map(self.data_storage(), |d| d.bit_fields().find(bit_field_id))
         })
     }
-
-    pub fn add_metadata_entry(&self, k: JourneyMetadataType, v: JourneyMetadataEntry) {
-        self.metadata
-            .borrow_mut()
-            .entry(k)
-            .or_insert(RefCell::new(Vec::new()))
-            .borrow_mut()
-            .push(v);
-    }
-
-    pub fn route(&self) -> Ref<Vec<JourneyRouteEntry>> {
-        self.route.borrow()
-    }
-
-    pub fn add_route_entry(&self, entry: JourneyRouteEntry) {
-        self.route.borrow_mut().push(entry);
-    }
-
-    // TODO: getters/setters.
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -503,7 +502,6 @@ pub struct JourneyRouteEntry {
     stop_id: i32,
     arrival_time: Option<Time>,
     departure_time: Option<Time>,
-    // TODO: add time type.
 }
 
 #[allow(unused)]
@@ -605,13 +603,7 @@ pub struct Line {
     background_color: RefCell<Color>,
 }
 
-impl Model<Line> for Line {
-    type K = i32;
-
-    fn id(&self) -> Self::K {
-        self.id
-    }
-}
+impl_Model!(Line);
 
 #[allow(unused)]
 impl Line {
@@ -669,13 +661,7 @@ pub struct Platform {
     wgs84_coordinate: RefCell<Coordinate>,
 }
 
-impl Model<Platform> for Platform {
-    type K = i32;
-
-    fn id(&self) -> Self::K {
-        self.id
-    }
-}
+impl_Model!(Platform);
 
 #[allow(unused)]
 impl Platform {
@@ -747,13 +733,7 @@ pub struct Stop {
     boarding_areas: RefCell<Vec<String>>,
 }
 
-impl Model<Stop> for Stop {
-    type K = i32;
-
-    fn id(&self) -> Self::K {
-        self.id
-    }
-}
+impl_Model!(Stop);
 
 #[allow(unused)]
 impl Stop {
@@ -893,13 +873,7 @@ pub struct StopConnection {
     attributes: RefCell<Vec<i32>>,
 }
 
-impl Model<StopConnection> for StopConnection {
-    type K = i32;
-
-    fn id(&self) -> Self::K {
-        self.id
-    }
-}
+impl_Model!(StopConnection);
 
 #[allow(unused)]
 impl StopConnection {
@@ -940,13 +914,7 @@ pub struct ThroughService {
     bit_field_id: i32,
 }
 
-impl Model<ThroughService> for ThroughService {
-    type K = i32;
-
-    fn id(&self) -> Self::K {
-        self.id
-    }
-}
+impl_Model!(ThroughService);
 
 #[allow(unused)]
 impl ThroughService {
@@ -1016,13 +984,7 @@ pub struct TimetableMetadataEntry {
     value: String,
 }
 
-impl Model<TimetableMetadataEntry> for TimetableMetadataEntry {
-    type K = i32;
-
-    fn id(&self) -> Self::K {
-        self.id
-    }
-}
+impl_Model!(TimetableMetadataEntry);
 
 #[allow(unused)]
 impl TimetableMetadataEntry {
@@ -1057,13 +1019,7 @@ pub struct TransferTimeAdministration {
     duration: i16, // Transfer time from administration 1 to administration 2 is in minutes.
 }
 
-impl Model<TransferTimeAdministration> for TransferTimeAdministration {
-    type K = i32;
-
-    fn id(&self) -> Self::K {
-        self.id
-    }
-}
+impl_Model!(TransferTimeAdministration);
 
 #[allow(unused)]
 impl TransferTimeAdministration {
@@ -1111,13 +1067,7 @@ pub struct TransferTimeJourney {
     bit_field_id: Option<i32>,
 }
 
-impl Model<TransferTimeJourney> for TransferTimeJourney {
-    type K = i32;
-
-    fn id(&self) -> Self::K {
-        self.id
-    }
-}
+impl_Model!(TransferTimeJourney);
 
 #[allow(unused)]
 impl TransferTimeJourney {
@@ -1170,13 +1120,7 @@ pub struct TransferTimeLine {
     is_guaranteed: bool,
 }
 
-impl Model<TransferTimeLine> for TransferTimeLine {
-    type K = i32;
-
-    fn id(&self) -> Self::K {
-        self.id
-    }
-}
+impl_Model!(TransferTimeLine);
 
 #[allow(unused)]
 impl TransferTimeLine {
@@ -1248,13 +1192,7 @@ pub struct TransportCompany {
     administrations: Vec<String>,
 }
 
-impl Model<TransportCompany> for TransportCompany {
-    type K = i32;
-
-    fn id(&self) -> Self::K {
-        self.id
-    }
-}
+impl_Model!(TransportCompany);
 
 #[allow(unused)]
 impl TransportCompany {
@@ -1321,13 +1259,7 @@ pub struct TransportType {
     category_name: RefCell<HashMap<Language, String>>,
 }
 
-impl Model<TransportType> for TransportType {
-    type K = i32;
-
-    fn id(&self) -> Self::K {
-        self.id
-    }
-}
+impl_Model!(TransportType);
 
 #[allow(unused)]
 impl TransportType {

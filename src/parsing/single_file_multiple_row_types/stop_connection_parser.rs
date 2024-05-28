@@ -50,7 +50,7 @@ pub fn parse(
                     return Some(instance);
                 }
                 ROW_B => add_attribute(values, &current_instance, attributes_original_primary_index),
-                ROW_C => (),
+                ROW_C => {}
                 _ => unreachable!(),
             };
             None

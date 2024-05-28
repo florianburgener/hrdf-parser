@@ -1,5 +1,5 @@
 use std::{
-    cell::{Ref, RefCell},
+    cell::RefCell,
     collections::{HashMap, HashSet},
     error::Error,
     rc::Rc,
@@ -10,9 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     models::{
-        Attribute, BitField, Direction, Holiday, InformationText, JourneyPlatform, Line, Platform,
-        Stop, StopConnection, ThroughService, TransferTimeAdministration, TransferTimeJourney,
-        TransferTimeLine, TransportCompany, TransportType,
+        Attribute, BitField, Direction, HasDataStorage, Holiday, InformationText, JourneyPlatform, Line, Platform, Stop, StopConnection, ThroughService, TransferTimeAdministration, TransferTimeJourney, TransferTimeLine, TransportCompany, TransportType
     },
     parsing,
 };
@@ -95,7 +93,7 @@ impl DataStorage {
         let transfer_times_line =
             parsing::load_transfer_times_line(&transport_types_original_primary_index)?;
 
-        let instance = Rc::new(RefCell::new(Self {
+        let data_storage = Rc::new(RefCell::new(Self {
             // Time-relevant data.
             bit_fields,
             holidays,
@@ -121,16 +119,16 @@ impl DataStorage {
             transfer_times_line,
         }));
 
-        instance.borrow_mut().set_references(&instance);
-        Self::build_indexes(&instance);
-        Ok(instance)
+        data_storage.borrow_mut().set_references(&data_storage);
+        Self::build_indexes(&data_storage);
+        Ok(data_storage)
     }
 
-    pub fn set_references(&mut self, instance: &Rc<RefCell<DataStorage>>) {
+    pub fn set_references(&mut self, data_storage: &Rc<RefCell<DataStorage>>) {
         self.journeys
             .entries_mut()
             .into_iter()
-            .for_each(|item| item.set_data_storage_reference(instance));
+            .for_each(|item| item.set_data_storage_reference(data_storage));
     }
 
     pub fn remove_references(&mut self) {
@@ -141,14 +139,18 @@ impl DataStorage {
     }
 
     fn build_indexes(data_storage: &Rc<RefCell<DataStorage>>) {
-        let journeys_by_day = data_storage
-            .borrow()
-            .journeys()
-            .create_journeys_by_day(data_storage.borrow());
-        data_storage
-            .borrow_mut()
-            .journeys_mut()
-            .set_journeys_by_day(journeys_by_day);
+        let indexes = data_storage.borrow().create_indexes();
+        data_storage.borrow_mut().set_indexes(indexes);
+    }
+
+    fn create_indexes(&self) -> (JourneyIndexes,) {
+        let journey_indexes = self.journeys().create_indexes(self);
+        (journey_indexes,)
+    }
+
+    fn set_indexes(&mut self, indexes: (JourneyIndexes,)) {
+        let (journey_indexes,) = indexes;
+        self.journeys_mut().set_indexes(journey_indexes);
     }
 
     pub fn bit_fields(&self) -> &SimpleResourceStorage<BitField> {
@@ -207,7 +209,6 @@ impl<M: Model<M>> SimpleResourceStorage<M> {
 
     pub fn find(&self, k: M::K) -> &M {
         &self.primary_index().get(&k).unwrap()
-        // Rc::clone(self.primary_index().get(&k).unwrap())
     }
 }
 
@@ -272,42 +273,40 @@ impl TimetableMetadataStorage {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct JourneyStorage {
     data: HashMap<i32, Journey>,
-    journeys_by_stop_id: HashMap<i32, HashSet<i32>>,
     journeys_by_day: HashMap<NaiveDate, HashSet<i32>>,
+    journeys_by_stop_id: HashMap<i32, HashSet<i32>>,
 }
 
 #[allow(unused)]
 impl JourneyStorage {
     pub fn new(data: HashMap<i32, Journey>) -> Self {
-        let journeys_by_stop_id = Self::create_journeys_by_stop_id(&data);
-
         Self {
             data,
-            journeys_by_stop_id,
             journeys_by_day: HashMap::new(),
+            journeys_by_stop_id: HashMap::new(),
         }
     }
 
     // Getters/Setters
 
-    pub fn data(&self) -> &HashMap<i32, Journey> {
+    fn data(&self) -> &HashMap<i32, Journey> {
         &self.data
     }
 
-    fn data_mut(&mut self) -> &mut HashMap<i32, Journey> {
-        &mut self.data
-    }
-
-    pub fn journeys_by_stop_id(&self) -> &HashMap<i32, HashSet<i32>> {
-        &self.journeys_by_stop_id
-    }
-
-    pub fn journeys_by_day(&self) -> &HashMap<NaiveDate, HashSet<i32>> {
+    fn journeys_by_day(&self) -> &JourneyIndex1 {
         &self.journeys_by_day
     }
 
-    pub fn set_journeys_by_day(&mut self, value: HashMap<NaiveDate, HashSet<i32>>) {
+    fn set_journeys_by_day(&mut self, value: JourneyIndex1) {
         self.journeys_by_day = value;
+    }
+
+    fn journeys_by_stop_id(&self) -> &JourneyIndex2 {
+        &self.journeys_by_stop_id
+    }
+
+    fn set_journeys_by_stop_id(&mut self, value: JourneyIndex2) {
+        self.journeys_by_stop_id = value;
     }
 
     // Functions
@@ -317,7 +316,7 @@ impl JourneyStorage {
     }
 
     pub fn entries_mut(&mut self) -> Vec<&mut Journey> {
-        self.data_mut().values_mut().map(|j| j).collect()
+        self.data.values_mut().map(|j| j).collect()
     }
 
     pub fn find(&self, id: i32) -> &Journey {
@@ -333,23 +332,27 @@ impl JourneyStorage {
     }
 }
 
-// Functions that create indexes.
+type JourneyIndex1 = HashMap<NaiveDate, HashSet<i32>>;
+type JourneyIndex2 = HashMap<i32, HashSet<i32>>;
+type JourneyIndexes = (JourneyIndex1, JourneyIndex2);
+
+// Manages the creation of indexes.
 impl JourneyStorage {
-    fn create_journeys_by_stop_id(data: &HashMap<i32, Journey>) -> HashMap<i32, HashSet<i32>> {
-        data.values().fold(HashMap::new(), |mut acc, journey| {
-            journey.route().iter().for_each(|route_entry| {
-                acc.entry(route_entry.stop_id())
-                    .or_insert(HashSet::new())
-                    .insert(journey.id());
-            });
-            acc
-        })
+    pub fn create_indexes(&self, data_storage: &DataStorage) -> JourneyIndexes {
+        (
+            self.create_journeys_by_day(data_storage),
+            self.create_journeys_by_stop_id(data_storage),
+        )
     }
 
-    pub fn create_journeys_by_day(
-        &self,
-        data_storage: Ref<DataStorage>,
-    ) -> HashMap<NaiveDate, HashSet<i32>> {
+    pub fn set_indexes(&mut self, indexes: JourneyIndexes) {
+        let (journeys_by_day, journeys_by_stop_id) = indexes;
+
+        self.set_journeys_by_day(journeys_by_day);
+        self.set_journeys_by_stop_id(journeys_by_stop_id);
+    }
+
+    fn create_journeys_by_day(&self, data_storage: &DataStorage) -> JourneyIndex1 {
         let timetable_metadata = data_storage.timetable_metadata();
         let start_date = timetable_metadata.start_date();
         let num_days = count_days_between_two_dates(start_date, timetable_metadata.end_date());
@@ -363,7 +366,7 @@ impl JourneyStorage {
             })
             .collect();
 
-        self.data().values().fold(HashMap::new(), |mut acc, item| {
+        self.entries().iter().fold(HashMap::new(), |mut acc, item| {
             let bit_field = item.bit_field();
             let indexes: Vec<usize> = if let Some(bit_field) = bit_field {
                 bit_field
@@ -385,5 +388,18 @@ impl JourneyStorage {
 
             acc
         })
+    }
+
+    fn create_journeys_by_stop_id(&self, _: &DataStorage) -> JourneyIndex2 {
+        self.entries()
+            .iter()
+            .fold(HashMap::new(), |mut acc, journey| {
+                journey.route().iter().for_each(|route_entry| {
+                    acc.entry(route_entry.stop_id())
+                        .or_insert(HashSet::new())
+                        .insert(journey.id());
+                });
+                acc
+            })
     }
 }

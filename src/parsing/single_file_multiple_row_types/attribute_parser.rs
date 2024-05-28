@@ -67,7 +67,7 @@ pub fn parse() -> Result<
                     original_primary_index.insert(k, Rc::clone(&instance));
                     return Some(instance);
                 }
-                ROW_B => (),
+                ROW_B => {}
                 ROW_C => update_current_language(values, &mut current_language),
                 ROW_D => set_description(values, &original_primary_index, current_language),
                 _ => unreachable!(),

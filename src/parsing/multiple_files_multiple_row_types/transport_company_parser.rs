@@ -35,7 +35,7 @@ pub fn parse() -> Result<SimpleResourceStorage<TransportCompany>, Box<dyn Error>
         .parse()
         .filter_map(|(id, _, values)| {
             match id {
-                ROW_A => (),
+                ROW_A => {}
                 ROW_B => return Some(create_instance(values)),
                 _ => unreachable!(),
             };

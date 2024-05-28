@@ -101,82 +101,41 @@ pub fn parse(
     let parser = FileParser::new("data/FPLAN", row_parser)?;
 
     let auto_increment = AutoIncrement::new();
-    let mut original_primary_index = HashMap::new();
-
     let mut data = Vec::new();
+    let mut pk_type_converter = HashMap::new();
 
     for (id, _, values) in parser.parse() {
         match id {
             ROW_A => {
                 let (instance, k) = create_instance(values, &auto_increment);
-                original_primary_index.insert(k, instance.id());
+                pk_type_converter.insert(k, instance.id());
                 data.push(instance);
             }
-            ROW_B => set_transport_type(
-                values,
-                data.last_mut().unwrap(),
-                &transport_types_original_primary_index,
-            ),
-            ROW_C => set_bit_field(values, data.last_mut().unwrap()),
-            ROW_D => add_attribute(
-                values,
-                data.last_mut().unwrap(),
-                &attributes_original_primary_index,
-            ),
-            ROW_E => add_information_text(values, data.last_mut().unwrap()),
-            ROW_F => set_line(values, data.last_mut().unwrap()),
-            ROW_G => set_direction(
-                values,
-                data.last_mut().unwrap(),
-                directions_original_primary_index,
-            ),
-            ROW_H => set_boarding_or_disembarking_transfer_time(values, data.last_mut().unwrap()),
-            ROW_I => add_route_entry(values, data.last_mut().unwrap()),
-            _ => unreachable!(),
+            _ => {
+                let journey = data.last_mut().unwrap();
+
+                match id {
+                    ROW_B => {
+                        set_transport_type(values, journey, &transport_types_original_primary_index)
+                    }
+                    ROW_C => set_bit_field(values, journey),
+                    ROW_D => add_attribute(values, journey, &attributes_original_primary_index),
+                    ROW_E => add_information_text(values, journey),
+                    ROW_F => set_line(values, journey),
+                    ROW_G => set_direction(values, journey, directions_original_primary_index),
+                    ROW_H => set_boarding_or_disembarking_transfer_time(values, journey),
+                    ROW_I => add_route_entry(values, journey),
+                    _ => unreachable!(),
+                }
+            }
         }
     }
 
-    let data = data.into_iter().fold(HashMap::new(), |mut acc, item| {
-        acc.insert(item.id(), item);
-        acc
-    });
-
-    Ok((JourneyStorage::new(data), original_primary_index))
+    Ok((
+        JourneyStorage::new(Journey::vec_to_map(data)),
+        pk_type_converter,
+    ))
 }
-
-// let data = parser
-//     .parse()
-//     .filter_map(|(id, _, values)| {
-//         match id {
-//             ROW_A => {
-//                 let (instance, k) = create_instance(values, &auto_increment);
-//                 original_primary_index.insert(k, Rc::clone(&instance));
-//                 current_instance = Rc::clone(&instance);
-//                 return Some(instance);
-//             }
-//             ROW_B => set_transport_type(
-//                 values,
-//                 &current_instance,
-//                 &transport_types_original_primary_index,
-//             ),
-//             ROW_C => set_bit_field(values, &current_instance),
-//             ROW_D => add_attribute(
-//                 values,
-//                 &current_instance,
-//                 &attributes_original_primary_index,
-//             ),
-//             ROW_E => add_information_text(values, &current_instance),
-//             ROW_F => set_line(values, &current_instance),
-//             ROW_G => {
-//                 set_direction(values, &current_instance, directions_original_primary_index)
-//             }
-//             ROW_H => set_boarding_or_disembarking_transfer_time(values, &current_instance),
-//             ROW_I => add_route_entry(values, &current_instance),
-//             _ => unreachable!(),
-//         };
-//         None
-//     })
-//     .collect();
 
 // ------------------------------------------------------------------------------------------------
 // --- Data Processing Functions
@@ -222,7 +181,7 @@ fn set_transport_type(
     );
 }
 
-fn set_bit_field(mut values: Vec<ParsedValue>, journey: &Journey) {
+fn set_bit_field(mut values: Vec<ParsedValue>, journey: &mut Journey) {
     let from_stop_id: Option<i32> = values.remove(0).into();
     let until_stop_id: Option<i32> = values.remove(0).into();
     let bit_field_id: Option<i32> = values.remove(0).into();
@@ -244,7 +203,7 @@ fn set_bit_field(mut values: Vec<ParsedValue>, journey: &Journey) {
 
 fn add_attribute(
     mut values: Vec<ParsedValue>,
-    journey: &Journey,
+    journey: &mut Journey,
     attributes_original_primary_index: &ResourceIndex<String, Attribute>,
 ) {
     let designation: String = values.remove(0).into();
@@ -271,7 +230,7 @@ fn add_attribute(
     );
 }
 
-fn add_information_text(mut values: Vec<ParsedValue>, journey: &Journey) {
+fn add_information_text(mut values: Vec<ParsedValue>, journey: &mut Journey) {
     let code: String = values.remove(0).into();
     let from_stop_id: Option<i32> = values.remove(0).into();
     let until_stop_id: Option<i32> = values.remove(0).into();
@@ -298,7 +257,7 @@ fn add_information_text(mut values: Vec<ParsedValue>, journey: &Journey) {
     );
 }
 
-fn set_line(mut values: Vec<ParsedValue>, journey: &Journey) {
+fn set_line(mut values: Vec<ParsedValue>, journey: &mut Journey) {
     let line_designation: String = values.remove(0).into();
     let from_stop_id: Option<i32> = values.remove(0).into();
     let until_stop_id: Option<i32> = values.remove(0).into();
@@ -331,7 +290,7 @@ fn set_line(mut values: Vec<ParsedValue>, journey: &Journey) {
 
 fn set_direction(
     mut values: Vec<ParsedValue>,
-    journey: &Journey,
+    journey: &mut Journey,
     directions_original_primary_index: &ResourceIndex<String, Direction>,
 ) {
     let direction_type: String = values.remove(0).into();
@@ -370,7 +329,7 @@ fn set_direction(
     );
 }
 
-fn set_boarding_or_disembarking_transfer_time(mut values: Vec<ParsedValue>, journey: &Journey) {
+fn set_boarding_or_disembarking_transfer_time(mut values: Vec<ParsedValue>, journey: &mut Journey) {
     let ci_co: String = values.remove(0).into();
     let transfer_time: i32 = values.remove(0).into();
     let from_stop_id: Option<i32> = values.remove(0).into();
@@ -397,7 +356,7 @@ fn set_boarding_or_disembarking_transfer_time(mut values: Vec<ParsedValue>, jour
     );
 }
 
-fn add_route_entry(mut values: Vec<ParsedValue>, journey: &Journey) {
+fn add_route_entry(mut values: Vec<ParsedValue>, journey: &mut Journey) {
     let stop_id: i32 = values.remove(0).into();
     let arrival_time: Option<i32> = values.remove(0).into();
     let departure_time: Option<i32> = values.remove(0).into();
