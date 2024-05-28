@@ -54,6 +54,11 @@ Algorithme de calcul du trajet le plus court :
 * Ne pas considérer les arrêts où les changements sont désactivés
 * Utiliser une HashMap pour chaque arrêt contenant le temps le plus court pour l'atteindre, si un trajet arrive à un arrêt après le meilleur de temps => terminated
 
-auto_increment         : journey_parser
-for loop + .last_mut() : journey_parser
-pk_type_converter      : journey_parser
+
+for loop + data HashMap : attribute
+for loop + .last_mut()  : journey
+.map().collect()        : bit_field, direction, holiday, through_service, transfer_administration, transfer_journey, transfer_line, stop
+
+auto_increment          : holiday, journey, through_service, transfer_administration, transfer_journey, transfer_line
+HashMap direct usage    : stop
+pk_type_converter       : direction, journey

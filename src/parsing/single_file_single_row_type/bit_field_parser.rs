@@ -1,10 +1,10 @@
 // 1 file(s).
 // File(s) read by the parser:
 // BITFELD
-use std::{error::Error, rc::Rc};
+use std::error::Error;
 
 use crate::{
-    models::BitField,
+    models::{BitField, Model},
     parsing::{ColumnDefinition, ExpectedType, FileParser, ParsedValue, RowDefinition, RowParser},
     storage::SimpleResourceStorage,
 };
@@ -21,25 +21,26 @@ pub fn parse() -> Result<SimpleResourceStorage<BitField>, Box<dyn Error>> {
     ]);
     let parser = FileParser::new("data/BITFELD", row_parser)?;
 
-    let rows = parser
+    let data = parser
         .parse()
         .map(|(_, _, values)| create_instance(values))
         .collect();
+    let data = BitField::vec_to_map(data);
 
-    Ok(SimpleResourceStorage::new(rows))
+    Ok(SimpleResourceStorage::new(data))
 }
 
 // ------------------------------------------------------------------------------------------------
 // --- Data Processing Functions
 // ------------------------------------------------------------------------------------------------
 
-fn create_instance(mut values: Vec<ParsedValue>) -> Rc<BitField> {
+fn create_instance(mut values: Vec<ParsedValue>) -> BitField {
     let id: i32 = values.remove(0).into();
     let hex_number: String = values.remove(0).into();
 
     let bits = convert_hex_number_to_bits(hex_number);
 
-    Rc::new(BitField::new(id, bits))
+    BitField::new(id, bits)
 }
 
 // ------------------------------------------------------------------------------------------------

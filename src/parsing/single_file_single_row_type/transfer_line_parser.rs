@@ -1,17 +1,17 @@
 // 1 file(s).
 // File(s) read by the parser:
 // UMSTEIGL
-use std::{error::Error, rc::Rc, str::FromStr};
+use std::{collections::HashMap, error::Error, str::FromStr};
 
 use crate::{
-    models::{DirectionType, Model, ResourceIndex, TransferTimeLine, TransportType},
+    models::{DirectionType, Model, TransferTimeLine},
     parsing::{ColumnDefinition, ExpectedType, FileParser, ParsedValue, RowDefinition, RowParser},
     storage::SimpleResourceStorage,
     utils::AutoIncrement,
 };
 
 pub fn parse(
-    transport_types_original_primary_index: &ResourceIndex<String, TransportType>,
+    transport_types_pk_type_converter: &HashMap<String, i32>,
 ) -> Result<SimpleResourceStorage<TransferTimeLine>, Box<dyn Error>> {
     println!("Parsing UMSTEIGL...");
     #[rustfmt::skip]
@@ -35,18 +35,15 @@ pub fn parse(
 
     let auto_increment = AutoIncrement::new();
 
-    let rows = parser
+    let data = parser
         .parse()
         .map(|(_, _, values)| {
-            create_instance(
-                values,
-                &auto_increment,
-                transport_types_original_primary_index,
-            )
+            create_instance(values, &auto_increment, transport_types_pk_type_converter)
         })
         .collect();
+    let data = TransferTimeLine::vec_to_map(data);
 
-    Ok(SimpleResourceStorage::new(rows))
+    Ok(SimpleResourceStorage::new(data))
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -56,8 +53,8 @@ pub fn parse(
 fn create_instance(
     mut values: Vec<ParsedValue>,
     auto_increment: &AutoIncrement,
-    transport_types_original_primary_index: &ResourceIndex<String, TransportType>,
-) -> Rc<TransferTimeLine> {
+    transport_types_pk_type_converter: &HashMap<String, i32>,
+) -> TransferTimeLine {
     let stop_id: i32 = values.remove(0).into();
     let administration_1: String = values.remove(0).into();
     let transport_type_id_1: String = values.remove(0).into();
@@ -70,10 +67,9 @@ fn create_instance(
     let duration: i16 = values.remove(0).into();
     let is_guaranteed: String = values.remove(0).into();
 
-    let transport_type_id_1 = transport_types_original_primary_index
+    let transport_type_id_1 = *transport_types_pk_type_converter
         .get(&transport_type_id_1)
-        .unwrap()
-        .id();
+        .unwrap();
 
     let line_id_1 = if line_id_1 == "*" {
         None
@@ -87,10 +83,9 @@ fn create_instance(
         Some(DirectionType::from_str(&direction_1).unwrap())
     };
 
-    let transport_type_id_2 = transport_types_original_primary_index
+    let transport_type_id_2 = *transport_types_pk_type_converter
         .get(&transport_type_id_2)
-        .unwrap()
-        .id();
+        .unwrap();
 
     let line_id_2 = if line_id_2 == "*" {
         None
@@ -106,7 +101,7 @@ fn create_instance(
 
     let is_guaranteed = is_guaranteed == "!";
 
-    Rc::new(TransferTimeLine::new(
+    TransferTimeLine::new(
         auto_increment.next(),
         stop_id,
         administration_1,
@@ -119,5 +114,5 @@ fn create_instance(
         direction_2,
         duration,
         is_guaranteed,
-    ))
+    )
 }

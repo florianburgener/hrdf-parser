@@ -1,13 +1,16 @@
 // 4 file(s).
 // File(s) read by the parser:
 // BETRIEB_DE, BETRIEB_EN, BETRIEB_FR, BETRIEB_IT
-use std::{error::Error, rc::Rc};
+use std::{collections::HashMap, error::Error};
 
 use regex::Regex;
 
 use crate::{
-    models::{Language, Model, ResourceIndex, TransportCompany},
-    parsing::{ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, ParsedValue, RowDefinition, RowParser},
+    models::{Language, Model, TransportCompany},
+    parsing::{
+        ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, ParsedValue, RowDefinition,
+        RowParser,
+    },
     storage::SimpleResourceStorage,
 };
 
@@ -31,7 +34,7 @@ pub fn parse() -> Result<SimpleResourceStorage<TransportCompany>, Box<dyn Error>
     ]);
     let parser = FileParser::new("data/BETRIEB_DE", row_parser)?;
 
-    let rows = parser
+    let data = parser
         .parse()
         .filter_map(|(id, _, values)| {
             match id {
@@ -42,19 +45,18 @@ pub fn parse() -> Result<SimpleResourceStorage<TransportCompany>, Box<dyn Error>
             None
         })
         .collect();
+    let data = TransportCompany::vec_to_map(data);
 
-    let primary_index = TransportCompany::create_primary_index(&rows);
+    load_designations(&data, Language::German)?;
+    load_designations(&data, Language::English)?;
+    load_designations(&data, Language::French)?;
+    load_designations(&data, Language::Italian)?;
 
-    load_designations(&primary_index, Language::German)?;
-    load_designations(&primary_index, Language::English)?;
-    load_designations(&primary_index, Language::French)?;
-    load_designations(&primary_index, Language::Italian)?;
-
-    Ok(SimpleResourceStorage::new(rows))
+    Ok(SimpleResourceStorage::new(data))
 }
 
 fn load_designations(
-    primary_index: &ResourceIndex<i32, TransportCompany>,
+    data: &HashMap<i32, TransportCompany>,
     language: Language,
 ) -> Result<(), Box<dyn Error>> {
     const ROW_A: i32 = 1;
@@ -80,7 +82,7 @@ fn load_designations(
     let parser = FileParser::new(&path, row_parser)?;
 
     parser.parse().for_each(|(id, _, values)| match id {
-        ROW_A => set_designations(values, primary_index, language),
+        ROW_A => set_designations(values, data, language),
         _ => {}
     });
 
@@ -91,18 +93,18 @@ fn load_designations(
 // --- Data Processing Functions
 // ------------------------------------------------------------------------------------------------
 
-fn create_instance(mut values: Vec<ParsedValue>) -> Rc<TransportCompany> {
+fn create_instance(mut values: Vec<ParsedValue>) -> TransportCompany {
     let id: i32 = values.remove(0).into();
     let administrations = values.remove(0).into();
 
     let administrations = parse_administrations(administrations);
 
-    Rc::new(TransportCompany::new(id, administrations))
+    TransportCompany::new(id, administrations)
 }
 
 fn set_designations(
     mut values: Vec<ParsedValue>,
-    primary_index: &ResourceIndex<i32, TransportCompany>,
+    data: &HashMap<i32, TransportCompany>,
     language: Language,
 ) {
     let id: i32 = values.remove(0).into();
@@ -110,7 +112,7 @@ fn set_designations(
 
     let (short_name, long_name, full_name) = parse_designations(designations);
 
-    let transport_company = primary_index.get(&id).unwrap();
+    let transport_company = data.get(&id).unwrap();
     transport_company.set_short_name(language, &short_name);
     transport_company.set_long_name(language, &long_name);
     transport_company.set_full_name(language, &full_name);

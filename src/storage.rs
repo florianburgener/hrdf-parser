@@ -10,12 +10,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     models::{
-        Attribute, BitField, Direction, HasDataStorage, Holiday, InformationText, JourneyPlatform, Line, Platform, Stop, StopConnection, ThroughService, TransferTimeAdministration, TransferTimeJourney, TransferTimeLine, TransportCompany, TransportType
+        Attribute, BitField, Direction, HasDataStorage, Holiday, InformationText, Journey,
+        JourneyPlatform, Line, Model, Platform, Stop, StopConnection, ThroughService,
+        TimetableMetadataEntry, TransferTimeAdministration, TransferTimeJourney, TransferTimeLine,
+        TransportCompany, TransportType,
     },
     parsing,
-};
-use crate::{
-    models::{Journey, Model, ResourceCollection, ResourceIndex, TimetableMetadataEntry},
     utils::count_days_between_two_dates,
 };
 
@@ -64,34 +64,32 @@ impl DataStorage {
         let timetable_metadata = parsing::load_timetable_metadata()?;
 
         // Master data.
-        let (attributes, attributes_original_primary_index) = parsing::load_attributes()?;
-        let (directions, directions_original_primary_index) = parsing::load_directions()?;
+        let (attributes, attributes_pk_type_converter) = parsing::load_attributes()?;
+        let (directions, directions_pk_type_converter) = parsing::load_directions()?;
         let information_texts = parsing::load_information_texts()?;
         let lines = parsing::load_lines()?;
         let transport_companies = parsing::load_transport_companies()?;
-        let (transport_types, transport_types_original_primary_index) =
-            parsing::load_transport_types()?;
+        let (transport_types, transport_types_pk_type_converter) = parsing::load_transport_types()?;
 
         // Stop data.
         let stops = parsing::load_stops()?;
-        let stop_connections = parsing::load_stop_connections(&attributes_original_primary_index)?;
+        let stop_connections = parsing::load_stop_connections(&attributes_pk_type_converter)?;
 
         // Timetable data.
-        let (journeys, journeys_original_primary_index) = parsing::load_journeys(
-            &transport_types_original_primary_index,
-            &attributes_original_primary_index,
-            &directions_original_primary_index,
+        let (journeys, journeys_pk_type_converter) = parsing::load_journeys(
+            &transport_types_pk_type_converter,
+            &attributes_pk_type_converter,
+            &directions_pk_type_converter,
         )?;
-        let (journey_platform, platforms) =
-            parsing::load_platforms(&journeys_original_primary_index)?;
-        let through_service = parsing::load_through_service(&journeys_original_primary_index)?;
+        let (journey_platform, platforms) = parsing::load_platforms(&journeys_pk_type_converter)?;
+        let through_service = parsing::load_through_service(&journeys_pk_type_converter)?;
 
         // Transfer times.
         let transfer_times_administration = parsing::load_transfer_times_administration()?;
         let transfer_times_journey =
-            parsing::load_transfer_times_journey(&journeys_original_primary_index)?;
+            parsing::load_transfer_times_journey(&journeys_pk_type_converter)?;
         let transfer_times_line =
-            parsing::load_transfer_times_line(&transport_types_original_primary_index)?;
+            parsing::load_transfer_times_line(&transport_types_pk_type_converter)?;
 
         let data_storage = Rc::new(RefCell::new(Self {
             // Time-relevant data.
@@ -150,7 +148,7 @@ impl DataStorage {
 
     fn set_indexes(&mut self, indexes: (JourneyIndexes,)) {
         let (journey_indexes,) = indexes;
-        self.journeys_mut().set_indexes(journey_indexes);
+        self.journeys.set_indexes(journey_indexes);
     }
 
     pub fn bit_fields(&self) -> &SimpleResourceStorage<BitField> {
@@ -163,10 +161,6 @@ impl DataStorage {
 
     pub fn journeys(&self) -> &JourneyStorage {
         &self.journeys
-    }
-
-    fn journeys_mut(&mut self) -> &mut JourneyStorage {
-        &mut self.journeys
     }
 
     pub fn platforms(&self) -> &SimpleResourceStorage<Platform> {
@@ -184,31 +178,21 @@ impl DataStorage {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SimpleResourceStorage<M: Model<M>> {
-    rows: ResourceCollection<M>,
-    primary_index: ResourceIndex<M::K, M>,
+    data: HashMap<M::K, M>,
 }
 
 #[allow(unused)]
 impl<M: Model<M>> SimpleResourceStorage<M> {
-    pub fn new(rows: ResourceCollection<M>) -> Self {
-        let primary_index = M::create_primary_index(&rows);
-
-        Self {
-            rows,
-            primary_index,
-        }
+    pub fn new(data: HashMap<M::K, M>) -> Self {
+        Self { data }
     }
 
-    pub fn rows(&self) -> &ResourceCollection<M> {
-        &self.rows
-    }
-
-    pub fn primary_index(&self) -> &ResourceIndex<M::K, M> {
-        &self.primary_index
+    pub fn data(&self) -> &HashMap<M::K, M> {
+        &self.data
     }
 
     pub fn find(&self, k: M::K) -> &M {
-        &self.primary_index().get(&k).unwrap()
+        &self.data().get(&k).unwrap()
     }
 }
 
@@ -218,43 +202,44 @@ impl<M: Model<M>> SimpleResourceStorage<M> {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TimetableMetadataStorage {
-    rows: ResourceCollection<TimetableMetadataEntry>,
-    primary_index: ResourceIndex<i32, TimetableMetadataEntry>,
-    timetable_metadata_entry_by_key: ResourceIndex<String, TimetableMetadataEntry>,
+    data: HashMap<i32, TimetableMetadataEntry>,
+    timetable_metadata_entry_by_key: HashMap<String, i32>,
 }
 
 #[allow(unused)]
 impl TimetableMetadataStorage {
-    pub fn new(rows: ResourceCollection<TimetableMetadataEntry>) -> Self {
-        let primary_index = TimetableMetadataEntry::create_primary_index(&rows);
-        let timetable_metadata_entry_by_key = Self::create_timetable_metadata_entry_by_key(&rows);
+    pub fn new(data: HashMap<i32, TimetableMetadataEntry>) -> Self {
+        let timetable_metadata_entry_by_key = Self::create_timetable_metadata_entry_by_key(&data);
 
         Self {
-            rows,
-            primary_index,
+            data,
             timetable_metadata_entry_by_key,
         }
     }
 
+    fn data(&self) -> &HashMap<i32, TimetableMetadataEntry> {
+        &self.data
+    }
+
+    fn timetable_metadata_entry_by_key(&self) -> &HashMap<String, i32> {
+        &self.timetable_metadata_entry_by_key
+    }
+
     fn create_timetable_metadata_entry_by_key(
-        rows: &ResourceCollection<TimetableMetadataEntry>,
-    ) -> ResourceIndex<String, TimetableMetadataEntry> {
-        rows.iter().fold(HashMap::new(), |mut acc, item| {
-            acc.insert(item.key().to_owned(), Rc::clone(&item));
+        data: &HashMap<i32, TimetableMetadataEntry>,
+    ) -> HashMap<String, i32> {
+        data.values().fold(HashMap::new(), |mut acc, item| {
+            acc.insert(item.key().to_owned(), item.id());
             acc
         })
     }
 
-    pub fn rows(&self) -> &ResourceCollection<TimetableMetadataEntry> {
-        &self.rows
+    pub fn find(&self, id: i32) -> &TimetableMetadataEntry {
+        self.data().get(&id).unwrap()
     }
 
-    pub fn primary_index(&self) -> &ResourceIndex<i32, TimetableMetadataEntry> {
-        &self.primary_index
-    }
-
-    pub fn find_by_key(&self, k: &str) -> Rc<TimetableMetadataEntry> {
-        Rc::clone(self.timetable_metadata_entry_by_key.get(k).unwrap())
+    pub fn find_by_key(&self, key: &str) -> &TimetableMetadataEntry {
+        self.find(*self.timetable_metadata_entry_by_key().get(key).unwrap())
     }
 
     pub fn start_date(&self) -> NaiveDate {

@@ -1,10 +1,10 @@
 // 4 file(s).
 // File(s) read by the parser:
 // INFOTEXT_DE, INFOTEXT_EN, INFOTEXT_FR, INFOTEXT_IT
-use std::{error::Error, rc::Rc};
+use std::{collections::HashMap, error::Error};
 
 use crate::{
-    models::{InformationText, Language, Model, ResourceIndex},
+    models::{InformationText, Language, Model},
     parsing::{ColumnDefinition, ExpectedType, FileParser, ParsedValue, RowDefinition, RowParser},
     storage::SimpleResourceStorage,
 };
@@ -24,23 +24,22 @@ pub fn parse() -> Result<SimpleResourceStorage<InformationText>, Box<dyn Error>>
     ]);
     let parser = FileParser::new("data/INFOTEXT_DE", row_parser)?;
 
-    let rows = parser
+    let data = parser
         .parse()
         .map(|(_, _, values)| create_instance(values))
         .collect();
+    let data = InformationText::vec_to_map(data);
 
-    let primary_index = InformationText::create_primary_index(&rows);
+    load_content(&data, Language::German)?;
+    load_content(&data, Language::English)?;
+    load_content(&data, Language::French)?;
+    load_content(&data, Language::Italian)?;
 
-    load_content(&primary_index, Language::German)?;
-    load_content(&primary_index, Language::English)?;
-    load_content(&primary_index, Language::French)?;
-    load_content(&primary_index, Language::Italian)?;
-
-    Ok(SimpleResourceStorage::new(rows))
+    Ok(SimpleResourceStorage::new(data))
 }
 
 fn load_content(
-    primary_index: &ResourceIndex<i32, InformationText>,
+    data: &HashMap<i32, InformationText>,
     language: Language,
 ) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
@@ -62,7 +61,7 @@ fn load_content(
 
     parser
         .parse()
-        .for_each(|(_, _, values)| set_content(values, primary_index, language));
+        .for_each(|(_, _, values)| set_content(values, data, language));
 
     Ok(())
 }
@@ -71,22 +70,19 @@ fn load_content(
 // --- Data Processing Functions
 // ------------------------------------------------------------------------------------------------
 
-fn create_instance(mut values: Vec<ParsedValue>) -> Rc<InformationText> {
+fn create_instance(mut values: Vec<ParsedValue>) -> InformationText {
     let id: i32 = values.remove(0).into();
 
-    Rc::new(InformationText::new(id))
+    InformationText::new(id)
 }
 
 fn set_content(
     mut values: Vec<ParsedValue>,
-    primary_index: &ResourceIndex<i32, InformationText>,
+    data: &HashMap<i32, InformationText>,
     language: Language,
 ) {
     let id: i32 = values.remove(0).into();
     let description: String = values.remove(0).into();
 
-    primary_index
-        .get(&id)
-        .unwrap()
-        .set_content(language, &description);
+    data.get(&id).unwrap().set_content(language, &description);
 }

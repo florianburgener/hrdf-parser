@@ -1,17 +1,17 @@
 // 1 file(s).
 // File(s) read by the parser:
 // UMSTEIGZ
-use std::{collections::HashMap, error::Error, rc::Rc};
+use std::{collections::HashMap, error::Error};
 
 use crate::{
-    models::TransferTimeJourney,
+    models::{Model, TransferTimeJourney},
     parsing::{ColumnDefinition, ExpectedType, FileParser, ParsedValue, RowDefinition, RowParser},
     storage::SimpleResourceStorage,
     utils::AutoIncrement,
 };
 
 pub fn parse(
-    journeys_original_primary_index: &HashMap<(i32, String), i32>,
+    journeys_pk_type_converter: &HashMap<(i32, String), i32>,
 ) -> Result<SimpleResourceStorage<TransferTimeJourney>, Box<dyn Error>> {
     println!("Parsing UMSTEIGZ...");
     #[rustfmt::skip]
@@ -32,14 +32,13 @@ pub fn parse(
 
     let auto_increment = AutoIncrement::new();
 
-    let rows = parser
+    let data = parser
         .parse()
-        .map(|(_, _, values)| {
-            create_instance(values, &auto_increment, journeys_original_primary_index)
-        })
+        .map(|(_, _, values)| create_instance(values, &auto_increment, journeys_pk_type_converter))
         .collect();
+    let data = TransferTimeJourney::vec_to_map(data);
 
-    Ok(SimpleResourceStorage::new(rows))
+    Ok(SimpleResourceStorage::new(data))
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -49,8 +48,8 @@ pub fn parse(
 fn create_instance(
     mut values: Vec<ParsedValue>,
     auto_increment: &AutoIncrement,
-    journeys_original_primary_index: &HashMap<(i32, String), i32>,
-) -> Rc<TransferTimeJourney> {
+    journeys_pk_type_converter: &HashMap<(i32, String), i32>,
+) -> TransferTimeJourney {
     let stop_id: i32 = values.remove(0).into();
     let journey_id_1: i32 = values.remove(0).into();
     let administration_1: String = values.remove(0).into();
@@ -60,17 +59,17 @@ fn create_instance(
     let is_guaranteed: String = values.remove(0).into();
     let bit_field_id: Option<i32> = values.remove(0).into();
 
-    let journey_id_1 = *journeys_original_primary_index
+    let journey_id_1 = *journeys_pk_type_converter
         .get(&(journey_id_1, administration_1))
         .unwrap();
 
-    let journey_id_2 = *journeys_original_primary_index
+    let journey_id_2 = *journeys_pk_type_converter
         .get(&(journey_id_2, administration_2))
         .unwrap();
 
     let is_guaranteed = is_guaranteed == "!";
 
-    Rc::new(TransferTimeJourney::new(
+    TransferTimeJourney::new(
         auto_increment.next(),
         stop_id,
         journey_id_1,
@@ -78,5 +77,5 @@ fn create_instance(
         duration,
         is_guaranteed,
         bit_field_id,
-    ))
+    )
 }

@@ -1,10 +1,10 @@
 // 1 file(s).
 // File(s) read by the parser:
 // UMSTEIGV
-use std::{error::Error, rc::Rc};
+use std::error::Error;
 
 use crate::{
-    models::TransferTimeAdministration,
+    models::{Model, TransferTimeAdministration},
     parsing::{ColumnDefinition, ExpectedType, FileParser, ParsedValue, RowDefinition, RowParser},
     storage::SimpleResourceStorage,
     utils::AutoIncrement,
@@ -26,12 +26,13 @@ pub fn parse() -> Result<SimpleResourceStorage<TransferTimeAdministration>, Box<
 
     let auto_increment = AutoIncrement::new();
 
-    let rows = parser
+    let data = parser
         .parse()
         .map(|(_, _, values)| create_instance(values, &auto_increment))
         .collect();
+    let data = TransferTimeAdministration::vec_to_map(data);
 
-    Ok(SimpleResourceStorage::new(rows))
+    Ok(SimpleResourceStorage::new(data))
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -41,17 +42,17 @@ pub fn parse() -> Result<SimpleResourceStorage<TransferTimeAdministration>, Box<
 fn create_instance(
     mut values: Vec<ParsedValue>,
     auto_increment: &AutoIncrement,
-) -> Rc<TransferTimeAdministration> {
+) -> TransferTimeAdministration {
     let stop_id: Option<i32> = values.remove(0).into();
     let administration_1: String = values.remove(0).into();
     let administration_2: String = values.remove(0).into();
     let duration: i16 = values.remove(0).into();
 
-    Rc::new(TransferTimeAdministration::new(
+    TransferTimeAdministration::new(
         auto_increment.next(),
         stop_id,
         administration_1,
         administration_2,
         duration,
-    ))
+    )
 }

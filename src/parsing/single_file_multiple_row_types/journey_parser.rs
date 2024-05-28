@@ -4,10 +4,7 @@
 use std::{collections::HashMap, error::Error};
 
 use crate::{
-    models::{
-        Attribute, Direction, Journey, JourneyMetadataEntry, JourneyMetadataType,
-        JourneyRouteEntry, Model, ResourceIndex, Time, TransportType,
-    },
+    models::{Journey, JourneyMetadataEntry, JourneyMetadataType, JourneyRouteEntry, Model, Time},
     parsing::{
         ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, ParsedValue, RowDefinition,
         RowParser,
@@ -17,9 +14,9 @@ use crate::{
 };
 
 pub fn parse(
-    transport_types_original_primary_index: &ResourceIndex<String, TransportType>,
-    attributes_original_primary_index: &ResourceIndex<String, Attribute>,
-    directions_original_primary_index: &ResourceIndex<String, Direction>,
+    transport_types_pk_type_converter: &HashMap<String, i32>,
+    attributes_pk_type_converter: &HashMap<String, i32>,
+    directions_pk_type_converter: &HashMap<String, i32>,
 ) -> Result<(JourneyStorage, HashMap<(i32, String), i32>), Box<dyn Error>> {
     println!("Parsing FPLAN...");
     const ROW_A: i32 = 1;
@@ -106,23 +103,23 @@ pub fn parse(
 
     for (id, _, values) in parser.parse() {
         match id {
-            ROW_A => {
-                let (instance, k) = create_instance(values, &auto_increment);
-                pk_type_converter.insert(k, instance.id());
-                data.push(instance);
-            }
+            ROW_A => data.push(create_instance(
+                values,
+                &auto_increment,
+                &mut pk_type_converter,
+            )),
             _ => {
                 let journey = data.last_mut().unwrap();
 
                 match id {
                     ROW_B => {
-                        set_transport_type(values, journey, &transport_types_original_primary_index)
+                        set_transport_type(values, journey, &transport_types_pk_type_converter)
                     }
                     ROW_C => set_bit_field(values, journey),
-                    ROW_D => add_attribute(values, journey, &attributes_original_primary_index),
+                    ROW_D => add_attribute(values, journey, &attributes_pk_type_converter),
                     ROW_E => add_information_text(values, journey),
                     ROW_F => set_line(values, journey),
-                    ROW_G => set_direction(values, journey, directions_original_primary_index),
+                    ROW_G => set_direction(values, journey, directions_pk_type_converter),
                     ROW_H => set_boarding_or_disembarking_transfer_time(values, journey),
                     ROW_I => add_route_entry(values, journey),
                     _ => unreachable!(),
@@ -131,10 +128,9 @@ pub fn parse(
         }
     }
 
-    Ok((
-        JourneyStorage::new(Journey::vec_to_map(data)),
-        pk_type_converter,
-    ))
+    let data = Journey::vec_to_map(data);
+
+    Ok((JourneyStorage::new(data), pk_type_converter))
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -144,27 +140,27 @@ pub fn parse(
 fn create_instance(
     mut values: Vec<ParsedValue>,
     auto_increment: &AutoIncrement,
-) -> (Journey, (i32, String)) {
+    pk_type_converter: &mut HashMap<(i32, String), i32>,
+) -> Journey {
     let legacy_id: i32 = values.remove(0).into();
     let administration: String = values.remove(0).into();
 
-    let instance = Journey::new(auto_increment.next(), administration.to_owned());
-    (instance, (legacy_id, administration))
+    let id = auto_increment.next();
+
+    pk_type_converter.insert((legacy_id, administration.to_owned()), id);
+    Journey::new(id, administration)
 }
 
 fn set_transport_type(
     mut values: Vec<ParsedValue>,
     journey: &mut Journey,
-    transport_types_original_primary_index: &ResourceIndex<String, TransportType>,
+    transport_types_pk_type_converter: &HashMap<String, i32>,
 ) {
     let designation: String = values.remove(0).into();
     let from_stop_id: Option<i32> = values.remove(0).into();
     let until_stop_id: Option<i32> = values.remove(0).into();
 
-    let transport_type_id = transport_types_original_primary_index
-        .get(&designation)
-        .unwrap()
-        .id();
+    let transport_type_id = *transport_types_pk_type_converter.get(&designation).unwrap();
 
     journey.add_metadata_entry(
         JourneyMetadataType::TransportType,
@@ -204,16 +200,13 @@ fn set_bit_field(mut values: Vec<ParsedValue>, journey: &mut Journey) {
 fn add_attribute(
     mut values: Vec<ParsedValue>,
     journey: &mut Journey,
-    attributes_original_primary_index: &ResourceIndex<String, Attribute>,
+    attributes_pk_type_converter: &HashMap<String, i32>,
 ) {
     let designation: String = values.remove(0).into();
     let from_stop_id: Option<i32> = values.remove(0).into();
     let until_stop_id: Option<i32> = values.remove(0).into();
 
-    let attribute_id = attributes_original_primary_index
-        .get(&designation)
-        .unwrap()
-        .id();
+    let attribute_id = *attributes_pk_type_converter.get(&designation).unwrap();
 
     journey.add_metadata_entry(
         JourneyMetadataType::Attribute,
@@ -291,7 +284,7 @@ fn set_line(mut values: Vec<ParsedValue>, journey: &mut Journey) {
 fn set_direction(
     mut values: Vec<ParsedValue>,
     journey: &mut Journey,
-    directions_original_primary_index: &ResourceIndex<String, Direction>,
+    directions_pk_type_converter: &HashMap<String, i32>,
 ) {
     let direction_type: String = values.remove(0).into();
     let direction_id: String = values.remove(0).into();
@@ -306,12 +299,7 @@ fn set_direction(
     let direction_id = if direction_id.is_empty() {
         None
     } else {
-        Some(
-            directions_original_primary_index
-                .get(&direction_id)
-                .unwrap()
-                .id(),
-        )
+        Some(*directions_pk_type_converter.get(&direction_id).unwrap())
     };
 
     journey.add_metadata_entry(

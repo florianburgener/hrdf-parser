@@ -1,12 +1,12 @@
 // 1 file(s).
 // File(s) read by the parser:
 // FEIERTAG
-use std::{collections::HashMap, error::Error, rc::Rc, str::FromStr};
+use std::{collections::HashMap, error::Error, str::FromStr};
 
 use chrono::NaiveDate;
 
 use crate::{
-    models::{Holiday, Language},
+    models::{Holiday, Language, Model},
     parsing::{ColumnDefinition, ExpectedType, FileParser, ParsedValue, RowDefinition, RowParser},
     storage::SimpleResourceStorage,
     utils::AutoIncrement,
@@ -26,26 +26,27 @@ pub fn parse() -> Result<SimpleResourceStorage<Holiday>, Box<dyn Error>> {
 
     let auto_increment = AutoIncrement::new();
 
-    let rows = parser
+    let data = parser
         .parse()
         .map(|(_, _, values)| create_instance(values, &auto_increment))
         .collect();
+    let data = Holiday::vec_to_map(data);
 
-    Ok(SimpleResourceStorage::new(rows))
+    Ok(SimpleResourceStorage::new(data))
 }
 
 // ------------------------------------------------------------------------------------------------
 // --- Data Processing Functions
 // ------------------------------------------------------------------------------------------------
 
-fn create_instance(mut values: Vec<ParsedValue>, auto_increment: &AutoIncrement) -> Rc<Holiday> {
+fn create_instance(mut values: Vec<ParsedValue>, auto_increment: &AutoIncrement) -> Holiday {
     let date: String = values.remove(0).into();
     let name_translations: String = values.remove(0).into();
 
     let date = NaiveDate::parse_from_str(&date, "%d.%m.%Y").unwrap();
     let name = parse_name_translations(name_translations);
 
-    Rc::new(Holiday::new(auto_increment.next(), date, name))
+    Holiday::new(auto_increment.next(), date, name)
 }
 
 // ------------------------------------------------------------------------------------------------

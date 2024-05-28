@@ -1,19 +1,20 @@
 // 0.5 file(s).
 // File(s) read by the parser:
 // METABHF
-use std::{error::Error, rc::Rc};
+use std::{collections::HashMap, error::Error};
 
 use crate::{
-    models::{Attribute, Model, ResourceIndex, StopConnection},
+    models::{Model, StopConnection},
     parsing::{
-        AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, ParsedValue, RowDefinition, RowParser
+        AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser,
+        ParsedValue, RowDefinition, RowParser,
     },
     storage::SimpleResourceStorage,
     utils::AutoIncrement,
 };
 
 pub fn parse(
-    attributes_original_primary_index: &ResourceIndex<String, Attribute>,
+    attributes_pk_type_converter: &HashMap<String, i32>,
 ) -> Result<SimpleResourceStorage<StopConnection>, Box<dyn Error>> {
     println!("Parsing METABHF 2/2...");
     const ROW_A: i32 = 1;
@@ -38,57 +39,48 @@ pub fn parse(
     let parser = FileParser::new("data/METABHF", row_parser)?;
 
     let auto_increment = AutoIncrement::new();
-    let mut current_instance = Rc::new(StopConnection::default());
+    let mut data = Vec::new();
 
-    let rows = parser
-        .parse()
-        .filter_map(|(id, _, values)| {
-            match id {
-                ROW_A => {
-                    let instance = create_instance(values, &auto_increment);
-                    current_instance = Rc::clone(&instance);
-                    return Some(instance);
+    for (id, _, values) in parser.parse() {
+        match id {
+            ROW_A => data.push(create_instance(values, &auto_increment)),
+            _ => {
+                let stop_connection = data.last_mut().unwrap();
+
+                match id {
+                    ROW_B => add_attribute(values, &stop_connection, attributes_pk_type_converter),
+                    ROW_C => {}
+                    _ => unreachable!(),
                 }
-                ROW_B => add_attribute(values, &current_instance, attributes_original_primary_index),
-                ROW_C => {}
-                _ => unreachable!(),
-            };
-            None
-        })
-        .collect();
+            }
+        }
+    }
 
-    Ok(SimpleResourceStorage::new(rows))
+    let data = StopConnection::vec_to_map(data);
+
+    Ok(SimpleResourceStorage::new(data))
 }
 
 // ------------------------------------------------------------------------------------------------
 // --- Data Processing Functions
 // ------------------------------------------------------------------------------------------------
 
-fn create_instance(
-    mut values: Vec<ParsedValue>,
-    auto_increment: &AutoIncrement,
-) -> Rc<StopConnection> {
+fn create_instance(mut values: Vec<ParsedValue>, auto_increment: &AutoIncrement) -> StopConnection {
     let stop_id_1: i32 = values.remove(0).into();
     let stop_id_2: i32 = values.remove(0).into();
     let duration: i16 = values.remove(0).into();
 
-    Rc::new(StopConnection::new(
-        auto_increment.next(),
-        stop_id_1,
-        stop_id_2,
-        duration,
-    ))
+    StopConnection::new(auto_increment.next(), stop_id_1, stop_id_2, duration)
 }
 
 fn add_attribute(
     mut values: Vec<ParsedValue>,
     current_instance: &StopConnection,
-    attributes_original_primary_index: &ResourceIndex<String, Attribute>,
+    attributes_pk_type_converter: &HashMap<String, i32>,
 ) {
     let attribute_designation: String = values.remove(0).into();
-    let attribute_id = attributes_original_primary_index
+    let attribute_id = *attributes_pk_type_converter
         .get(&attribute_designation)
-        .unwrap()
-        .id();
+        .unwrap();
     current_instance.add_attribute(attribute_id);
 }

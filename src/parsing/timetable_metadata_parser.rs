@@ -1,13 +1,16 @@
 // 1 file(s).
 // File(s) read by the parser:
 // ECKDATEN
-use std::{error::Error, rc::Rc};
+use std::error::Error;
 
 use chrono::NaiveDate;
 
 use crate::{
-    models::TimetableMetadataEntry,
-    parsing::{AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, ParsedValue, RowDefinition, RowParser},
+    models::{Model, TimetableMetadataEntry},
+    parsing::{
+        AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser,
+        ParsedValue, RowDefinition, RowParser,
+    },
     storage::TimetableMetadataStorage,
     utils::AutoIncrement,
 };
@@ -54,16 +57,13 @@ pub fn parse() -> Result<TimetableMetadataStorage, Box<dyn Error>> {
 
     let auto_increment = AutoIncrement::new();
 
-    let rows = rows
+    let data: Vec<TimetableMetadataEntry> = rows
         .iter()
         .map(|(key, value)| {
-            Rc::new(TimetableMetadataEntry::new(
-                auto_increment.next(),
-                key.to_string(),
-                value.to_owned(),
-            ))
+            TimetableMetadataEntry::new(auto_increment.next(), key.to_string(), value.to_owned())
         })
         .collect();
+    let data = TimetableMetadataEntry::vec_to_map(data);
 
-    Ok(TimetableMetadataStorage::new(rows))
+    Ok(TimetableMetadataStorage::new(data))
 }

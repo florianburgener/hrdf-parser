@@ -4,24 +4,19 @@
 // ---
 // Files not used by the parser:
 // ATTRIBUT_DE, ATTRIBUT_EN, ATTRIBUT_FR, ATTRIBUT_IT
-use std::{collections::HashMap, error::Error, rc::Rc, str::FromStr};
+use std::{collections::HashMap, error::Error, str::FromStr};
 
 use crate::{
-    models::{Attribute, Language, ResourceIndex},
+    models::{Attribute, Language, Model},
     parsing::{
-        AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, ParsedValue, RowDefinition, RowParser
+        AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser,
+        ParsedValue, RowDefinition, RowParser,
     },
     storage::SimpleResourceStorage,
     utils::AutoIncrement,
 };
 
-pub fn parse() -> Result<
-    (
-        SimpleResourceStorage<Attribute>,
-        ResourceIndex<String, Attribute>,
-    ),
-    Box<dyn Error>,
-> {
+pub fn parse() -> Result<(SimpleResourceStorage<Attribute>, HashMap<String, i32>), Box<dyn Error>> {
     println!("Parsing ATTRIBUT...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -55,28 +50,25 @@ pub fn parse() -> Result<
     let parser = FileParser::new("data/ATTRIBUT", row_parser)?;
 
     let auto_increment = AutoIncrement::new();
+    let mut data = HashMap::new();
+    let mut pk_type_converter = HashMap::new();
+
     let mut current_language = Language::default();
-    let mut original_primary_index = HashMap::new();
 
-    let rows = parser
-        .parse()
-        .filter_map(|(id, _, values)| {
-            match id {
-                ROW_A => {
-                    let (instance, k) = create_instance(values, &auto_increment);
-                    original_primary_index.insert(k, Rc::clone(&instance));
-                    return Some(instance);
-                }
-                ROW_B => {}
-                ROW_C => update_current_language(values, &mut current_language),
-                ROW_D => set_description(values, &original_primary_index, current_language),
-                _ => unreachable!(),
-            };
-            None
-        })
-        .collect();
+    for (id, _, values) in parser.parse() {
+        match id {
+            ROW_A => {
+                let attribute = create_instance(values, &auto_increment, &mut pk_type_converter);
+                data.insert(attribute.id(), attribute);
+            }
+            ROW_B => {}
+            ROW_C => update_current_language(values, &mut current_language),
+            ROW_D => set_description(values, &pk_type_converter, &data, current_language),
+            _ => unreachable!(),
+        }
+    }
 
-    Ok((SimpleResourceStorage::new(rows), original_primary_index))
+    Ok((SimpleResourceStorage::new(data), pk_type_converter))
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -86,32 +78,35 @@ pub fn parse() -> Result<
 fn create_instance(
     mut values: Vec<ParsedValue>,
     auto_increment: &AutoIncrement,
-) -> (Rc<Attribute>, String) {
+    pk_type_converter: &mut HashMap<String, i32>,
+) -> Attribute {
     let designation: String = values.remove(0).into();
     let stop_scope: i16 = values.remove(0).into();
     let main_sorting_priority: i16 = values.remove(0).into();
     let secondary_sorting_priority: i16 = values.remove(0).into();
 
-    let instance = Rc::new(Attribute::new(
-        auto_increment.next(),
+    let id = auto_increment.next();
+
+    pk_type_converter.insert(designation.to_owned(), id);
+    Attribute::new(
+        id,
         designation.to_owned(),
         stop_scope,
         main_sorting_priority,
         secondary_sorting_priority,
-    ));
-    (instance, designation)
+    )
 }
 
 fn set_description(
     mut values: Vec<ParsedValue>,
-    original_primary_index: &ResourceIndex<String, Attribute>,
+    pk_type_converter: &HashMap<String, i32>,
+    data: &HashMap<i32, Attribute>,
     language: Language,
 ) {
     let legacy_id: String = values.remove(0).into();
     let description: String = values.remove(0).into();
 
-    original_primary_index
-        .get(&legacy_id)
+    data.get(&pk_type_converter.get(&legacy_id).unwrap())
         .unwrap()
         .set_description(language, &description);
 }

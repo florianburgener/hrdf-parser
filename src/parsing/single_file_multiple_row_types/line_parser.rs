@@ -1,12 +1,13 @@
 // 1 file(s).
 // File(s) read by the parser:
 // LINIE
-use std::{error::Error, rc::Rc};
+use std::error::Error;
 
 use crate::{
-    models::{Color, Line},
+    models::{Color, Line, Model},
     parsing::{
-        ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, ParsedValue, RowDefinition, RowParser
+        ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, ParsedValue, RowDefinition,
+        RowParser,
     },
     storage::SimpleResourceStorage,
 };
@@ -44,38 +45,40 @@ pub fn parse() -> Result<SimpleResourceStorage<Line>, Box<dyn Error>> {
     ]);
     let parser = FileParser::new("data/LINIE", row_parser)?;
 
-    let mut current_instance = Rc::new(Line::default());
+    let mut data = Vec::new();
 
-    let rows = parser
-        .parse()
-        .filter_map(|(id, _, values)| {
-            match id {
-                ROW_A => {
-                    let instance = create_instance(values);
-                    current_instance = Rc::clone(&instance);
-                    return Some(instance);
+    for (id, _, values) in parser.parse() {
+        match id {
+            ROW_A => {
+                data.push(create_instance(values));
+            }
+            _ => {
+                let line = data.last_mut().unwrap();
+
+                match id {
+                    ROW_B => set_short_name(values, &line),
+                    ROW_C => set_text_color(values, &line),
+                    ROW_D => set_background_color(values, &line),
+                    _ => unreachable!(),
                 }
-                ROW_B => set_short_name(values, &current_instance),
-                ROW_C => set_text_color(values, &current_instance),
-                ROW_D => set_background_color(values, &current_instance),
-                _ => unreachable!(),
-            };
-            None
-        })
-        .collect();
+            }
+        }
+    }
 
-    Ok(SimpleResourceStorage::new(rows))
+    let data = Line::vec_to_map(data);
+
+    Ok(SimpleResourceStorage::new(data))
 }
 
 // ------------------------------------------------------------------------------------------------
 // --- Data Processing Functions
 // ------------------------------------------------------------------------------------------------
 
-fn create_instance(mut values: Vec<ParsedValue>) -> Rc<Line> {
+fn create_instance(mut values: Vec<ParsedValue>) -> Line {
     let id: i32 = values.remove(0).into();
     let name: String = values.remove(0).into();
 
-    Rc::new(Line::new(id, name))
+    Line::new(id, name)
 }
 
 fn set_short_name(mut values: Vec<ParsedValue>, line: &Line) {

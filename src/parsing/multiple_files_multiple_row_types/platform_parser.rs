@@ -3,7 +3,7 @@
 // GLEIS, GLEIS_LV95, GLEIS_WGS
 // ---
 // Note: this parser collects both the Platform and JourneyPlatform resources.
-use std::{collections::HashMap, error::Error, rc::Rc};
+use std::{collections::HashMap, error::Error};
 
 use crate::{
     models::{Coordinate, CoordinateType, JourneyPlatform, Model, Platform, Time},
@@ -16,7 +16,7 @@ use crate::{
 };
 
 pub fn parse(
-    journeys_original_primary_index: &HashMap<(i32, String), i32>,
+    journeys_pk_type_converter: &HashMap<(i32, String), i32>,
 ) -> Result<
     (
         SimpleResourceStorage<JourneyPlatform>,
@@ -49,46 +49,49 @@ pub fn parse(
     let parser = FileParser::new("data/GLEIS", row_parser)?;
 
     let auto_increment = AutoIncrement::new();
+    let mut platforms = Vec::new();
+    let mut platforms_pk_type_converter = HashMap::new();
+
     let mut bytes_offset = 0;
-    let mut journey_platform_data = Vec::new();
-    let mut platforms_original_primary_index = HashMap::new();
+    let mut journey_platform = Vec::new();
 
-    let platforms = parser
-        .parse()
-        .filter_map(|(id, bytes_read, values)| {
-            match id {
-                ROW_A => {
-                    journey_platform_data.push(values);
-                    bytes_offset += bytes_read;
-                }
-                ROW_B => {
-                    let (instance, k) = create_platform(values, &auto_increment);
-                    platforms_original_primary_index.insert(k, Rc::clone(&instance));
-                    return Some(instance);
-                }
-                _ => unreachable!(),
-            };
-            None
-        })
-        .collect();
+    for (id, bytes_read, values) in parser.parse() {
+        match id {
+            ROW_A => {
+                bytes_offset += bytes_read;
+                journey_platform.push(values);
+            }
+            ROW_B => {
+                platforms.push(create_platform(
+                    values,
+                    &auto_increment,
+                    &mut platforms_pk_type_converter,
+                ));
+            }
+            _ => unreachable!(),
+        }
+    }
 
-    let journey_platform = journey_platform_data
+    let platforms = Platform::vec_to_map(platforms);
+
+    let journey_platform = journey_platform
         .into_iter()
         .map(|values| {
             create_journey_platform(
                 values,
-                journeys_original_primary_index,
-                &platforms_original_primary_index,
+                journeys_pk_type_converter,
+                &platforms_pk_type_converter,
             )
         })
         .collect();
+    let journey_platform = JourneyPlatform::vec_to_map(journey_platform);
 
     println!("Parsing GLEIS_LV95...");
     #[rustfmt::skip]
-    load_coordinates_for_platforms(CoordinateType::LV95, bytes_offset, &platforms_original_primary_index)?;
+    load_coordinates_for_platforms(CoordinateType::LV95, bytes_offset, &platforms_pk_type_converter, &platforms)?;
     println!("Parsing GLEIS_WGS84...");
     #[rustfmt::skip]
-    load_coordinates_for_platforms(CoordinateType::WGS84, bytes_offset, &platforms_original_primary_index)?;
+    load_coordinates_for_platforms(CoordinateType::WGS84, bytes_offset, &platforms_pk_type_converter, &platforms)?;
 
     Ok((
         SimpleResourceStorage::new(journey_platform),
@@ -99,7 +102,8 @@ pub fn parse(
 fn load_coordinates_for_platforms(
     coordinate_type: CoordinateType,
     bytes_offset: u64,
-    platforms_original_primary_index: &HashMap<(i32, i32), Rc<Platform>>,
+    pk_type_converter: &HashMap<(i32, i32), i32>,
+    data: &HashMap<i32, Platform>,
 ) -> Result<(), Box<dyn Error>> {
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -132,10 +136,8 @@ fn load_coordinates_for_platforms(
 
     parser.parse().for_each(|(id, _, values)| match id {
         ROW_A => {}
-        ROW_B => set_sloid_of_platform(values, coordinate_type, platforms_original_primary_index),
-        ROW_C => {
-            set_coordinate_of_platform(values, coordinate_type, platforms_original_primary_index)
-        }
+        ROW_B => platform_set_sloid(values, coordinate_type, pk_type_converter, data),
+        ROW_C => platform_set_coordinate(values, coordinate_type, pk_type_converter, data),
         _ => unreachable!(),
     });
 
@@ -148,9 +150,9 @@ fn load_coordinates_for_platforms(
 
 fn create_journey_platform(
     mut values: Vec<ParsedValue>,
-    journeys_original_primary_index: &HashMap<(i32, String), i32>,
-    platforms_original_primary_index: &HashMap<(i32, i32), Rc<Platform>>,
-) -> Rc<JourneyPlatform> {
+    journeys_pk_type_converter: &HashMap<(i32, String), i32>,
+    platforms_pk_type_converter: &HashMap<(i32, i32), i32>,
+) -> JourneyPlatform {
     let stop_id: i32 = values.remove(0).into();
     let journey_id: i32 = values.remove(0).into();
     let administration: String = values.remove(0).into();
@@ -158,43 +160,38 @@ fn create_journey_platform(
     let time: Option<i32> = values.remove(0).into();
     let bit_field_id: Option<i32> = values.remove(0).into();
 
-    let journey_id = *journeys_original_primary_index
+    let journey_id = *journeys_pk_type_converter
         .get(&(journey_id, administration))
         .unwrap();
 
-    let platform_id = platforms_original_primary_index
-        .get(&(stop_id, index))
-        .unwrap()
-        .id();
+    let platform_id = *platforms_pk_type_converter.get(&(stop_id, index)).unwrap();
 
     let time = time.map(|x| Time::from(x));
 
-    Rc::new(JourneyPlatform::new(
-        journey_id,
-        platform_id,
-        time,
-        bit_field_id,
-    ))
+    JourneyPlatform::new(journey_id, platform_id, time, bit_field_id)
 }
 
 fn create_platform(
     mut values: Vec<ParsedValue>,
     auto_increment: &AutoIncrement,
-) -> (Rc<Platform>, (i32, i32)) {
+    platforms_pk_type_converter: &mut HashMap<(i32, i32), i32>,
+) -> Platform {
     let stop_id: i32 = values.remove(0).into();
     let index: i32 = values.remove(0).into();
     let platform_data: String = values.remove(0).into();
 
+    let id = auto_increment.next();
     let (code, sectors) = parse_platform_data(platform_data);
 
-    let instance = Rc::new(Platform::new(auto_increment.next(), code, sectors, stop_id));
-    (instance, (stop_id, index))
+    platforms_pk_type_converter.insert((stop_id, index), id);
+    Platform::new(id, code, sectors, stop_id)
 }
 
-fn set_sloid_of_platform(
+fn platform_set_sloid(
     mut values: Vec<ParsedValue>,
     coordinate_type: CoordinateType,
-    platforms_original_primary_index: &HashMap<(i32, i32), Rc<Platform>>,
+    pk_type_converter: &HashMap<(i32, i32), i32>,
+    data: &HashMap<i32, Platform>,
 ) {
     // The SLOID is processed only when loading LV95 coordinates.
     if coordinate_type == CoordinateType::LV95 {
@@ -202,17 +199,17 @@ fn set_sloid_of_platform(
         let index: i32 = values.remove(0).into();
         let sloid: String = values.remove(0).into();
 
-        platforms_original_primary_index
-            .get(&(stop_id, index))
+        data.get(&pk_type_converter.get(&(stop_id, index)).unwrap())
             .unwrap()
             .set_sloid(sloid);
     }
 }
 
-fn set_coordinate_of_platform(
+fn platform_set_coordinate(
     mut values: Vec<ParsedValue>,
     coordinate_type: CoordinateType,
-    platforms_original_primary_index: &HashMap<(i32, i32), Rc<Platform>>,
+    pk_type_converter: &HashMap<(i32, i32), i32>,
+    data: &HashMap<i32, Platform>,
 ) {
     let stop_id: i32 = values.remove(0).into();
     let index: i32 = values.remove(0).into();
@@ -227,8 +224,8 @@ fn set_coordinate_of_platform(
     }
 
     let coordinate = Coordinate::new(coordinate_type, xy1, xy2, altitude);
-    let platform = platforms_original_primary_index
-        .get(&(stop_id, index))
+    let platform = data
+        .get(&pk_type_converter.get(&(stop_id, index)).unwrap())
         .unwrap();
 
     match coordinate_type {

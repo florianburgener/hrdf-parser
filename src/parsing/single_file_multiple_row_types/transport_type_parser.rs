@@ -1,24 +1,20 @@
 // 1 file(s).
 // File(s) read by the parser:
 // ZUGART
-use std::{collections::HashMap, error::Error, rc::Rc};
+use std::{collections::HashMap, error::Error};
 
 use crate::{
-    models::{Language, ResourceIndex, TransportType},
+    models::{Language, Model, TransportType},
     parsing::{
-        AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, ParsedValue, RowDefinition, RowParser
+        AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser,
+        ParsedValue, RowDefinition, RowParser,
     },
     storage::SimpleResourceStorage,
     utils::AutoIncrement,
 };
 
-pub fn parse() -> Result<
-    (
-        SimpleResourceStorage<TransportType>,
-        ResourceIndex<String, TransportType>,
-    ),
-    Box<dyn Error>,
-> {
+pub fn parse(
+) -> Result<(SimpleResourceStorage<TransportType>, HashMap<String, i32>), Box<dyn Error>> {
     println!("Parsing ZUGART...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -64,36 +60,37 @@ pub fn parse() -> Result<
     let parser = FileParser::new("data/ZUGART", row_parser)?;
 
     let auto_increment = AutoIncrement::new();
-    let mut current_instance = Rc::new(TransportType::default());
+    let mut data = Vec::new();
+    let mut pk_type_converter = HashMap::new();
+
     let mut current_language = Language::default();
-    let mut original_primary_index = HashMap::new();
-    let mut product_class_id_dict = HashMap::new();
 
-    let rows = parser
-        .parse()
-        .filter_map(|(id, _, values)| {
-            match id {
-                ROW_A => {
-                    let (instance, k) = create_instance(values, &auto_increment);
-                    current_instance = Rc::clone(&instance);
-                    original_primary_index.insert(k, Rc::clone(&instance));
-                    product_class_id_dict
-                        .entry(current_instance.product_class_id())
-                        .or_insert(Vec::new())
-                        .push(Rc::clone(&instance));
-                    return Some(instance);
+    for (id, _, values) in parser.parse() {
+        match id {
+            ROW_A => {
+                let transport_type =
+                    create_instance(values, &auto_increment, &mut pk_type_converter);
+                data.push(transport_type);
+            }
+            _ => {
+                let transport_type = data.last_mut().unwrap();
+
+                match id {
+                    ROW_B => update_current_language(values, &mut current_language),
+                    ROW_C => {
+                        set_product_class_name(values, &data, current_language);
+                    }
+                    ROW_D => {}
+                    ROW_E => set_category_name(values, &transport_type, current_language),
+                    _ => unreachable!(),
                 }
-                ROW_B => update_current_language(values, &mut current_language),
-                ROW_C => set_product_class_name(values, &product_class_id_dict, current_language),
-                ROW_D => {}
-                ROW_E => set_category_name(values, &current_instance, current_language),
-                _ => unreachable!(),
-            };
-            None
-        })
-        .collect();
+            }
+        }
+    }
 
-    Ok((SimpleResourceStorage::new(rows), original_primary_index))
+    let data = TransportType::vec_to_map(data);
+
+    Ok((SimpleResourceStorage::new(data), pk_type_converter))
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -103,7 +100,8 @@ pub fn parse() -> Result<
 fn create_instance(
     mut values: Vec<ParsedValue>,
     auto_increment: &AutoIncrement,
-) -> (Rc<TransportType>, String) {
+    pk_type_converter: &mut HashMap<String, i32>,
+) -> TransportType {
     let designation: String = values.remove(0).into();
     let product_class_id: i16 = values.remove(0).into();
     let tarrif_group: String = values.remove(0).into();
@@ -112,8 +110,11 @@ fn create_instance(
     let surchage: i16 = values.remove(0).into();
     let flag: String = values.remove(0).into();
 
-    let instance = Rc::new(TransportType::new(
-        auto_increment.next(),
+    let id = auto_increment.next();
+
+    pk_type_converter.insert(designation.to_owned(), id);
+    TransportType::new(
+        id,
         designation.to_owned(),
         product_class_id,
         tarrif_group,
@@ -121,34 +122,33 @@ fn create_instance(
         short_name,
         surchage,
         flag,
-    ));
-    (instance, designation)
+    )
 }
 
 fn set_product_class_name(
     mut values: Vec<ParsedValue>,
-    product_class_id_dict: &HashMap<i16, Vec<Rc<TransportType>>>,
+    data: &Vec<TransportType>,
     language: Language,
 ) {
     let product_class_id: i16 = values.remove(0).into();
     let product_class_name: String = values.remove(0).into();
 
-    product_class_id_dict.get(&product_class_id).map(|items| {
-        items
-            .iter()
-            .for_each(|instance| instance.set_product_class_name(language, &product_class_name))
-    });
+    for transport_type in data {
+        if transport_type.product_class_id() == product_class_id {
+            transport_type.set_product_class_name(language, &product_class_name)
+        }
+    }
 }
 
 fn set_category_name(
     mut values: Vec<ParsedValue>,
-    current_instance: &TransportType,
+    transport_type: &TransportType,
     language: Language,
 ) {
     let _: i32 = values.remove(0).into();
     let category_name: String = values.remove(0).into();
 
-    current_instance.set_category_name(language, &category_name);
+    transport_type.set_category_name(language, &category_name);
 }
 
 // ------------------------------------------------------------------------------------------------

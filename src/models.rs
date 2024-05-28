@@ -51,13 +51,6 @@ pub trait Model<M: Model<M>> {
 
     fn id(&self) -> M::K;
 
-    fn create_primary_index(rows: &ResourceCollection<M>) -> ResourceIndex<M::K, M> {
-        rows.iter().fold(HashMap::new(), |mut acc, item| {
-            acc.insert(item.id(), Rc::clone(item));
-            acc
-        })
-    }
-
     fn vec_to_map(data: Vec<M>) -> HashMap<M::K, M> {
         data.into_iter().fold(HashMap::new(), |mut acc, item| {
             acc.insert(item.id(), item);
@@ -77,13 +70,6 @@ macro_rules! impl_Model {
         }
     };
 }
-
-/// M = Model type.
-pub type ResourceCollection<M> = Vec<Rc<M>>;
-
-/// M = Model type.
-/// K = Key type.
-pub type ResourceIndex<K, M> = HashMap<K, Rc<M>>;
 
 // ------------------------------------------------------------------------------------------------
 // --- Attribute

@@ -4,10 +4,10 @@
 // ---
 // Files not used by the parser:
 // BHFART
-use std::{collections::HashMap, error::Error, rc::Rc};
+use std::{collections::HashMap, error::Error};
 
 use crate::{
-    models::{Coordinate, CoordinateType, Model, ResourceIndex, Stop},
+    models::{Coordinate, CoordinateType, Model, Stop},
     parsing::{
         AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser,
         ParsedValue, RowDefinition, RowParser,
@@ -27,34 +27,33 @@ pub fn parse() -> Result<SimpleResourceStorage<Stop>, Box<dyn Error>> {
     ]);
     let parser = FileParser::new("data/BAHNHOF", row_parser)?;
 
-    let rows = parser
+    let data = parser
         .parse()
         .map(|(_, _, values)| create_instance(values))
         .collect();
-
-    let primary_index = Stop::create_primary_index(&rows);
+    let data = Stop::vec_to_map(data);
 
     println!("Parsing BFKOORD_LV95...");
-    load_coordinates(CoordinateType::LV95, &primary_index)?;
+    load_coordinates(CoordinateType::LV95, &data)?;
     println!("Parsing BFKOORD_WGS...");
-    load_coordinates(CoordinateType::WGS84, &primary_index)?;
+    load_coordinates(CoordinateType::WGS84, &data)?;
     println!("Parsing BFPRIOS...");
-    load_transfer_priorities(&primary_index)?;
+    load_transfer_priorities(&data)?;
     println!("Parsing KMINFO...");
-    load_transfer_flags(&primary_index)?;
+    load_transfer_flags(&data)?;
     println!("Parsing UMSTEIGB...");
-    load_transfer_times(&primary_index)?;
+    load_transfer_times(&data)?;
     println!("Parsing METABHF 1/2...");
-    load_connections(&primary_index)?;
+    load_connections(&data)?;
     println!("Parsing BHFART_60...");
-    load_descriptions(&primary_index)?;
+    load_descriptions(&data)?;
 
-    Ok(SimpleResourceStorage::new(rows))
+    Ok(SimpleResourceStorage::new(data))
 }
 
 fn load_coordinates(
     coordinate_type: CoordinateType,
-    primary_index: &ResourceIndex<i32, Stop>,
+    data: &HashMap<i32, Stop>,
 ) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -75,12 +74,12 @@ fn load_coordinates(
 
     parser
         .parse()
-        .for_each(|(_, _, values)| set_coordinate(values, coordinate_type, primary_index));
+        .for_each(|(_, _, values)| set_coordinate(values, coordinate_type, data));
 
     Ok(())
 }
 
-fn load_transfer_priorities(primary_index: &ResourceIndex<i32, Stop>) -> Result<(), Box<dyn Error>> {
+fn load_transfer_priorities(data: &HashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row contains the changing priority.
@@ -94,12 +93,12 @@ fn load_transfer_priorities(primary_index: &ResourceIndex<i32, Stop>) -> Result<
 
     parser
         .parse()
-        .for_each(|(_, _, values)| set_transfer_priority(values, primary_index));
+        .for_each(|(_, _, values)| set_transfer_priority(values, data));
 
     Ok(())
 }
 
-fn load_transfer_flags(primary_index: &ResourceIndex<i32, Stop>) -> Result<(), Box<dyn Error>> {
+fn load_transfer_flags(data: &HashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row contains the changing flag.
@@ -112,12 +111,12 @@ fn load_transfer_flags(primary_index: &ResourceIndex<i32, Stop>) -> Result<(), B
 
     parser
         .parse()
-        .for_each(|(_, _, values)| set_transfer_flag(values, primary_index));
+        .for_each(|(_, _, values)| set_transfer_flag(values, data));
 
     Ok(())
 }
 
-fn load_transfer_times(primary_index: &ResourceIndex<i32, Stop>) -> Result<(), Box<dyn Error>> {
+fn load_transfer_times(data: &HashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row contains the changing time.
@@ -131,12 +130,12 @@ fn load_transfer_times(primary_index: &ResourceIndex<i32, Stop>) -> Result<(), B
 
     parser
         .parse()
-        .for_each(|(_, _, values)| set_transfer_time(values, primary_index));
+        .for_each(|(_, _, values)| set_transfer_time(values, data));
 
     Ok(())
 }
 
-fn load_connections(primary_index: &ResourceIndex<i32, Stop>) -> Result<(), Box<dyn Error>> {
+fn load_connections(data: &HashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
     const ROW_C: i32 = 3;
@@ -157,14 +156,14 @@ fn load_connections(primary_index: &ResourceIndex<i32, Stop>) -> Result<(), Box<
 
     parser.parse().for_each(|(id, _, values)| match id {
         ROW_A | ROW_B => {}
-        ROW_C => set_connections(values, primary_index),
+        ROW_C => set_connections(values, data),
         _ => unreachable!(),
     });
 
     Ok(())
 }
 
-fn load_descriptions(primary_index: &ResourceIndex<i32, Stop>) -> Result<(), Box<dyn Error>> {
+fn load_descriptions(data: &HashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
     const ROW_C: i32 = 3;
@@ -194,9 +193,9 @@ fn load_descriptions(primary_index: &ResourceIndex<i32, Stop>) -> Result<(), Box
 
     parser.parse().for_each(|(id, _, values)| match id {
         ROW_A => {}
-        ROW_B => set_restrictions(values, primary_index),
-        ROW_C => set_sloid(values, primary_index),
-        ROW_D => add_boarding_area(values, primary_index),
+        ROW_B => set_restrictions(values, data),
+        ROW_C => set_sloid(values, data),
+        ROW_D => add_boarding_area(values, data),
         _ => unreachable!(),
     });
 
@@ -207,19 +206,19 @@ fn load_descriptions(primary_index: &ResourceIndex<i32, Stop>) -> Result<(), Box
 // --- Data Processing Functions
 // ------------------------------------------------------------------------------------------------
 
-fn create_instance(mut values: Vec<ParsedValue>) -> Rc<Stop> {
+fn create_instance(mut values: Vec<ParsedValue>) -> Stop {
     let id: i32 = values.remove(0).into();
     let designations: String = values.remove(0).into();
 
     let (name, long_name, abbreviation, synonyms) = parse_designations(designations);
 
-    Rc::new(Stop::new(id, name, long_name, abbreviation, synonyms))
+    Stop::new(id, name, long_name, abbreviation, synonyms)
 }
 
 fn set_coordinate(
     mut values: Vec<ParsedValue>,
     coordinate_type: CoordinateType,
-    primary_index: &ResourceIndex<i32, Stop>,
+    data: &HashMap<i32, Stop>,
 ) {
     let stop_id: i32 = values.remove(0).into();
     let mut xy1: f64 = values.remove(0).into();
@@ -231,7 +230,7 @@ fn set_coordinate(
         (xy1, xy2) = (xy2, xy1);
     }
 
-    let stop = primary_index.get(&stop_id).unwrap();
+    let stop = data.get(&stop_id).unwrap();
     let coordinate = Coordinate::new(coordinate_type, xy1, xy2, altitude);
 
     match coordinate_type {
@@ -240,71 +239,71 @@ fn set_coordinate(
     }
 }
 
-fn set_transfer_priority(mut values: Vec<ParsedValue>, primary_index: &ResourceIndex<i32, Stop>) {
+fn set_transfer_priority(mut values: Vec<ParsedValue>, data: &HashMap<i32, Stop>) {
     let stop_id: i32 = values.remove(0).into();
     let transfer_priority: i16 = values.remove(0).into();
 
-    let stop = primary_index.get(&stop_id).unwrap();
+    let stop = data.get(&stop_id).unwrap();
     stop.set_transfer_priority(transfer_priority);
 }
 
-fn set_transfer_flag(mut values: Vec<ParsedValue>, primary_index: &ResourceIndex<i32, Stop>) {
+fn set_transfer_flag(mut values: Vec<ParsedValue>, data: &HashMap<i32, Stop>) {
     let stop_id: i32 = values.remove(0).into();
     let transfer_flag: i16 = values.remove(0).into();
 
-    let stop = primary_index.get(&stop_id).unwrap();
+    let stop = data.get(&stop_id).unwrap();
     stop.set_transfer_flag(transfer_flag);
 }
 
-fn set_transfer_time(mut values: Vec<ParsedValue>, primary_index: &ResourceIndex<i32, Stop>) {
+fn set_transfer_time(mut values: Vec<ParsedValue>, data: &HashMap<i32, Stop>) {
     let stop_id: i32 = values.remove(0).into();
     let transfer_time_inter_city: i16 = values.remove(0).into();
     let transfer_time_other: i16 = values.remove(0).into();
 
     if stop_id == 9999999 {
         // The first row of the file has the stop ID number 9999999. It contains the default values for all stops.
-        for stop in primary_index.values() {
+        for stop in data.values() {
             stop.set_transfer_time_inter_city(transfer_time_inter_city);
             stop.set_transfer_time_other(transfer_time_other);
         }
     } else {
-        let stop = primary_index.get(&stop_id).unwrap();
+        let stop = data.get(&stop_id).unwrap();
         stop.set_transfer_time_inter_city(transfer_time_inter_city);
         stop.set_transfer_time_other(transfer_time_other);
     }
 }
 
-fn set_connections(mut values: Vec<ParsedValue>, primary_index: &ResourceIndex<i32, Stop>) {
+fn set_connections(mut values: Vec<ParsedValue>, data: &HashMap<i32, Stop>) {
     let stop_id: i32 = values.remove(0).into();
     let connections: String = values.remove(0).into();
 
     let connections = parse_connections(connections);
 
-    let stop = primary_index.get(&stop_id).unwrap();
+    let stop = data.get(&stop_id).unwrap();
     stop.set_connections(connections);
 }
 
-fn set_restrictions(mut values: Vec<ParsedValue>, primary_index: &ResourceIndex<i32, Stop>) {
+fn set_restrictions(mut values: Vec<ParsedValue>, data: &HashMap<i32, Stop>) {
     let stop_id: i32 = values.remove(0).into();
     let restrictions: i16 = values.remove(0).into();
 
-    let stop = primary_index.get(&stop_id).unwrap();
+    let stop = data.get(&stop_id).unwrap();
     stop.set_restrictions(restrictions);
 }
 
-fn set_sloid(mut values: Vec<ParsedValue>, primary_index: &ResourceIndex<i32, Stop>) {
+fn set_sloid(mut values: Vec<ParsedValue>, data: &HashMap<i32, Stop>) {
     let stop_id: i32 = values.remove(0).into();
     let sloid: String = values.remove(0).into();
 
-    let stop = primary_index.get(&stop_id).unwrap();
+    let stop = data.get(&stop_id).unwrap();
     stop.set_sloid(sloid);
 }
 
-fn add_boarding_area(mut values: Vec<ParsedValue>, primary_index: &ResourceIndex<i32, Stop>) {
+fn add_boarding_area(mut values: Vec<ParsedValue>, data: &HashMap<i32, Stop>) {
     let stop_id: i32 = values.remove(0).into();
     let sloid: String = values.remove(0).into();
 
-    let stop = primary_index.get(&stop_id).unwrap();
+    let stop = data.get(&stop_id).unwrap();
     stop.add_boarding_area(sloid);
 }
 
