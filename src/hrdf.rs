@@ -1,9 +1,4 @@
-use std::{
-    cell::{Ref, RefCell},
-    error::Error,
-    fs,
-    rc::Rc,
-};
+use std::{error::Error, fs};
 
 use serde::{Deserialize, Serialize};
 
@@ -13,7 +8,7 @@ const CACHED_PATH: &str = "data.cache";
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Hrdf {
-    data_storage: Rc<RefCell<DataStorage>>,
+    data_storage: DataStorage,
 }
 
 impl Hrdf {
@@ -26,29 +21,15 @@ impl Hrdf {
 
     // Getters/Setters
 
-    pub fn data_storage(&self) -> Ref<DataStorage> {
-        self.data_storage.borrow()
+    pub fn data_storage(&self) -> &DataStorage {
+        &self.data_storage
     }
 
     // Functions
 
-    fn set_data_storage_references(&self) {
-        self.data_storage
-            .borrow_mut()
-            .set_references(&self.data_storage);
-    }
-
-    fn remove_data_storage_references(&self) {
-        self.data_storage.borrow_mut().remove_references();
-    }
-
     pub fn build_cache(self) -> Result<Self, Box<dyn Error>> {
-        self.remove_data_storage_references();
-
         let data = bincode::serialize(&self).unwrap();
         fs::write(CACHED_PATH, data)?;
-
-        self.set_data_storage_references();
 
         Ok(self)
     }
@@ -56,8 +37,6 @@ impl Hrdf {
     pub fn load_from_cache() -> Result<Hrdf, Box<dyn Error>> {
         let data = fs::read(CACHED_PATH)?;
         let hrdf: Hrdf = bincode::deserialize(&data).unwrap();
-
-        hrdf.set_data_storage_references();
 
         Ok(hrdf)
     }

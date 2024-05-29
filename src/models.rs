@@ -1,8 +1,9 @@
+use core::fmt;
 use std::{
     cell::{Ref, RefCell},
+    cmp::Ordering,
     collections::HashMap,
     hash::Hash,
-    rc::Rc,
 };
 
 use chrono::NaiveDate;
@@ -10,36 +11,6 @@ use serde::{Deserialize, Serialize};
 use strum_macros::{self, Display, EnumString};
 
 use crate::storage::DataStorage;
-
-// ------------------------------------------------------------------------------------------------
-// --- HasDataStorage
-// ------------------------------------------------------------------------------------------------
-
-pub trait HasDataStorage {
-    fn data_storage(&self) -> Ref<DataStorage>;
-
-    fn set_data_storage_reference(&mut self, data_storage: &Rc<RefCell<DataStorage>>);
-
-    fn remove_data_storage_reference(&mut self);
-}
-
-macro_rules! impl_HasDataStorage {
-    ($m:ty) => {
-        impl HasDataStorage for $m {
-            fn data_storage(&self) -> Ref<DataStorage> {
-                self.data_storage.as_ref().unwrap().borrow()
-            }
-
-            fn set_data_storage_reference(&mut self, data_storage: &Rc<RefCell<DataStorage>>) {
-                self.data_storage = Some(Rc::clone(data_storage));
-            }
-
-            fn remove_data_storage_reference(&mut self) {
-                self.data_storage = None;
-            }
-        }
-    };
-}
 
 // ------------------------------------------------------------------------------------------------
 // --- Model
@@ -350,21 +321,18 @@ impl InformationText {
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Journey {
-    data_storage: Option<Rc<RefCell<DataStorage>>>,
     id: i32,
     administration: String,
     metadata: HashMap<JourneyMetadataType, Vec<JourneyMetadataEntry>>,
     route: Vec<JourneyRouteEntry>,
 }
 
-impl_HasDataStorage!(Journey);
 impl_Model!(Journey);
 
 #[allow(unused)]
 impl Journey {
     pub fn new(id: i32, administration: String) -> Self {
         Self {
-            data_storage: None,
             id,
             administration,
             metadata: HashMap::new(),
@@ -386,10 +354,6 @@ impl Journey {
         &self.route
     }
 
-    pub fn route_mut(&mut self) -> &mut Vec<JourneyRouteEntry> {
-        &mut self.route
-    }
-
     // Functions
 
     pub fn add_metadata_entry(&mut self, k: JourneyMetadataType, v: JourneyMetadataEntry) {
@@ -400,12 +364,12 @@ impl Journey {
         self.route.push(entry);
     }
 
-    pub fn bit_field(&self) -> Option<Ref<BitField>> {
+    pub fn bit_field<'a>(&'a self, data_storage: &'a DataStorage) -> Option<&BitField> {
         let entry = &self.metadata().get(&JourneyMetadataType::BitField).unwrap()[0];
 
-        entry.bit_field_id.map(|bit_field_id| {
-            Ref::map(self.data_storage(), |d| d.bit_fields().find(bit_field_id))
-        })
+        entry
+            .bit_field_id
+            .map(|bit_field_id| data_storage.bit_fields().find(bit_field_id))
     }
 }
 
@@ -497,19 +461,15 @@ impl JourneyMetadataEntry {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct JourneyRouteEntry {
-    data_storage: Option<Rc<RefCell<DataStorage>>>,
     stop_id: i32,
     arrival_time: Option<Time>,
     departure_time: Option<Time>,
 }
 
-impl_HasDataStorage!(JourneyRouteEntry);
-
 #[allow(unused)]
 impl JourneyRouteEntry {
     pub fn new(stop_id: i32, arrival_time: Option<Time>, departure_time: Option<Time>) -> Self {
         Self {
-            data_storage: None,
             stop_id,
             arrival_time,
             departure_time,
@@ -532,8 +492,8 @@ impl JourneyRouteEntry {
 
     // Functions
 
-    pub fn stop(&self) -> Ref<Stop> {
-        Ref::map(self.data_storage(), |d| d.stops().find(self.stop_id()))
+    pub fn stop<'a>(&'a self, data_storage: &'a DataStorage) -> &Stop {
+        data_storage.stops().find(self.stop_id())
     }
 }
 
@@ -734,7 +694,7 @@ pub struct Stop {
     lv95_coordinate: RefCell<Option<Coordinate>>,
     wgs84_coordinate: RefCell<Option<Coordinate>>,
     transfer_priority: RefCell<i16>,
-    transfer_flag: RefCell<Option<i16>>,
+    transfer_flag: RefCell<i16>,
     transfer_time_inter_city: RefCell<i16>,
     transfer_time_other: RefCell<i16>,
     connections: RefCell<Vec<i32>>, // Vec of Stop.id
@@ -763,7 +723,7 @@ impl Stop {
             lv95_coordinate: RefCell::new(None),
             wgs84_coordinate: RefCell::new(None),
             transfer_priority: RefCell::new(8), // 8 is the default priority.
-            transfer_flag: RefCell::new(None),
+            transfer_flag: RefCell::new(0),
             transfer_time_inter_city: RefCell::new(0),
             transfer_time_other: RefCell::new(0),
             connections: RefCell::new(Vec::new()),
@@ -813,12 +773,12 @@ impl Stop {
         *self.transfer_priority.borrow_mut() = value;
     }
 
-    pub fn transfer_flag(&self) -> Option<i16> {
+    pub fn transfer_flag(&self) -> i16 {
         *self.transfer_flag.borrow()
     }
 
     pub fn set_transfer_flag(&self, value: i16) {
-        *self.transfer_flag.borrow_mut() = Some(value);
+        *self.transfer_flag.borrow_mut() = value;
     }
 
     pub fn transfer_time_inter_city(&self) -> i16 {
@@ -961,6 +921,16 @@ impl Time {
     pub fn new(hour: i8, minute: i8) -> Self {
         Self { hour, minute }
     }
+
+    // pub fn total_minutes(&self) -> i32 {
+    //     i32::from(self.hour) * 60 + i32::from(self.minute)
+    // }
+}
+
+impl fmt::Display for Time {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:0>2}:{:0>2}", self.hour, self.minute)
+    }
 }
 
 impl From<i32> for Time {
@@ -973,13 +943,18 @@ impl From<i32> for Time {
     }
 }
 
+impl Ord for Time {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match self.hour.cmp(&other.hour) {
+            std::cmp::Ordering::Equal => self.minute.cmp(&other.minute),
+            o => o,
+        }
+    }
+}
+
 impl PartialOrd for Time {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        match self.hour.partial_cmp(&other.hour) {
-            Some(core::cmp::Ordering::Equal) => {}
-            ord => return ord,
-        }
-        self.minute.partial_cmp(&other.minute)
+        Some(self.cmp(other))
     }
 }
 

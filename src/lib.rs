@@ -15,7 +15,7 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     const CACHED_PATH: &str = "data.cache";
 
     let now = Instant::now();
-    let hrdf = if Path::new(CACHED_PATH).exists() && false {
+    let hrdf = if Path::new(CACHED_PATH).exists() && true {
         println!("Reading from cache...");
         Hrdf::load_from_cache()?
     } else {
@@ -39,9 +39,13 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     // println!("{} platforms", hrdf.data_storage().platforms().items().len());
     // println!("{} stops", hrdf.data_storage().stops().items().len());
 
+    println!("");
     let departure_date = NaiveDate::from_ymd_opt(2023, 02, 03).unwrap();
-    // Chancy=8592688
-    hrdf.plan_trip(8592688, 8508134, departure_date, Time::new(14, 12));
+    // 8592688     Chancy, Les Bouveries
+    // 8587031     Avully, village
+    // 8508134     Bernex, Vailly
+    // 8587418     Petit-Lancy, Les Esserts
+    hrdf.plan_journey(8592688, 8508134, departure_date, Time::new(14, 31));
 
     Ok(())
 }

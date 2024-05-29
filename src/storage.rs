@@ -1,8 +1,6 @@
 use std::{
-    cell::RefCell,
     collections::{HashMap, HashSet},
     error::Error,
-    rc::Rc,
 };
 
 use chrono::{Days, NaiveDate};
@@ -10,10 +8,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     models::{
-        Attribute, BitField, Direction, HasDataStorage, Holiday, InformationText, Journey,
-        JourneyPlatform, Line, Model, Platform, Stop, StopConnection, ThroughService,
-        TimetableMetadataEntry, TransferTimeAdministration, TransferTimeJourney, TransferTimeLine,
-        TransportCompany, TransportType,
+        Attribute, BitField, Direction, Holiday, InformationText, Journey, JourneyPlatform, Line,
+        Model, Platform, Stop, StopConnection, ThroughService, TimetableMetadataEntry,
+        TransferTimeAdministration, TransferTimeJourney, TransferTimeLine, TransportCompany,
+        TransportType,
     },
     parsing,
     utils::count_days_between_two_dates,
@@ -57,7 +55,7 @@ pub struct DataStorage {
 
 #[allow(unused)]
 impl DataStorage {
-    pub fn new() -> Result<Rc<RefCell<Self>>, Box<dyn Error>> {
+    pub fn new() -> Result<Self, Box<dyn Error>> {
         // Time-relevant data.
         let bit_fields = parsing::load_bit_fields()?;
         let holidays = parsing::load_holidays()?;
@@ -91,7 +89,7 @@ impl DataStorage {
         let transfer_times_line =
             parsing::load_transfer_times_line(&transport_types_pk_type_converter)?;
 
-        let data_storage = Rc::new(RefCell::new(Self {
+        let mut data_storage = Self {
             // Time-relevant data.
             bit_fields,
             holidays,
@@ -115,33 +113,15 @@ impl DataStorage {
             transfer_times_administration,
             transfer_times_journey,
             transfer_times_line,
-        }));
+        };
 
-        data_storage.borrow_mut().set_references(&data_storage);
-        Self::build_indexes(&data_storage);
+        data_storage.build_indexes();
         Ok(data_storage)
     }
 
-    pub fn set_references(&mut self, data_storage: &Rc<RefCell<DataStorage>>) {
-        self.journeys.entries_mut().into_iter().for_each(|journey| {
-            journey.set_data_storage_reference(data_storage);
-            journey
-                .route_mut()
-                .iter_mut()
-                .for_each(|route_entry| route_entry.set_data_storage_reference(data_storage));
-        });
-    }
-
-    pub fn remove_references(&mut self) {
-        self.journeys
-            .entries_mut()
-            .into_iter()
-            .for_each(|journey| journey.remove_data_storage_reference());
-    }
-
-    fn build_indexes(data_storage: &Rc<RefCell<DataStorage>>) {
-        let indexes = data_storage.borrow().create_indexes();
-        data_storage.borrow_mut().set_indexes(indexes);
+    fn build_indexes(&mut self) {
+        let indexes = self.create_indexes();
+        self.set_indexes(indexes);
     }
 
     fn create_indexes(&self) -> (JourneyIndexes,) {
@@ -311,6 +291,10 @@ impl JourneyStorage {
         self.data().get(&id).unwrap()
     }
 
+    pub fn resolve_ids(&self, data_storage: &DataStorage, ids: HashSet<i32>) -> Vec<&Journey> {
+        ids.into_iter().map(|id| self.find(id)).collect()
+    }
+
     pub fn find_by_day(&self, day: NaiveDate) -> &HashSet<i32> {
         self.journeys_by_day().get(&day).unwrap()
     }
@@ -354,8 +338,8 @@ impl JourneyStorage {
             })
             .collect();
 
-        self.entries().iter().fold(HashMap::new(), |mut acc, item| {
-            let bit_field = item.bit_field();
+        self.entries().iter().fold(HashMap::new(), |mut acc, journey| {
+            let bit_field = journey.bit_field(data_storage);
             let indexes: Vec<usize> = if let Some(bit_field) = bit_field {
                 bit_field
                     .bits()
@@ -371,7 +355,7 @@ impl JourneyStorage {
             indexes.into_iter().for_each(|i| {
                 acc.entry(dates[i])
                     .or_insert(HashSet::new())
-                    .insert(item.id());
+                    .insert(journey.id());
             });
 
             acc
