@@ -45,7 +45,8 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     // 8587031     Avully, village
     // 8508134     Bernex, Vailly
     // 8587418     Petit-Lancy, Les Esserts
-    hrdf.plan_journey(8592688, 8508134, departure_date, Time::new(14, 31));
+    // 8592995     Petit-Lancy, Quidort
+    hrdf.plan_journey(8592688, 8592995, departure_date, Time::new(14, 31));
 
     Ok(())
 }

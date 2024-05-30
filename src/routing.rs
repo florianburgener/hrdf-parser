@@ -73,6 +73,10 @@ impl Node {
 
     // Functions
 
+    pub fn arrival_stop_id(&self) -> i32 {
+        self.route_sections().last().unwrap().arrival_stop_id()
+    }
+
     pub fn arrival_time<'a>(&'a self, data_storage: &'a DataStorage) -> &Time {
         let route_section = self.route_sections().last().unwrap();
 
@@ -80,6 +84,7 @@ impl Node {
             .journey(data_storage)
             .route()
             .iter()
+            .skip(1)
             .find(|route_entry| route_entry.stop_id() == route_section.arrival_stop_id())
             .unwrap()
             .arrival_time()
@@ -145,22 +150,23 @@ impl Hrdf {
         departure_date: NaiveDate,
         departure_time: Time,
     ) {
+        const MAX_CONNECTION_COUNT: i32 = 1;
+
+        let mut connection_count = 0;
         let mut nodes = self.get_initial_nodes(
             departure_stop_id,
             target_arrival_stop_id,
             departure_date,
-            departure_time,
+            &departure_time,
         );
         let mut next_nodes: Vec<Node> = Vec::new();
 
         let mut solution: Option<Node> = None;
 
         while !nodes.is_empty() {
-            println!("{}", nodes.len());
             while !nodes.is_empty() {
                 let parent_node = nodes.remove(0);
                 let route_section = parent_node.route_sections().last().unwrap();
-                println!("A");
 
                 if route_section.arrival_stop_id() == target_arrival_stop_id {
                     if let Some(solution_ref) = solution.as_ref() {
@@ -183,17 +189,69 @@ impl Hrdf {
                     route_section.arrival_stop_id(),
                     target_arrival_stop_id,
                 )
-                .map(|node| {
-                    nodes.push(node);
-                });
+                .map(|node| self.sorted_insert(&mut nodes, vec![node]));
+
+                if connection_count == MAX_CONNECTION_COUNT {
+                    continue;
+                }
+
+                let next_nodes_to_insert = self
+                    .next_departures(
+                        parent_node.arrival_stop_id(),
+                        departure_date,
+                        parent_node.arrival_time(self.data_storage()),
+                    )
+                    .iter()
+                    .filter_map(|j| {
+                        self.create_node(
+                            &parent_node,
+                            j.id(),
+                            route_section.arrival_stop_id(),
+                            target_arrival_stop_id,
+                        )
+                    })
+                    .collect();
+
+                self.sorted_insert(&mut next_nodes, next_nodes_to_insert);
             }
 
-            next_nodes = nodes;
-            nodes = Vec::new();
+            println!("{}", next_nodes.len());
+
+            connection_count += 1;
+            nodes = next_nodes;
+            next_nodes = Vec::new();
+            // break;
         }
 
         if let Some(solution) = solution {
+            println!("{:#?}", solution);
             solution.print(self.data_storage());
+        }
+    }
+
+    fn sorted_insert(&self, nodes: &mut Vec<Node>, mut nodes_to_insert: Vec<Node>) {
+        nodes_to_insert.sort_by(|a, b| {
+            let a = a.arrival_time(self.data_storage());
+            let b = b.arrival_time(self.data_storage());
+            a.cmp(b)
+        });
+
+        let mut i = 0;
+
+        while nodes_to_insert.len() > 0 && i < nodes.len() {
+            let t1 = nodes_to_insert[0].arrival_time(self.data_storage());
+            let t2 = nodes[i].arrival_time(self.data_storage());
+
+            if t1 < t2 {
+                nodes.insert(i, nodes_to_insert.remove(0));
+                i += 1;
+            }
+
+            i += 1;
+        }
+
+        for node in nodes_to_insert {
+            nodes.push(node);
         }
     }
 
@@ -208,8 +266,13 @@ impl Hrdf {
         data_storage.journeys().resolve_ids(data_storage, ids)
     }
 
-    fn next_departures(&self, stop_id: i32, date: NaiveDate, time: Time) -> Vec<&Journey> {
+    fn next_departures(&self, stop_id: i32, date: NaiveDate, time: &Time) -> Vec<&Journey> {
         let mut journeys: Vec<&Journey> = self.get_operating_journeys(date, stop_id);
+
+        journeys = journeys
+            .into_iter()
+            .filter(|j| !j.is_last_stop(stop_id))
+            .collect();
 
         journeys.sort_by(|a, b| {
             let a = self.get_departure_time(a, stop_id);
@@ -241,8 +304,13 @@ impl Hrdf {
         journey: &Journey,
         departure_stop_id: i32,
         target_arrival_stop_id: i32,
+        skip_first_route_entry: bool,
     ) -> Option<(RouteSection, HashSet<i32>)> {
         let mut route_iter = journey.route().iter().peekable();
+
+        if skip_first_route_entry {
+            route_iter.next();
+        }
 
         while route_iter.peek().unwrap().stop_id() != departure_stop_id {
             route_iter.next();
@@ -276,17 +344,22 @@ impl Hrdf {
         departure_stop_id: i32,
         target_arrival_stop_id: i32,
         departure_date: NaiveDate,
-        departure_time: Time,
+        departure_time: &Time,
     ) -> Vec<Node> {
-        self.next_departures(departure_stop_id, departure_date, departure_time)
+        let nodes_to_insert = self
+            .next_departures(departure_stop_id, departure_date, departure_time)
             .iter()
             .filter_map(|journey| {
-                self.get_next_route_section(journey, departure_stop_id, target_arrival_stop_id)
-                    .map(|(route_section, visited_stops)| {
+                self.get_next_route_section(journey, departure_stop_id, target_arrival_stop_id, false)
+                    .map(|(route_section, mut visited_stops)| {
+                        visited_stops.insert(departure_stop_id);
                         Node::new(vec![route_section], visited_stops)
                     })
             })
-            .collect()
+            .collect();
+        let mut nodes = Vec::new();
+        self.sorted_insert(&mut nodes, nodes_to_insert);
+        nodes
     }
 
     fn create_node(
@@ -296,27 +369,32 @@ impl Hrdf {
         departure_stop_id: i32,
         target_arrival_stop_id: i32,
     ) -> Option<Node> {
+        let is_same_journey =
+            parent_node.route_sections().last().unwrap().journey_id() == journey_id;
+
         self.get_next_route_section(
             self.data_storage().journeys().find(journey_id),
             departure_stop_id,
             target_arrival_stop_id,
+            is_same_journey,
         )
-        .map(|(route_section, new_visited_stops)| {
-            let mut route_sections = parent_node.route_sections().clone();
+        .map(|(new_route_section, new_visited_stops)| {
+            let mut cloned_route_sections: Vec<RouteSection> = parent_node.route_sections().clone();
+            let mut cloned_visited_stops = parent_node.visited_stops().clone();
 
-            if route_sections.last().unwrap().journey_id() == journey_id {
-                route_sections
+            if is_same_journey {
+                cloned_route_sections
                     .last_mut()
                     .unwrap()
-                    .set_arrival_stop_id(route_section.arrival_stop_id());
+                    .set_arrival_stop_id(new_route_section.arrival_stop_id());
             } else {
-                route_sections.push(route_section);
+                cloned_route_sections.push(new_route_section);
             }
 
-            let mut visited_stops = parent_node.visited_stops().clone();
-            visited_stops.extend(new_visited_stops);
+            // new_visited_stops.insert(departure_stop_id); // Only when it's necessary to walk between two different stops.
+            cloned_visited_stops.extend(new_visited_stops);
 
-            Node::new(route_sections, visited_stops)
+            Node::new(cloned_route_sections, cloned_visited_stops)
         })
     }
 }

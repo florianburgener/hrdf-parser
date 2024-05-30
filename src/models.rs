@@ -371,6 +371,10 @@ impl Journey {
             .bit_field_id
             .map(|bit_field_id| data_storage.bit_fields().find(bit_field_id))
     }
+
+    pub fn is_last_stop(&self, stop_id: i32) -> bool {
+        stop_id == self.route().last().unwrap().stop_id()
+    }
 }
 
 // ------------------------------------------------------------------------------------------------
