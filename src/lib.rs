@@ -46,7 +46,17 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     // 8508134     Bernex, Vailly
     // 8587418     Petit-Lancy, Les Esserts
     // 8592995     Petit-Lancy, Quidort
-    hrdf.plan_journey(8592688, 8592995, departure_date, Time::new(14, 31));
+    // 8587387     Genève, Bel-Air
+    // 8592910     Genève, Terrassière
+    // 8587057     Genève, gare Cornavin
+    // 8593189     Pont-Céard, gare
+    // ...
+    // 8501008     Genève
+
+    let before = Instant::now();
+    // hrdf.plan_journey(8592688, 8593189, departure_date, Time::new(14, 31));
+    hrdf.plan_journey(8592688, 8587057, departure_date, Time::new(14, 31));
+    println!("{:.2?}", before.elapsed());
 
     Ok(())
 }

@@ -55,10 +55,13 @@ Algorithme de calcul du trajet le plus court :
 * Utiliser une HashMap pour chaque arrêt contenant le temps le plus court pour l'atteindre, si un trajet arrive à un arrêt après le meilleur de temps => terminated
 
 
-for loop + data HashMap : attribute
-for loop + .last_mut()  : journey
-.map().collect()        : bit_field, direction, holiday, through_service, transfer_administration, transfer_journey, transfer_line, stop
-
-auto_increment          : holiday, journey, through_service, transfer_administration, transfer_journey, transfer_line
-HashMap direct usage    : stop
-pk_type_converter       : direction, journey
+* Pouvoir paginer les résultats
+    * Récupérer N résults plus tôt
+    * Récupérer N résults plus tard
+* Renvoyer les résultats via une structure
+* Pouvoir préciser une heure de départ ou d'arrivée
+* Mettre en place des optimisations
+    * Faire attention aux conséquences qu'elles peuvent engendrer
+* Gérer le problème du jour d'après (lundi 23 h 59 - mardi 00 h 00)
+* Considérer les temps de transferts lors d'une correspondance
+* considérer le changement d'arrêt ("Genève, gare" vers "Genève")

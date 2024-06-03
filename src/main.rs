@@ -1,4 +1,8 @@
-use std::process;
+use std::{
+    collections::BTreeSet,
+    hash::{DefaultHasher, Hash, Hasher},
+    process,
+};
 
 fn main() {
     if let Err(e) = hrdf::run() {

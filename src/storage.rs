@@ -138,12 +138,12 @@ impl DataStorage {
         &self.bit_fields
     }
 
-    pub fn timetable_metadata(&self) -> &TimetableMetadataStorage {
-        &self.timetable_metadata
-    }
-
     pub fn journeys(&self) -> &JourneyStorage {
         &self.journeys
+    }
+
+    pub fn lines(&self) -> &SimpleResourceStorage<Line> {
+        &self.lines
     }
 
     pub fn platforms(&self) -> &SimpleResourceStorage<Platform> {
@@ -152,6 +152,10 @@ impl DataStorage {
 
     pub fn stops(&self) -> &SimpleResourceStorage<Stop> {
         &self.stops
+    }
+
+    pub fn timetable_metadata(&self) -> &TimetableMetadataStorage {
+        &self.timetable_metadata
     }
 }
 

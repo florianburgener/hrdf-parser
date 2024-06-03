@@ -2,8 +2,10 @@ use core::fmt;
 use std::{
     cell::{Ref, RefCell},
     cmp::Ordering,
-    collections::HashMap,
-    hash::Hash,
+    collections::{BTreeSet, HashMap, HashSet},
+    hash::{DefaultHasher, Hash, Hasher},
+    ops,
+    str::FromStr,
 };
 
 use chrono::NaiveDate;
@@ -372,8 +374,48 @@ impl Journey {
             .map(|bit_field_id| data_storage.bit_fields().find(bit_field_id))
     }
 
+    pub fn direction_type(&self) -> DirectionType {
+        DirectionType::from_str(
+            &self
+                .metadata()
+                .get(&JourneyMetadataType::Direction)
+                .unwrap()[0]
+                .extra_field_1()
+                .as_ref()
+                .unwrap(),
+        )
+        .unwrap()
+    }
+
+    pub fn line_metadata_entry(&self) -> &JourneyMetadataEntry {
+        &self.metadata().get(&JourneyMetadataType::Line).unwrap()[0]
+    }
+
+    pub fn line<'a>(&'a self, data_storage: &'a DataStorage) -> Option<&Line> {
+        let entry = self.line_metadata_entry();
+
+        entry
+            .resource_id()
+            .map(|line_id| data_storage.lines().find(line_id))
+    }
+
     pub fn is_last_stop(&self, stop_id: i32) -> bool {
         stop_id == self.route().last().unwrap().stop_id()
+    }
+
+    pub fn hash_route(&self, departure_stop_id: i32) -> u64 {
+        let mut route_iter = self.route().iter().peekable();
+
+        while route_iter.peek().unwrap().stop_id() != departure_stop_id {
+            route_iter.next();
+        }
+
+        let mut hasher = DefaultHasher::new();
+        let x = route_iter
+            .map(|route_entry| route_entry.stop_id())
+            .collect::<BTreeSet<_>>()
+            .hash(&mut hasher);
+        hasher.finish()
     }
 }
 
@@ -915,7 +957,7 @@ impl ThroughService {
 // --- Time
 // ------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Time {
     hour: i8,
     minute: i8,
@@ -929,6 +971,27 @@ impl Time {
     // pub fn total_minutes(&self) -> i32 {
     //     i32::from(self.hour) * 60 + i32::from(self.minute)
     // }
+}
+
+impl ops::Add for Time {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        let hour = self.hour + other.hour;
+        let minute = self.minute + other.minute;
+
+        let (hour, minute) = if minute >= 60 {
+            (hour + 1, minute % 60)
+        } else {
+            (hour, minute)
+        };
+
+        if hour >= 24 {
+            panic!("Impossible to add these two times together!");
+        }
+
+        Time::new(hour, minute)
+    }
 }
 
 impl fmt::Display for Time {
