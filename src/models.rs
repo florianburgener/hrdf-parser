@@ -2,7 +2,7 @@ use core::fmt;
 use std::{
     cell::{Ref, RefCell},
     cmp::Ordering,
-    collections::{BTreeSet, HashMap, HashSet},
+    collections::{BTreeSet, HashMap},
     hash::{DefaultHasher, Hash, Hasher},
     ops,
     str::FromStr,

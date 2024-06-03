@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use chrono::NaiveDate;
 
@@ -72,6 +72,13 @@ impl Node {
     }
 
     // Functions
+
+    pub fn journeys_as_set(&self) -> HashSet<i32> {
+        self.route_sections()
+            .iter()
+            .map(|route_section| route_section.journey_id())
+            .collect()
+    }
 
     pub fn arrival_stop_id(&self) -> i32 {
         self.route_sections().last().unwrap().arrival_stop_id()
@@ -202,6 +209,7 @@ impl Hrdf {
                         parent_node.arrival_stop_id(),
                         departure_date,
                         parent_node.arrival_time(self.data_storage()),
+                        Some(parent_node.journeys_as_set()),
                     )
                     .iter()
                     .filter_map(|j| {
@@ -270,12 +278,20 @@ impl Hrdf {
         stop_id: i32,
         date: NaiveDate,
         departure_time: &Time,
+        journeys_to_ignore: Option<HashSet<i32>>,
     ) -> Vec<&Journey> {
         let mut journeys: Vec<&Journey> = self.get_operating_journeys(date, stop_id);
 
         let departure_time_max = *departure_time + Time::new(1, 0);
         journeys = journeys
             .into_iter()
+            .filter(|journey| {
+                if let Some(journeys_to_ignore) = &journeys_to_ignore {
+                    !journeys_to_ignore.contains(&journey.id())
+                } else {
+                    true
+                }
+            })
             .filter(|journey| !journey.is_last_stop(stop_id))
             .filter(|journey| {
                 let journey_departure_time = self.get_departure_time(journey, stop_id);
@@ -291,29 +307,17 @@ impl Hrdf {
             a.cmp(b)
         });
 
-        let mut lines_filter = HashMap::new();
+        let mut unique_route = HashSet::new();
 
         journeys
             .into_iter()
             .filter_map(|journey| {
-                // Filter:
-                let line_designation = if let Some(line) = journey.line(self.data_storage()) {
-                    line.name().to_owned()
-                } else {
-                    journey
-                        .line_metadata_entry()
-                        .extra_field_1()
-                        .as_ref()
-                        .unwrap()
-                        .to_owned()
-                };
-                let direction_type = journey.direction_type();
+                let hash = journey.hash_route(stop_id);
 
-                let k = (line_designation, direction_type);
-                if lines_filter.contains_key(&k) {
+                if unique_route.contains(&hash) {
                     None
                 } else {
-                    lines_filter.insert(k, true);
+                    unique_route.insert(hash);
                     Some(journey)
                 }
             })
@@ -380,7 +384,7 @@ impl Hrdf {
         departure_time: &Time,
     ) -> Vec<Node> {
         let nodes_to_insert = self
-            .next_departures(departure_stop_id, departure_date, departure_time)
+            .next_departures(departure_stop_id, departure_date, departure_time, None)
             .iter()
             .filter_map(|journey| {
                 self.get_next_route_section(
