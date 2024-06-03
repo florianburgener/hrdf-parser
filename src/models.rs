@@ -403,6 +403,27 @@ impl Journey {
         stop_id == self.route().last().unwrap().stop_id()
     }
 
+    pub fn count_stops(&self, departure_stop_id: i32, arrival_stop_id: i32) -> i32 {
+        let mut route_iter = self.route().iter().peekable();
+
+        while route_iter.peek().unwrap().stop_id() != departure_stop_id {
+            route_iter.next();
+        }
+
+        let mut count = 0;
+
+        loop {
+            count += 1;
+            let stop_id = route_iter.next().unwrap().stop_id();
+
+            if stop_id == arrival_stop_id {
+                break;
+            }
+        }
+
+        count
+    }
+
     pub fn hash_route(&self, departure_stop_id: i32) -> u64 {
         let mut route_iter = self.route().iter().peekable();
 
@@ -411,7 +432,7 @@ impl Journey {
         }
 
         let mut hasher = DefaultHasher::new();
-        let x = route_iter
+        route_iter
             .map(|route_entry| route_entry.stop_id())
             .collect::<BTreeSet<_>>()
             .hash(&mut hasher);

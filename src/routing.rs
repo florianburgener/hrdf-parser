@@ -168,7 +168,7 @@ impl Hrdf {
         );
         let mut next_nodes: Vec<Node> = Vec::new();
 
-        let mut solution: Option<Node> = None;
+        let mut best_solution: Option<Node> = None;
 
         while !nodes.is_empty() {
             println!("{}", nodes.len());
@@ -178,15 +178,8 @@ impl Hrdf {
                 let route_section = parent_node.route_sections().last().unwrap();
 
                 if route_section.arrival_stop_id() == target_arrival_stop_id {
-                    if let Some(solution_ref) = solution.as_ref() {
-                        let t1 = parent_node.arrival_time(self.data_storage());
-                        let t2 = solution_ref.arrival_time(self.data_storage());
-
-                        if t1 < t2 {
-                            solution = Some(parent_node);
-                        }
-                    } else {
-                        solution = Some(parent_node);
+                    if self.is_improving_solution(&parent_node, &best_solution) {
+                        best_solution = Some(parent_node);
                     }
 
                     continue;
@@ -230,10 +223,54 @@ impl Hrdf {
             next_nodes = Vec::new();
         }
 
-        if let Some(solution) = solution {
-            // println!("{:#?}", solution);
-            solution.print(self.data_storage());
+        if let Some(b) = best_solution {
+            // println!("{:#?}", best_solution);
+            b.print(self.data_storage());
         }
+    }
+
+    fn is_improving_solution(&self, candidate: &Node, best_solution: &Option<Node>) -> bool {
+        fn count_stops(data_storage: &DataStorage, node: &Node, i: usize) -> i32 {
+            let route_section = &node.route_sections()[i];
+
+            route_section.journey(data_storage).count_stops(
+                route_section.departure_stop_id(),
+                route_section.arrival_stop_id(),
+            )
+        }
+
+        if best_solution.is_none() {
+            return true;
+        }
+
+        let best_solution = best_solution.as_ref().unwrap();
+
+        let t1 = candidate.arrival_time(self.data_storage());
+        let t2 = best_solution.arrival_time(self.data_storage());
+
+        if t1 != t2 {
+            return t1 < t2;
+        }
+
+        let connection_count_1 = candidate.route_sections().len();
+        let connection_count_2 = best_solution.route_sections().len();
+
+        if connection_count_1 != connection_count_2 {
+            return connection_count_1 < connection_count_2;
+        }
+
+        for i in 0..connection_count_1 {
+            let data_storage = self.data_storage();
+
+            let stop_count_1 = count_stops(data_storage, candidate, i);
+            let stop_count_2 = count_stops(data_storage, best_solution, i);
+
+            if stop_count_1 != stop_count_2 {
+                return stop_count_1 > stop_count_2;
+            }
+        }
+
+        false
     }
 
     fn sorted_insert(&self, nodes: &mut Vec<Node>, mut nodes_to_insert: Vec<Node>) {
