@@ -56,9 +56,9 @@ pub fn parse() -> Result<SimpleResourceStorage<Line>, Box<dyn Error>> {
                 let line = data.last_mut().unwrap();
 
                 match id {
-                    ROW_B => set_short_name(values, &line),
-                    ROW_C => set_text_color(values, &line),
-                    ROW_D => set_background_color(values, &line),
+                    ROW_B => set_short_name(values, line),
+                    ROW_C => set_text_color(values, line),
+                    ROW_D => set_background_color(values, line),
                     _ => unreachable!(),
                 }
             }
@@ -81,13 +81,13 @@ fn create_instance(mut values: Vec<ParsedValue>) -> Line {
     Line::new(id, name)
 }
 
-fn set_short_name(mut values: Vec<ParsedValue>, line: &Line) {
+fn set_short_name(mut values: Vec<ParsedValue>, line: &mut Line) {
     let short_name: String = values.remove(0).into();
 
     line.set_short_name(short_name);
 }
 
-fn set_text_color(mut values: Vec<ParsedValue>, line: &Line) {
+fn set_text_color(mut values: Vec<ParsedValue>, line: &mut Line) {
     let r: i16 = values.remove(0).into();
     let g: i16 = values.remove(0).into();
     let b: i16 = values.remove(0).into();
@@ -95,7 +95,7 @@ fn set_text_color(mut values: Vec<ParsedValue>, line: &Line) {
     line.set_text_color(Color::new(r, g, b));
 }
 
-fn set_background_color(mut values: Vec<ParsedValue>, line: &Line) {
+fn set_background_color(mut values: Vec<ParsedValue>, line: &mut Line) {
     let r: i16 = values.remove(0).into();
     let g: i16 = values.remove(0).into();
     let b: i16 = values.remove(0).into();

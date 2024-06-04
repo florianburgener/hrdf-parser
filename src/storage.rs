@@ -39,7 +39,7 @@ pub struct DataStorage {
 
     // Stop data.
     stops: SimpleResourceStorage<Stop>,
-    stop_connections: SimpleResourceStorage<StopConnection>,
+    stop_connections: StopConnectionStorage,
 
     // Timetable data.
     journeys: JourneyStorage,
@@ -184,61 +184,6 @@ impl<M: Model<M>> SimpleResourceStorage<M> {
 }
 
 // ------------------------------------------------------------------------------------------------
-// --- TimetableMetadataStorage
-// ------------------------------------------------------------------------------------------------
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct TimetableMetadataStorage {
-    data: HashMap<i32, TimetableMetadataEntry>,
-    timetable_metadata_entry_by_key: HashMap<String, i32>,
-}
-
-#[allow(unused)]
-impl TimetableMetadataStorage {
-    pub fn new(data: HashMap<i32, TimetableMetadataEntry>) -> Self {
-        let timetable_metadata_entry_by_key = Self::create_timetable_metadata_entry_by_key(&data);
-
-        Self {
-            data,
-            timetable_metadata_entry_by_key,
-        }
-    }
-
-    fn data(&self) -> &HashMap<i32, TimetableMetadataEntry> {
-        &self.data
-    }
-
-    fn timetable_metadata_entry_by_key(&self) -> &HashMap<String, i32> {
-        &self.timetable_metadata_entry_by_key
-    }
-
-    fn create_timetable_metadata_entry_by_key(
-        data: &HashMap<i32, TimetableMetadataEntry>,
-    ) -> HashMap<String, i32> {
-        data.values().fold(HashMap::new(), |mut acc, item| {
-            acc.insert(item.key().to_owned(), item.id());
-            acc
-        })
-    }
-
-    pub fn find(&self, id: i32) -> &TimetableMetadataEntry {
-        self.data().get(&id).unwrap()
-    }
-
-    pub fn find_by_key(&self, key: &str) -> &TimetableMetadataEntry {
-        self.find(*self.timetable_metadata_entry_by_key().get(key).unwrap())
-    }
-
-    pub fn start_date(&self) -> NaiveDate {
-        self.find_by_key("start_date").value_as_NaiveDate()
-    }
-
-    pub fn end_date(&self) -> NaiveDate {
-        self.find_by_key("end_date").value_as_NaiveDate()
-    }
-}
-
-// ------------------------------------------------------------------------------------------------
 // --- JourneyStorage
 // ------------------------------------------------------------------------------------------------
 
@@ -285,10 +230,6 @@ impl JourneyStorage {
 
     pub fn entries(&self) -> Vec<&Journey> {
         self.data().values().map(|j| j).collect()
-    }
-
-    pub fn entries_mut(&mut self) -> Vec<&mut Journey> {
-        self.data.values_mut().map(|j| j).collect()
     }
 
     pub fn find(&self, id: i32) -> &Journey {
@@ -342,28 +283,30 @@ impl JourneyStorage {
             })
             .collect();
 
-        self.entries().iter().fold(HashMap::new(), |mut acc, journey| {
-            let bit_field = journey.bit_field(data_storage);
-            let indexes: Vec<usize> = if let Some(bit_field) = bit_field {
-                bit_field
-                    .bits()
-                    .iter()
-                    .enumerate()
-                    .filter(|(i, &x)| *i < num_days && x == 1)
-                    .map(|(i, _)| i)
-                    .collect()
-            } else {
-                (0..num_days).collect()
-            };
+        self.entries()
+            .iter()
+            .fold(HashMap::new(), |mut acc, journey| {
+                let bit_field = journey.bit_field(data_storage);
+                let indexes: Vec<usize> = if let Some(bit_field) = bit_field {
+                    bit_field
+                        .bits()
+                        .iter()
+                        .enumerate()
+                        .filter(|(i, &x)| *i < num_days && x == 1)
+                        .map(|(i, _)| i)
+                        .collect()
+                } else {
+                    (0..num_days).collect()
+                };
 
-            indexes.into_iter().for_each(|i| {
-                acc.entry(dates[i])
-                    .or_insert(HashSet::new())
-                    .insert(journey.id());
-            });
+                indexes.into_iter().for_each(|i| {
+                    acc.entry(dates[i])
+                        .or_insert(HashSet::new())
+                        .insert(journey.id());
+                });
 
-            acc
-        })
+                acc
+            })
     }
 
     fn create_journeys_by_stop_id(&self, _: &DataStorage) -> JourneyIndex2 {
@@ -377,5 +320,107 @@ impl JourneyStorage {
                 });
                 acc
             })
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
+// --- StopConnectionStorage
+// ------------------------------------------------------------------------------------------------
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct StopConnectionStorage {
+    data: HashMap<i32, StopConnection>,
+    stop_connections_by_stop_id: HashMap<i32, Vec<i32>>,
+}
+
+impl StopConnectionStorage {
+    pub fn new(data: HashMap<i32, StopConnection>) -> Self {
+        let stop_connections_by_stop_id = Self::create_stop_connections_by_stop_id(&data);
+
+        Self {
+            data,
+            stop_connections_by_stop_id,
+        }
+    }
+}
+
+// Manages the creation of indexes.
+impl StopConnectionStorage {
+    fn create_stop_connections_by_stop_id(
+        data: &HashMap<i32, StopConnection>,
+    ) -> HashMap<i32, Vec<i32>> {
+        data.values()
+            .fold(HashMap::new(), |mut acc, stop_connection| {
+                acc.entry(stop_connection.stop_id_1())
+                    .or_insert(Vec::new())
+                    .push(stop_connection.id());
+                acc
+            })
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
+// --- TimetableMetadataStorage
+// ------------------------------------------------------------------------------------------------
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TimetableMetadataStorage {
+    data: HashMap<i32, TimetableMetadataEntry>,
+    timetable_metadata_entry_by_key: HashMap<String, i32>,
+}
+
+#[allow(unused)]
+impl TimetableMetadataStorage {
+    pub fn new(data: HashMap<i32, TimetableMetadataEntry>) -> Self {
+        let timetable_metadata_entry_by_key = Self::create_timetable_metadata_entry_by_key(&data);
+
+        Self {
+            data,
+            timetable_metadata_entry_by_key,
+        }
+    }
+
+    // Getters/Setters
+
+    fn data(&self) -> &HashMap<i32, TimetableMetadataEntry> {
+        &self.data
+    }
+
+    fn timetable_metadata_entry_by_key(&self) -> &HashMap<String, i32> {
+        &self.timetable_metadata_entry_by_key
+    }
+
+    // Functions.
+
+    pub fn entries(&self) -> Vec<&TimetableMetadataEntry> {
+        self.data().values().map(|j| j).collect()
+    }
+
+    pub fn find(&self, id: i32) -> &TimetableMetadataEntry {
+        self.data().get(&id).unwrap()
+    }
+
+    pub fn find_by_key(&self, key: &str) -> &TimetableMetadataEntry {
+        self.find(*self.timetable_metadata_entry_by_key().get(key).unwrap())
+    }
+
+    pub fn start_date(&self) -> NaiveDate {
+        self.find_by_key("start_date").value_as_NaiveDate()
+    }
+
+    pub fn end_date(&self) -> NaiveDate {
+        self.find_by_key("end_date").value_as_NaiveDate()
+    }
+}
+
+// Manages the creation of indexes.
+impl TimetableMetadataStorage {
+    fn create_timetable_metadata_entry_by_key(
+        data: &HashMap<i32, TimetableMetadataEntry>,
+    ) -> HashMap<String, i32> {
+        data.values().fold(HashMap::new(), |mut acc, item| {
+            acc.insert(item.key().to_owned(), item.id());
+            acc
+        })
     }
 }

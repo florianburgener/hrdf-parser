@@ -28,18 +28,18 @@ pub fn parse() -> Result<SimpleResourceStorage<InformationText>, Box<dyn Error>>
         .parse()
         .map(|(_, _, values)| create_instance(values))
         .collect();
-    let data = InformationText::vec_to_map(data);
+    let mut data = InformationText::vec_to_map(data);
 
-    load_content(&data, Language::German)?;
-    load_content(&data, Language::English)?;
-    load_content(&data, Language::French)?;
-    load_content(&data, Language::Italian)?;
+    load_content(&mut data, Language::German)?;
+    load_content(&mut data, Language::English)?;
+    load_content(&mut data, Language::French)?;
+    load_content(&mut data, Language::Italian)?;
 
     Ok(SimpleResourceStorage::new(data))
 }
 
 fn load_content(
-    data: &HashMap<i32, InformationText>,
+    data: &mut HashMap<i32, InformationText>,
     language: Language,
 ) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
@@ -78,11 +78,11 @@ fn create_instance(mut values: Vec<ParsedValue>) -> InformationText {
 
 fn set_content(
     mut values: Vec<ParsedValue>,
-    data: &HashMap<i32, InformationText>,
+    data: &mut HashMap<i32, InformationText>,
     language: Language,
 ) {
     let id: i32 = values.remove(0).into();
     let description: String = values.remove(0).into();
 
-    data.get(&id).unwrap().set_content(language, &description);
+    data.get_mut(&id).unwrap().set_content(language, &description);
 }

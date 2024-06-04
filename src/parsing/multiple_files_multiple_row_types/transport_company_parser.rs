@@ -45,18 +45,18 @@ pub fn parse() -> Result<SimpleResourceStorage<TransportCompany>, Box<dyn Error>
             None
         })
         .collect();
-    let data = TransportCompany::vec_to_map(data);
+    let mut data = TransportCompany::vec_to_map(data);
 
-    load_designations(&data, Language::German)?;
-    load_designations(&data, Language::English)?;
-    load_designations(&data, Language::French)?;
-    load_designations(&data, Language::Italian)?;
+    load_designations(&mut data, Language::German)?;
+    load_designations(&mut data, Language::English)?;
+    load_designations(&mut data, Language::French)?;
+    load_designations(&mut data, Language::Italian)?;
 
     Ok(SimpleResourceStorage::new(data))
 }
 
 fn load_designations(
-    data: &HashMap<i32, TransportCompany>,
+    data: &mut HashMap<i32, TransportCompany>,
     language: Language,
 ) -> Result<(), Box<dyn Error>> {
     const ROW_A: i32 = 1;
@@ -104,7 +104,7 @@ fn create_instance(mut values: Vec<ParsedValue>) -> TransportCompany {
 
 fn set_designations(
     mut values: Vec<ParsedValue>,
-    data: &HashMap<i32, TransportCompany>,
+    data: &mut HashMap<i32, TransportCompany>,
     language: Language,
 ) {
     let id: i32 = values.remove(0).into();
@@ -112,7 +112,7 @@ fn set_designations(
 
     let (short_name, long_name, full_name) = parse_designations(designations);
 
-    let transport_company = data.get(&id).unwrap();
+    let transport_company = data.get_mut(&id).unwrap();
     transport_company.set_short_name(language, &short_name);
     transport_company.set_long_name(language, &long_name);
     transport_company.set_full_name(language, &full_name);

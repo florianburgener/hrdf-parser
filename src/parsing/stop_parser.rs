@@ -31,29 +31,29 @@ pub fn parse() -> Result<SimpleResourceStorage<Stop>, Box<dyn Error>> {
         .parse()
         .map(|(_, _, values)| create_instance(values))
         .collect();
-    let data = Stop::vec_to_map(data);
+    let mut data = Stop::vec_to_map(data);
 
     println!("Parsing BFKOORD_LV95...");
-    load_coordinates(CoordinateType::LV95, &data)?;
+    load_coordinates(CoordinateType::LV95, &mut data)?;
     println!("Parsing BFKOORD_WGS...");
-    load_coordinates(CoordinateType::WGS84, &data)?;
+    load_coordinates(CoordinateType::WGS84, &mut data)?;
     println!("Parsing BFPRIOS...");
-    load_transfer_priorities(&data)?;
+    load_transfer_priorities(&mut data)?;
     println!("Parsing KMINFO...");
-    load_transfer_flags(&data)?;
+    load_transfer_flags(&mut data)?;
     println!("Parsing UMSTEIGB...");
-    load_transfer_times(&data)?;
+    load_transfer_times(&mut data)?;
     println!("Parsing METABHF 1/2...");
-    load_connections(&data)?;
+    load_connections(&mut data)?;
     println!("Parsing BHFART_60...");
-    load_descriptions(&data)?;
+    load_descriptions(&mut data)?;
 
     Ok(SimpleResourceStorage::new(data))
 }
 
 fn load_coordinates(
     coordinate_type: CoordinateType,
-    data: &HashMap<i32, Stop>,
+    data: &mut HashMap<i32, Stop>,
 ) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -79,7 +79,7 @@ fn load_coordinates(
     Ok(())
 }
 
-fn load_transfer_priorities(data: &HashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
+fn load_transfer_priorities(data: &mut HashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row contains the changing priority.
@@ -98,7 +98,7 @@ fn load_transfer_priorities(data: &HashMap<i32, Stop>) -> Result<(), Box<dyn Err
     Ok(())
 }
 
-fn load_transfer_flags(data: &HashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
+fn load_transfer_flags(data: &mut HashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row contains the changing flag.
@@ -116,7 +116,7 @@ fn load_transfer_flags(data: &HashMap<i32, Stop>) -> Result<(), Box<dyn Error>> 
     Ok(())
 }
 
-fn load_transfer_times(data: &HashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
+fn load_transfer_times(data: &mut HashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row contains the changing time.
@@ -135,7 +135,7 @@ fn load_transfer_times(data: &HashMap<i32, Stop>) -> Result<(), Box<dyn Error>> 
     Ok(())
 }
 
-fn load_connections(data: &HashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
+fn load_connections(data: &mut HashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
     const ROW_C: i32 = 3;
@@ -163,7 +163,7 @@ fn load_connections(data: &HashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn load_descriptions(data: &HashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
+fn load_descriptions(data: &mut HashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
     const ROW_C: i32 = 3;
@@ -218,7 +218,7 @@ fn create_instance(mut values: Vec<ParsedValue>) -> Stop {
 fn set_coordinate(
     mut values: Vec<ParsedValue>,
     coordinate_type: CoordinateType,
-    data: &HashMap<i32, Stop>,
+    data: &mut HashMap<i32, Stop>,
 ) {
     let stop_id: i32 = values.remove(0).into();
     let mut xy1: f64 = values.remove(0).into();
@@ -230,7 +230,7 @@ fn set_coordinate(
         (xy1, xy2) = (xy2, xy1);
     }
 
-    let stop = data.get(&stop_id).unwrap();
+    let stop = data.get_mut(&stop_id).unwrap();
     let coordinate = Coordinate::new(coordinate_type, xy1, xy2, altitude);
 
     match coordinate_type {
@@ -239,71 +239,71 @@ fn set_coordinate(
     }
 }
 
-fn set_transfer_priority(mut values: Vec<ParsedValue>, data: &HashMap<i32, Stop>) {
+fn set_transfer_priority(mut values: Vec<ParsedValue>, data: &mut HashMap<i32, Stop>) {
     let stop_id: i32 = values.remove(0).into();
     let transfer_priority: i16 = values.remove(0).into();
 
-    let stop = data.get(&stop_id).unwrap();
+    let stop = data.get_mut(&stop_id).unwrap();
     stop.set_transfer_priority(transfer_priority);
 }
 
-fn set_transfer_flag(mut values: Vec<ParsedValue>, data: &HashMap<i32, Stop>) {
+fn set_transfer_flag(mut values: Vec<ParsedValue>, data: &mut HashMap<i32, Stop>) {
     let stop_id: i32 = values.remove(0).into();
     let transfer_flag: i16 = values.remove(0).into();
 
-    let stop = data.get(&stop_id).unwrap();
+    let stop = data.get_mut(&stop_id).unwrap();
     stop.set_transfer_flag(transfer_flag);
 }
 
-fn set_transfer_time(mut values: Vec<ParsedValue>, data: &HashMap<i32, Stop>) {
+fn set_transfer_time(mut values: Vec<ParsedValue>, data: &mut HashMap<i32, Stop>) {
     let stop_id: i32 = values.remove(0).into();
     let transfer_time_inter_city: i16 = values.remove(0).into();
     let transfer_time_other: i16 = values.remove(0).into();
 
     if stop_id == 9999999 {
         // The first row of the file has the stop ID number 9999999. It contains the default values for all stops.
-        for stop in data.values() {
+        for stop in data.values_mut() {
             stop.set_transfer_time_inter_city(transfer_time_inter_city);
             stop.set_transfer_time_other(transfer_time_other);
         }
     } else {
-        let stop = data.get(&stop_id).unwrap();
+        let stop = data.get_mut(&stop_id).unwrap();
         stop.set_transfer_time_inter_city(transfer_time_inter_city);
         stop.set_transfer_time_other(transfer_time_other);
     }
 }
 
-fn set_connections(mut values: Vec<ParsedValue>, data: &HashMap<i32, Stop>) {
+fn set_connections(mut values: Vec<ParsedValue>, data: &mut HashMap<i32, Stop>) {
     let stop_id: i32 = values.remove(0).into();
     let connections: String = values.remove(0).into();
 
     let connections = parse_connections(connections);
 
-    let stop = data.get(&stop_id).unwrap();
+    let stop = data.get_mut(&stop_id).unwrap();
     stop.set_connections(connections);
 }
 
-fn set_restrictions(mut values: Vec<ParsedValue>, data: &HashMap<i32, Stop>) {
+fn set_restrictions(mut values: Vec<ParsedValue>, data: &mut HashMap<i32, Stop>) {
     let stop_id: i32 = values.remove(0).into();
     let restrictions: i16 = values.remove(0).into();
 
-    let stop = data.get(&stop_id).unwrap();
+    let stop = data.get_mut(&stop_id).unwrap();
     stop.set_restrictions(restrictions);
 }
 
-fn set_sloid(mut values: Vec<ParsedValue>, data: &HashMap<i32, Stop>) {
+fn set_sloid(mut values: Vec<ParsedValue>, data: &mut HashMap<i32, Stop>) {
     let stop_id: i32 = values.remove(0).into();
     let sloid: String = values.remove(0).into();
 
-    let stop = data.get(&stop_id).unwrap();
+    let stop = data.get_mut(&stop_id).unwrap();
     stop.set_sloid(sloid);
 }
 
-fn add_boarding_area(mut values: Vec<ParsedValue>, data: &HashMap<i32, Stop>) {
+fn add_boarding_area(mut values: Vec<ParsedValue>, data: &mut HashMap<i32, Stop>) {
     let stop_id: i32 = values.remove(0).into();
     let sloid: String = values.remove(0).into();
 
-    let stop = data.get(&stop_id).unwrap();
+    let stop = data.get_mut(&stop_id).unwrap();
     stop.add_boarding_area(sloid);
 }
 

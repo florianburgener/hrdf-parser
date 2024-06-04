@@ -9,13 +9,13 @@ use crate::{
         AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser,
         ParsedValue, RowDefinition, RowParser,
     },
-    storage::SimpleResourceStorage,
+    storage::StopConnectionStorage,
     utils::AutoIncrement,
 };
 
 pub fn parse(
     attributes_pk_type_converter: &HashMap<String, i32>,
-) -> Result<SimpleResourceStorage<StopConnection>, Box<dyn Error>> {
+) -> Result<StopConnectionStorage, Box<dyn Error>> {
     println!("Parsing METABHF 2/2...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -48,7 +48,7 @@ pub fn parse(
                 let stop_connection = data.last_mut().unwrap();
 
                 match id {
-                    ROW_B => add_attribute(values, &stop_connection, attributes_pk_type_converter),
+                    ROW_B => add_attribute(values, stop_connection, attributes_pk_type_converter),
                     ROW_C => {}
                     _ => unreachable!(),
                 }
@@ -58,7 +58,7 @@ pub fn parse(
 
     let data = StopConnection::vec_to_map(data);
 
-    Ok(SimpleResourceStorage::new(data))
+    Ok(StopConnectionStorage::new(data))
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -75,7 +75,7 @@ fn create_instance(mut values: Vec<ParsedValue>, auto_increment: &AutoIncrement)
 
 fn add_attribute(
     mut values: Vec<ParsedValue>,
-    current_instance: &StopConnection,
+    current_instance: &mut StopConnection,
     attributes_pk_type_converter: &HashMap<String, i32>,
 ) {
     let attribute_designation: String = values.remove(0).into();

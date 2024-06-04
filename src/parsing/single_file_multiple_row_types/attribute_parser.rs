@@ -63,7 +63,7 @@ pub fn parse() -> Result<(SimpleResourceStorage<Attribute>, HashMap<String, i32>
             }
             ROW_B => {}
             ROW_C => update_current_language(values, &mut current_language),
-            ROW_D => set_description(values, &pk_type_converter, &data, current_language),
+            ROW_D => set_description(values, &pk_type_converter, &mut data, current_language),
             _ => unreachable!(),
         }
     }
@@ -100,13 +100,13 @@ fn create_instance(
 fn set_description(
     mut values: Vec<ParsedValue>,
     pk_type_converter: &HashMap<String, i32>,
-    data: &HashMap<i32, Attribute>,
+    data: &mut HashMap<i32, Attribute>,
     language: Language,
 ) {
     let legacy_id: String = values.remove(0).into();
     let description: String = values.remove(0).into();
 
-    data.get(&pk_type_converter.get(&legacy_id).unwrap())
+    data.get_mut(&pk_type_converter.get(&legacy_id).unwrap())
         .unwrap()
         .set_description(language, &description);
 }

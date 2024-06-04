@@ -72,7 +72,7 @@ pub fn parse(
         }
     }
 
-    let platforms = Platform::vec_to_map(platforms);
+    let mut platforms = Platform::vec_to_map(platforms);
 
     let journey_platform = journey_platform
         .into_iter()
@@ -88,10 +88,10 @@ pub fn parse(
 
     println!("Parsing GLEIS_LV95...");
     #[rustfmt::skip]
-    load_coordinates_for_platforms(CoordinateType::LV95, bytes_offset, &platforms_pk_type_converter, &platforms)?;
+    load_coordinates_for_platforms(CoordinateType::LV95, bytes_offset, &platforms_pk_type_converter, &mut platforms)?;
     println!("Parsing GLEIS_WGS84...");
     #[rustfmt::skip]
-    load_coordinates_for_platforms(CoordinateType::WGS84, bytes_offset, &platforms_pk_type_converter, &platforms)?;
+    load_coordinates_for_platforms(CoordinateType::WGS84, bytes_offset, &platforms_pk_type_converter, &mut platforms)?;
 
     Ok((
         SimpleResourceStorage::new(journey_platform),
@@ -103,7 +103,7 @@ fn load_coordinates_for_platforms(
     coordinate_type: CoordinateType,
     bytes_offset: u64,
     pk_type_converter: &HashMap<(i32, i32), i32>,
-    data: &HashMap<i32, Platform>,
+    data: &mut HashMap<i32, Platform>,
 ) -> Result<(), Box<dyn Error>> {
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -191,7 +191,7 @@ fn platform_set_sloid(
     mut values: Vec<ParsedValue>,
     coordinate_type: CoordinateType,
     pk_type_converter: &HashMap<(i32, i32), i32>,
-    data: &HashMap<i32, Platform>,
+    data: &mut HashMap<i32, Platform>,
 ) {
     // The SLOID is processed only when loading LV95 coordinates.
     if coordinate_type == CoordinateType::LV95 {
@@ -199,7 +199,7 @@ fn platform_set_sloid(
         let index: i32 = values.remove(0).into();
         let sloid: String = values.remove(0).into();
 
-        data.get(&pk_type_converter.get(&(stop_id, index)).unwrap())
+        data.get_mut(&pk_type_converter.get(&(stop_id, index)).unwrap())
             .unwrap()
             .set_sloid(sloid);
     }
@@ -209,7 +209,7 @@ fn platform_set_coordinate(
     mut values: Vec<ParsedValue>,
     coordinate_type: CoordinateType,
     pk_type_converter: &HashMap<(i32, i32), i32>,
-    data: &HashMap<i32, Platform>,
+    data: &mut HashMap<i32, Platform>,
 ) {
     let stop_id: i32 = values.remove(0).into();
     let index: i32 = values.remove(0).into();
@@ -225,7 +225,7 @@ fn platform_set_coordinate(
 
     let coordinate = Coordinate::new(coordinate_type, xy1, xy2, altitude);
     let platform = data
-        .get(&pk_type_converter.get(&(stop_id, index)).unwrap())
+        .get_mut(&pk_type_converter.get(&(stop_id, index)).unwrap())
         .unwrap();
 
     match coordinate_type {

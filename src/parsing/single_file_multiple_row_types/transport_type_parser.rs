@@ -78,10 +78,10 @@ pub fn parse(
                 match id {
                     ROW_B => update_current_language(values, &mut current_language),
                     ROW_C => {
-                        set_product_class_name(values, &data, current_language);
+                        set_product_class_name(values, &mut data, current_language);
                     }
                     ROW_D => {}
-                    ROW_E => set_category_name(values, &transport_type, current_language),
+                    ROW_E => set_category_name(values, transport_type, current_language),
                     _ => unreachable!(),
                 }
             }
@@ -127,7 +127,7 @@ fn create_instance(
 
 fn set_product_class_name(
     mut values: Vec<ParsedValue>,
-    data: &Vec<TransportType>,
+    data: &mut Vec<TransportType>,
     language: Language,
 ) {
     let product_class_id: i16 = values.remove(0).into();
@@ -142,7 +142,7 @@ fn set_product_class_name(
 
 fn set_category_name(
     mut values: Vec<ParsedValue>,
-    transport_type: &TransportType,
+    transport_type: &mut TransportType,
     language: Language,
 ) {
     let _: i32 = values.remove(0).into();

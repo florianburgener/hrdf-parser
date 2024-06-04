@@ -47,6 +47,7 @@ Algorithme de calcul du trajet le plus court (Done) :
 * On ne revient pas sur ses pas
 * Ne pas considérer les arrêts où les changements sont désactivés
 * Si une solution est trouvée, alors il faut arrêter les routes qui arriveraient de toute manière plus tard que celle-ci
+* Empêcher de réemprunter le même type de trajet que précédemment (ex. sortir du 14 pour reprendre le 14 d'après)
 
 Algorithme de calcul du trajet le plus court (TODO) :
 * considérer le changement d'arrêt ("Genève, gare" vers "Genève")
@@ -63,7 +64,8 @@ Algorithme de calcul du trajet le plus court (TODO) :
 Algorithme de calcul du trajet le plus court (Idées) :
 * Pas de route sur 2 ou plusieurs jours
 * Utiliser une HashMap pour chaque arrêt contenant le temps le plus court pour l'atteindre, si un trajet arrive à un arrêt après le meilleur de temps => terminated
-
+    * Toujours pas de soluce à ça
+* Avoir une HashMap (journey_id, stop_id) qui maintient en combien de correspondance l'arrêt a été atteint pour tuer ceux qui serait pas meilleur
 
 
 Types de temps de transferts :
@@ -88,6 +90,6 @@ Quels sont les règles pour l'utilisation des temps de transferts ? Est-ce que c
 * METABHF
     * Temps de transfert pour se déplacer entre l'arrêt A et l'arrêt B
     * D'après ce que j'ai compris, ça permet principalement de connecter les réseaux de transports publics domestique aux réseaux ferroviaires
-    * A <=> B ?
+    * A => B ?
 
 Existe t'il d'autre endroits définissant des temps de transferts ?

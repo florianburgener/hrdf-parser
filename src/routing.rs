@@ -73,13 +73,6 @@ impl Node {
 
     // Functions
 
-    pub fn journeys_as_set(&self) -> HashSet<i32> {
-        self.route_sections()
-            .iter()
-            .map(|route_section| route_section.journey_id())
-            .collect()
-    }
-
     pub fn arrival_stop_id(&self) -> i32 {
         self.route_sections().last().unwrap().arrival_stop_id()
     }
@@ -186,7 +179,9 @@ impl Hrdf {
                 }
 
                 if let Some(bs) = &best_solution {
-                    if parent_node.arrival_time(self.data_storage()) > bs.arrival_time(self.data_storage()) {
+                    if parent_node.arrival_time(self.data_storage())
+                        > bs.arrival_time(self.data_storage())
+                    {
                         continue;
                     }
                 }
@@ -203,12 +198,22 @@ impl Hrdf {
                     continue;
                 }
 
+                let routes_to_ignore = parent_node
+                    .route_sections()
+                    .iter()
+                    .filter_map(|route_section| {
+                        route_section
+                            .journey(self.data_storage())
+                            .hash_route(parent_node.arrival_stop_id())
+                    })
+                    .collect();
+
                 let next_nodes_to_insert = self
                     .next_departures(
                         parent_node.arrival_stop_id(),
                         departure_date,
                         parent_node.arrival_time(self.data_storage()),
-                        Some(parent_node.journeys_as_set()),
+                        Some(routes_to_ignore),
                     )
                     .iter()
                     .filter_map(|j| {
@@ -321,24 +326,23 @@ impl Hrdf {
         stop_id: i32,
         date: NaiveDate,
         departure_time: &Time,
-        journeys_to_ignore: Option<HashSet<i32>>,
+        routes_to_ignore: Option<HashSet<u64>>,
     ) -> Vec<&Journey> {
         let mut journeys: Vec<&Journey> = self.get_operating_journeys(date, stop_id);
 
         let departure_time_max = *departure_time + Time::new(1, 0);
         journeys = journeys
             .into_iter()
-            .filter(|journey| {
-                if let Some(journeys_to_ignore) = &journeys_to_ignore {
-                    !journeys_to_ignore.contains(&journey.id())
-                } else {
-                    true
-                }
-            })
+            // .filter(|journey| {
+            //     if let Some(journeys_to_ignore) = &journeys_to_ignore {
+            //         !journeys_to_ignore.contains(&journey.id())
+            //     } else {
+            //         true
+            //     }
+            // })
             .filter(|journey| !journey.is_last_stop(stop_id))
             .filter(|journey| {
                 let journey_departure_time = self.get_departure_time(journey, stop_id);
-                // Filter:
                 journey_departure_time >= departure_time
                     && journey_departure_time <= &departure_time_max
             })
@@ -352,10 +356,14 @@ impl Hrdf {
 
         let mut unique_route = HashSet::new();
 
+        if let Some(routes_to_ignore) = routes_to_ignore {
+            unique_route = routes_to_ignore;
+        }
+
         journeys
             .into_iter()
             .filter_map(|journey| {
-                let hash = journey.hash_route(stop_id);
+                let hash = journey.hash_route(stop_id).unwrap();
 
                 if unique_route.contains(&hash) {
                     None

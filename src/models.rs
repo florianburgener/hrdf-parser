@@ -1,11 +1,9 @@
 use core::fmt;
 use std::{
-    cell::{Ref, RefCell},
     cmp::Ordering,
     collections::{BTreeSet, HashMap},
     hash::{DefaultHasher, Hash, Hasher},
     ops,
-    str::FromStr,
 };
 
 use chrono::NaiveDate;
@@ -55,12 +53,11 @@ pub struct Attribute {
     stop_scope: i16,
     main_sorting_priority: i16,
     secondary_sorting_priority: i16,
-    description: RefCell<HashMap<Language, String>>,
+    description: HashMap<Language, String>,
 }
 
 impl_Model!(Attribute);
 
-#[allow(unused)]
 impl Attribute {
     pub fn new(
         id: i32,
@@ -75,35 +72,17 @@ impl Attribute {
             stop_scope,
             main_sorting_priority,
             secondary_sorting_priority,
-            description: RefCell::new(HashMap::new()),
+            description: HashMap::new(),
         }
     }
 
-    pub fn designation(&self) -> &str {
-        &self.designation
+    // Getters/Setters
+
+    pub fn set_description(&mut self, language: Language, value: &str) {
+        self.description.insert(language, value.to_string());
     }
 
-    pub fn stop_scope(&self) -> i16 {
-        self.stop_scope
-    }
-
-    pub fn main_sorting_priority(&self) -> i16 {
-        self.main_sorting_priority
-    }
-
-    pub fn secondary_sorting_priority(&self) -> i16 {
-        self.secondary_sorting_priority
-    }
-
-    pub fn description(&self, language: Language) -> String {
-        self.description.borrow().get(&language).cloned().unwrap()
-    }
-
-    pub fn set_description(&self, language: Language, value: &str) {
-        self.description
-            .borrow_mut()
-            .insert(language, value.to_string());
-    }
+    // Functions
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -118,15 +97,18 @@ pub struct BitField {
 
 impl_Model!(BitField);
 
-#[allow(unused)]
 impl BitField {
     pub fn new(id: i32, bits: Vec<u8>) -> Self {
         Self { id, bits }
     }
 
+    // Getters/Setters
+
     pub fn bits(&self) -> &Vec<u8> {
-        return &self.bits;
+        &self.bits
     }
+
+    // Functions
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -146,6 +128,8 @@ impl Color {
         Self { r, g, b }
     }
 
+    // Getters/Setters
+
     pub fn r(&self) -> i16 {
         self.r
     }
@@ -157,6 +141,8 @@ impl Color {
     pub fn b(&self) -> i16 {
         self.b
     }
+
+    // Functions
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -193,6 +179,8 @@ impl Coordinate {
         }
     }
 
+    // Getters/Setters
+
     pub fn easting(&self) -> f64 {
         assert!(self.coordinate_type == CoordinateType::LV95);
         self.x
@@ -213,9 +201,12 @@ impl Coordinate {
         self.y
     }
 
+    // TODO: most stops have no specified altitude.
     pub fn altitude(&self) -> i16 {
         self.z
     }
+
+    // Functions
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -230,15 +221,14 @@ pub struct Direction {
 
 impl_Model!(Direction);
 
-#[allow(unused)]
 impl Direction {
     pub fn new(id: i32, name: String) -> Self {
         Self { id, name }
     }
 
-    pub fn name(&self) -> &str {
-        &self.name
-    }
+    // Getters/Setters
+
+    // Functions
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -270,19 +260,14 @@ pub struct Holiday {
 
 impl_Model!(Holiday);
 
-#[allow(unused)]
 impl Holiday {
     pub fn new(id: i32, date: NaiveDate, name: HashMap<Language, String>) -> Self {
         Self { id, date, name }
     }
 
-    pub fn date(&self) -> NaiveDate {
-        self.date
-    }
+    // Getters/Setters
 
-    pub fn name(&self, language: Language) -> String {
-        self.name.get(&language).cloned().unwrap()
-    }
+    // Functions
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -292,29 +277,26 @@ impl Holiday {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct InformationText {
     id: i32,
-    content: RefCell<HashMap<Language, String>>,
+    content: HashMap<Language, String>,
 }
 
 impl_Model!(InformationText);
 
-#[allow(unused)]
 impl InformationText {
     pub fn new(id: i32) -> Self {
         Self {
             id,
-            content: RefCell::new(HashMap::new()),
+            content: HashMap::new(),
         }
     }
 
-    pub fn content(&self, language: Language) -> String {
-        self.content.borrow().get(&language).cloned().unwrap()
+    // Getters/Setters
+
+    pub fn set_content(&mut self, language: Language, value: &str) {
+        self.content.insert(language, value.to_string());
     }
 
-    pub fn set_content(&self, language: Language, value: &str) {
-        self.content
-            .borrow_mut()
-            .insert(language, value.to_string());
-    }
+    // Functions
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -331,7 +313,6 @@ pub struct Journey {
 
 impl_Model!(Journey);
 
-#[allow(unused)]
 impl Journey {
     pub fn new(id: i32, administration: String) -> Self {
         Self {
@@ -343,10 +324,6 @@ impl Journey {
     }
 
     // Getters/Setters
-
-    pub fn administration(&self) -> &str {
-        &self.administration
-    }
 
     fn metadata(&self) -> &HashMap<JourneyMetadataType, Vec<JourneyMetadataEntry>> {
         &self.metadata
@@ -374,31 +351,6 @@ impl Journey {
             .map(|bit_field_id| data_storage.bit_fields().find(bit_field_id))
     }
 
-    pub fn direction_type(&self) -> DirectionType {
-        DirectionType::from_str(
-            &self
-                .metadata()
-                .get(&JourneyMetadataType::Direction)
-                .unwrap()[0]
-                .extra_field_1()
-                .as_ref()
-                .unwrap(),
-        )
-        .unwrap()
-    }
-
-    pub fn line_metadata_entry(&self) -> &JourneyMetadataEntry {
-        &self.metadata().get(&JourneyMetadataType::Line).unwrap()[0]
-    }
-
-    pub fn line<'a>(&'a self, data_storage: &'a DataStorage) -> Option<&Line> {
-        let entry = self.line_metadata_entry();
-
-        entry
-            .resource_id()
-            .map(|line_id| data_storage.lines().find(line_id))
-    }
-
     pub fn is_last_stop(&self, stop_id: i32) -> bool {
         stop_id == self.route().last().unwrap().stop_id()
     }
@@ -424,10 +376,18 @@ impl Journey {
         count
     }
 
-    pub fn hash_route(&self, departure_stop_id: i32) -> u64 {
+    pub fn hash_route(&self, departure_stop_id: i32) -> Option<u64> {
         let mut route_iter = self.route().iter().peekable();
 
-        while route_iter.peek().unwrap().stop_id() != departure_stop_id {
+        loop {
+            if let Some(route_entry) = route_iter.peek() {
+                if route_entry.stop_id() == departure_stop_id {
+                    break;
+                }
+            } else {
+                return None;
+            }
+
             route_iter.next();
         }
 
@@ -436,7 +396,7 @@ impl Journey {
             .map(|route_entry| route_entry.stop_id())
             .collect::<BTreeSet<_>>()
             .hash(&mut hasher);
-        hasher.finish()
+        Some(hasher.finish())
     }
 }
 
@@ -473,7 +433,6 @@ pub struct JourneyMetadataEntry {
     extra_field_2: Option<i32>,
 }
 
-#[allow(unused)]
 impl JourneyMetadataEntry {
     pub fn new(
         from_stop_id: Option<i32>,
@@ -499,26 +458,6 @@ impl JourneyMetadataEntry {
 
     // Getters/Setters
 
-    fn resource_id(&self) -> &Option<i32> {
-        &self.resource_id
-    }
-
-    pub fn departure_time(&self) -> &Option<Time> {
-        &self.departure_time
-    }
-
-    pub fn arrival_time(&self) -> &Option<Time> {
-        &self.arrival_time
-    }
-
-    pub fn extra_field_1(&self) -> &Option<String> {
-        &self.extra_field_1
-    }
-
-    pub fn extra_field_2(&self) -> &Option<i32> {
-        &self.extra_field_2
-    }
-
     // Functions
 }
 
@@ -533,7 +472,6 @@ pub struct JourneyRouteEntry {
     departure_time: Option<Time>,
 }
 
-#[allow(unused)]
 impl JourneyRouteEntry {
     pub fn new(stop_id: i32, arrival_time: Option<Time>, departure_time: Option<Time>) -> Self {
         Self {
@@ -576,15 +514,6 @@ pub struct JourneyPlatform {
     bit_field_id: Option<i32>,
 }
 
-impl Model<JourneyPlatform> for JourneyPlatform {
-    type K = (i32, i32);
-
-    fn id(&self) -> Self::K {
-        (self.journey_id, self.platform_id)
-    }
-}
-
-#[allow(unused)]
 impl JourneyPlatform {
     pub fn new(
         journey_id: i32,
@@ -600,8 +529,16 @@ impl JourneyPlatform {
         }
     }
 
-    pub fn time(&self) -> &Option<Time> {
-        &self.time
+    // Getters/Setters
+
+    // Functions
+}
+
+impl Model<JourneyPlatform> for JourneyPlatform {
+    type K = (i32, i32);
+
+    fn id(&self) -> Self::K {
+        (self.journey_id, self.platform_id)
     }
 }
 
@@ -635,52 +572,39 @@ pub enum Language {
 pub struct Line {
     id: i32,
     name: String,
-    short_name: RefCell<String>,
-    text_color: RefCell<Color>,
-    background_color: RefCell<Color>,
+    short_name: String,
+    text_color: Color,
+    background_color: Color,
 }
 
 impl_Model!(Line);
 
-#[allow(unused)]
 impl Line {
     pub fn new(id: i32, name: String) -> Self {
         Self {
             id,
             name,
-            short_name: RefCell::new(String::new()),
-            text_color: RefCell::new(Color::default()),
-            background_color: RefCell::new(Color::default()),
+            short_name: String::default(),
+            text_color: Color::default(),
+            background_color: Color::default(),
         }
     }
 
-    pub fn name(&self) -> &str {
-        &self.name
+    // Getters/Setters
+
+    pub fn set_short_name(&mut self, value: String) {
+        self.short_name = value;
     }
 
-    pub fn short_name(&self) -> Ref<'_, String> {
-        self.short_name.borrow()
+    pub fn set_text_color(&mut self, value: Color) {
+        self.text_color = value;
     }
 
-    pub fn set_short_name(&self, value: String) {
-        *self.short_name.borrow_mut() = value;
+    pub fn set_background_color(&mut self, value: Color) {
+        self.background_color = value;
     }
 
-    pub fn text_color(&self) -> Ref<'_, Color> {
-        self.text_color.borrow()
-    }
-
-    pub fn set_text_color(&self, value: Color) {
-        *self.text_color.borrow_mut() = value;
-    }
-
-    pub fn background_color(&self) -> Ref<'_, Color> {
-        self.background_color.borrow()
-    }
-
-    pub fn set_background_color(&self, value: Color) {
-        *self.background_color.borrow_mut() = value;
-    }
+    // Functions
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -693,14 +617,13 @@ pub struct Platform {
     name: String,
     sectors: Option<String>,
     stop_id: i32,
-    sloid: RefCell<String>,
-    lv95_coordinate: RefCell<Coordinate>,
-    wgs84_coordinate: RefCell<Coordinate>,
+    sloid: String,
+    lv95_coordinate: Coordinate,
+    wgs84_coordinate: Coordinate,
 }
 
 impl_Model!(Platform);
 
-#[allow(unused)]
 impl Platform {
     pub fn new(id: i32, name: String, sectors: Option<String>, stop_id: i32) -> Self {
         Self {
@@ -708,43 +631,27 @@ impl Platform {
             name,
             sectors,
             stop_id,
-            sloid: RefCell::new(String::default()),
-            lv95_coordinate: RefCell::new(Coordinate::default()),
-            wgs84_coordinate: RefCell::new(Coordinate::default()),
+            sloid: String::default(),
+            lv95_coordinate: Coordinate::default(),
+            wgs84_coordinate: Coordinate::default(),
         }
     }
 
-    pub fn name(&self) -> &str {
-        &self.name
+    // Getters/Setters
+
+    pub fn set_sloid(&mut self, value: String) {
+        self.sloid = value;
     }
 
-    pub fn sectors(&self) -> &Option<String> {
-        &self.sectors
+    pub fn set_lv95_coordinate(&mut self, value: Coordinate) {
+        self.lv95_coordinate = value;
     }
 
-    pub fn sloid(&self) -> Ref<'_, String> {
-        self.sloid.borrow()
+    pub fn set_wgs84_coordinate(&mut self, value: Coordinate) {
+        self.wgs84_coordinate = value;
     }
 
-    pub fn set_sloid(&self, value: String) {
-        *self.sloid.borrow_mut() = value;
-    }
-
-    pub fn lv95_coordinate(&self) -> Ref<'_, Coordinate> {
-        self.lv95_coordinate.borrow()
-    }
-
-    pub fn set_lv95_coordinate(&self, value: Coordinate) {
-        *self.lv95_coordinate.borrow_mut() = value;
-    }
-
-    pub fn wgs84_coordinate(&self) -> Ref<'_, Coordinate> {
-        self.wgs84_coordinate.borrow()
-    }
-
-    pub fn set_wgs84_coordinate(&self, value: Coordinate) {
-        *self.wgs84_coordinate.borrow_mut() = value;
-    }
+    // Functions
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -758,21 +665,20 @@ pub struct Stop {
     long_name: Option<String>,
     abbreviation: Option<String>,
     synonyms: Option<Vec<String>>,
-    lv95_coordinate: RefCell<Option<Coordinate>>,
-    wgs84_coordinate: RefCell<Option<Coordinate>>,
-    transfer_priority: RefCell<i16>,
-    transfer_flag: RefCell<i16>,
-    transfer_time_inter_city: RefCell<i16>,
-    transfer_time_other: RefCell<i16>,
-    connections: RefCell<Vec<i32>>, // Vec of Stop.id
-    restrictions: RefCell<i16>,
-    sloid: RefCell<String>,
-    boarding_areas: RefCell<Vec<String>>,
+    lv95_coordinate: Option<Coordinate>,
+    wgs84_coordinate: Option<Coordinate>,
+    transfer_priority: i16,
+    transfer_flag: i16,
+    transfer_time_inter_city: i16,
+    transfer_time_other: i16,
+    connections: Vec<i32>, // Vec of Stop.id
+    restrictions: i16,
+    sloid: String,
+    boarding_areas: Vec<String>,
 }
 
 impl_Model!(Stop);
 
-#[allow(unused)]
 impl Stop {
     pub fn new(
         id: i32,
@@ -787,113 +693,69 @@ impl Stop {
             long_name,
             abbreviation,
             synonyms,
-            lv95_coordinate: RefCell::new(None),
-            wgs84_coordinate: RefCell::new(None),
-            transfer_priority: RefCell::new(8), // 8 is the default priority.
-            transfer_flag: RefCell::new(0),
-            transfer_time_inter_city: RefCell::new(0),
-            transfer_time_other: RefCell::new(0),
-            connections: RefCell::new(Vec::new()),
-            restrictions: RefCell::new(0),
-            sloid: RefCell::new(String::new()),
-            boarding_areas: RefCell::new(Vec::new()),
+            lv95_coordinate: None,
+            wgs84_coordinate: None,
+            transfer_priority: 8, // 8 is the default priority.
+            transfer_flag: 0,
+            transfer_time_inter_city: 0,
+            transfer_time_other: 0,
+            connections: Vec::default(),
+            restrictions: 0,
+            sloid: String::default(),
+            boarding_areas: Vec::new(),
         }
     }
+
+    // Getters/Setters
 
     pub fn name(&self) -> &str {
         &self.name
     }
 
-    pub fn long_name(&self) -> &Option<String> {
-        &self.long_name
+    pub fn set_lv95_coordinate(&mut self, value: Coordinate) {
+        self.lv95_coordinate = Some(value);
     }
 
-    pub fn abbreviation(&self) -> &Option<String> {
-        &self.abbreviation
+    pub fn set_wgs84_coordinate(&mut self, value: Coordinate) {
+        self.wgs84_coordinate = Some(value);
     }
 
-    pub fn synonyms(&self) -> &Option<Vec<String>> {
-        &self.synonyms
-    }
-
-    pub fn lv95_coordinate(&self) -> Ref<'_, Option<Coordinate>> {
-        self.lv95_coordinate.borrow()
-    }
-
-    pub fn set_lv95_coordinate(&self, value: Coordinate) {
-        *self.lv95_coordinate.borrow_mut() = Some(value);
-    }
-
-    pub fn wgs84_coordinate(&self) -> Ref<'_, Option<Coordinate>> {
-        self.wgs84_coordinate.borrow()
-    }
-
-    pub fn set_wgs84_coordinate(&self, value: Coordinate) {
-        *self.wgs84_coordinate.borrow_mut() = Some(value);
-    }
-
-    pub fn transfer_priority(&self) -> i16 {
-        *self.transfer_priority.borrow()
-    }
-
-    pub fn set_transfer_priority(&self, value: i16) {
-        *self.transfer_priority.borrow_mut() = value;
+    pub fn set_transfer_priority(&mut self, value: i16) {
+        self.transfer_priority = value;
     }
 
     pub fn transfer_flag(&self) -> i16 {
-        *self.transfer_flag.borrow()
+        self.transfer_flag
     }
 
-    pub fn set_transfer_flag(&self, value: i16) {
-        *self.transfer_flag.borrow_mut() = value;
+    pub fn set_transfer_flag(&mut self, value: i16) {
+        self.transfer_flag = value;
     }
 
-    pub fn transfer_time_inter_city(&self) -> i16 {
-        *self.transfer_time_inter_city.borrow()
+    pub fn set_transfer_time_inter_city(&mut self, value: i16) {
+        self.transfer_time_inter_city = value;
     }
 
-    pub fn set_transfer_time_inter_city(&self, value: i16) {
-        *self.transfer_time_inter_city.borrow_mut() = value;
+    pub fn set_transfer_time_other(&mut self, value: i16) {
+        self.transfer_time_other = value;
     }
 
-    pub fn transfer_time_other(&self) -> i16 {
-        *self.transfer_time_other.borrow()
+    pub fn set_connections(&mut self, value: Vec<i32>) {
+        self.connections = value;
     }
 
-    pub fn set_transfer_time_other(&self, value: i16) {
-        *self.transfer_time_other.borrow_mut() = value;
+    pub fn set_restrictions(&mut self, value: i16) {
+        self.restrictions = value;
     }
 
-    pub fn connections(&self) -> Ref<'_, Vec<i32>> {
-        self.connections.borrow()
+    pub fn set_sloid(&mut self, value: String) {
+        self.sloid = value;
     }
 
-    pub fn set_connections(&self, value: Vec<i32>) {
-        *self.connections.borrow_mut() = value;
-    }
+    // Functions
 
-    pub fn restrictions(&self) -> Ref<'_, i16> {
-        self.restrictions.borrow()
-    }
-
-    pub fn set_restrictions(&self, value: i16) {
-        *self.restrictions.borrow_mut() = value;
-    }
-
-    pub fn sloid(&self) -> Ref<'_, String> {
-        self.sloid.borrow()
-    }
-
-    pub fn set_sloid(&self, value: String) {
-        *self.sloid.borrow_mut() = value;
-    }
-
-    pub fn boarding_areas(&self) -> Ref<'_, Vec<String>> {
-        self.boarding_areas.borrow()
-    }
-
-    pub fn add_boarding_area(&self, value: String) {
-        self.boarding_areas.borrow_mut().push(value);
+    pub fn add_boarding_area(&mut self, value: String) {
+        self.boarding_areas.push(value);
     }
 }
 
@@ -907,12 +769,11 @@ pub struct StopConnection {
     stop_id_1: i32,
     stop_id_2: i32,
     duration: i16, // Transfer time from stop 1 to stop 2 is in minutes.
-    attributes: RefCell<Vec<i32>>,
+    attributes: Vec<i32>,
 }
 
 impl_Model!(StopConnection);
 
-#[allow(unused)]
 impl StopConnection {
     pub fn new(id: i32, stop_id_1: i32, stop_id_2: i32, duration: i16) -> Self {
         Self {
@@ -920,20 +781,20 @@ impl StopConnection {
             stop_id_1,
             stop_id_2,
             duration,
-            attributes: RefCell::new(Vec::new()),
+            attributes: Vec::new(),
         }
     }
 
-    pub fn duration(&self) -> i16 {
-        self.duration
+    // Getters/Setters
+
+    pub fn stop_id_1(&self) -> i32 {
+        self.stop_id_1
     }
 
-    pub fn attributes(&self) -> Ref<'_, Vec<i32>> {
-        self.attributes.borrow()
-    }
+    // Functions
 
-    pub fn add_attribute(&self, value: i32) {
-        self.attributes.borrow_mut().push(value);
+    pub fn add_attribute(&mut self, value: i32) {
+        self.attributes.push(value);
     }
 }
 
@@ -953,7 +814,6 @@ pub struct ThroughService {
 
 impl_Model!(ThroughService);
 
-#[allow(unused)]
 impl ThroughService {
     pub fn new(
         id: i32,
@@ -972,6 +832,10 @@ impl ThroughService {
             bit_field_id,
         }
     }
+
+    // Getters/Setters
+
+    // Functions
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -989,9 +853,9 @@ impl Time {
         Self { hour, minute }
     }
 
-    // pub fn total_minutes(&self) -> i32 {
-    //     i32::from(self.hour) * 60 + i32::from(self.minute)
-    // }
+    // Getters/Setters
+
+    // Functions
 }
 
 impl ops::Add for Time {
@@ -1059,11 +923,12 @@ pub struct TimetableMetadataEntry {
 
 impl_Model!(TimetableMetadataEntry);
 
-#[allow(unused)]
 impl TimetableMetadataEntry {
     pub fn new(id: i32, key: String, value: String) -> Self {
         Self { id, key, value }
     }
+
+    // Getters/Setters
 
     pub fn key(&self) -> &str {
         &self.key
@@ -1077,6 +942,8 @@ impl TimetableMetadataEntry {
     pub fn value_as_NaiveDate(&self) -> NaiveDate {
         NaiveDate::parse_from_str(self.value(), "%Y-%m-%d").unwrap()
     }
+
+    // Functions
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -1094,7 +961,6 @@ pub struct TransferTimeAdministration {
 
 impl_Model!(TransferTimeAdministration);
 
-#[allow(unused)]
 impl TransferTimeAdministration {
     pub fn new(
         id: i32,
@@ -1112,17 +978,9 @@ impl TransferTimeAdministration {
         }
     }
 
-    pub fn administration_1(&self) -> &str {
-        &self.administration_1
-    }
+    // Getters/Setters
 
-    pub fn administration_2(&self) -> &str {
-        &self.administration_2
-    }
-
-    pub fn duration(&self) -> i16 {
-        self.duration
-    }
+    // Functions
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -1142,7 +1000,6 @@ pub struct TransferTimeJourney {
 
 impl_Model!(TransferTimeJourney);
 
-#[allow(unused)]
 impl TransferTimeJourney {
     pub fn new(
         id: i32,
@@ -1164,13 +1021,9 @@ impl TransferTimeJourney {
         }
     }
 
-    pub fn duration(&self) -> i16 {
-        self.duration
-    }
+    // Getters/Setters
 
-    pub fn is_guaranteed(&self) -> bool {
-        self.is_guaranteed
-    }
+    // Functions
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -1195,7 +1048,6 @@ pub struct TransferTimeLine {
 
 impl_Model!(TransferTimeLine);
 
-#[allow(unused)]
 impl TransferTimeLine {
     pub fn new(
         id: i32,
@@ -1227,29 +1079,9 @@ impl TransferTimeLine {
         }
     }
 
-    pub fn administration_1(&self) -> &str {
-        &self.administration_1
-    }
+    // Getters/Setters
 
-    pub fn direction_1(&self) -> &Option<DirectionType> {
-        &self.direction_1
-    }
-
-    pub fn administration_2(&self) -> &str {
-        &self.administration_2
-    }
-
-    pub fn direction_2(&self) -> &Option<DirectionType> {
-        &self.direction_2
-    }
-
-    pub fn duration(&self) -> i16 {
-        self.duration
-    }
-
-    pub fn is_guaranteed(&self) -> bool {
-        self.is_guaranteed
-    }
+    // Functions
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -1259,59 +1091,40 @@ impl TransferTimeLine {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TransportCompany {
     id: i32,
-    short_name: RefCell<HashMap<Language, String>>,
-    long_name: RefCell<HashMap<Language, String>>,
-    full_name: RefCell<HashMap<Language, String>>,
+    short_name: HashMap<Language, String>,
+    long_name: HashMap<Language, String>,
+    full_name: HashMap<Language, String>,
     administrations: Vec<String>,
 }
 
 impl_Model!(TransportCompany);
 
-#[allow(unused)]
 impl TransportCompany {
     pub fn new(id: i32, administrations: Vec<String>) -> Self {
         Self {
             id,
-            short_name: RefCell::new(HashMap::new()),
-            long_name: RefCell::new(HashMap::new()),
-            full_name: RefCell::new(HashMap::new()),
+            short_name: HashMap::new(),
+            long_name: HashMap::new(),
+            full_name: HashMap::new(),
             administrations,
         }
     }
 
-    pub fn short_name(&self, language: Language) -> String {
-        self.short_name.borrow().get(&language).cloned().unwrap()
+    // Getters/Setters
+
+    pub fn set_short_name(&mut self, language: Language, value: &str) {
+        self.short_name.insert(language, value.to_string());
     }
 
-    pub fn set_short_name(&self, language: Language, value: &str) {
-        self.short_name
-            .borrow_mut()
-            .insert(language, value.to_string());
+    pub fn set_long_name(&mut self, language: Language, value: &str) {
+        self.long_name.insert(language, value.to_string());
     }
 
-    pub fn long_name(&self, language: Language) -> String {
-        self.long_name.borrow().get(&language).cloned().unwrap()
+    pub fn set_full_name(&mut self, language: Language, value: &str) {
+        self.full_name.insert(language, value.to_string());
     }
 
-    pub fn set_long_name(&self, language: Language, value: &str) {
-        self.long_name
-            .borrow_mut()
-            .insert(language, value.to_string());
-    }
-
-    pub fn full_name(&self, language: Language) -> String {
-        self.full_name.borrow().get(&language).cloned().unwrap()
-    }
-
-    pub fn set_full_name(&self, language: Language, value: &str) {
-        self.full_name
-            .borrow_mut()
-            .insert(language, value.to_string());
-    }
-
-    pub fn administrations(&self) -> &Vec<String> {
-        &self.administrations
-    }
+    // Functions
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -1328,13 +1141,12 @@ pub struct TransportType {
     short_name: String,
     surchage: i16,
     flag: String,
-    product_class_name: RefCell<HashMap<Language, String>>,
-    category_name: RefCell<HashMap<Language, String>>,
+    product_class_name: HashMap<Language, String>,
+    category_name: HashMap<Language, String>,
 }
 
 impl_Model!(TransportType);
 
-#[allow(unused)]
 impl TransportType {
     pub fn new(
         id: i32,
@@ -1355,60 +1167,24 @@ impl TransportType {
             short_name,
             surchage,
             flag,
-            product_class_name: RefCell::new(HashMap::new()),
-            category_name: RefCell::new(HashMap::new()),
+            product_class_name: HashMap::new(),
+            category_name: HashMap::new(),
         }
     }
 
-    pub fn designation(&self) -> &str {
-        &self.designation
-    }
+    // Getters/Setters
 
     pub fn product_class_id(&self) -> i16 {
         self.product_class_id
     }
 
-    pub fn tarrif_group(&self) -> &str {
-        &self.tarrif_group
+    pub fn set_product_class_name(&mut self, language: Language, value: &str) {
+        self.product_class_name.insert(language, value.to_string());
     }
 
-    pub fn output_control(&self) -> i16 {
-        self.output_control
+    pub fn set_category_name(&mut self, language: Language, value: &str) {
+        self.category_name.insert(language, value.to_string());
     }
 
-    pub fn short_name(&self) -> &str {
-        &self.short_name
-    }
-
-    pub fn surchage(&self) -> i16 {
-        self.surchage
-    }
-
-    pub fn flag(&self) -> &str {
-        &self.flag
-    }
-
-    pub fn product_class_name(&self, language: Language) -> String {
-        self.product_class_name
-            .borrow()
-            .get(&language)
-            .cloned()
-            .unwrap()
-    }
-
-    pub fn set_product_class_name(&self, language: Language, value: &str) {
-        self.product_class_name
-            .borrow_mut()
-            .insert(language, value.to_string());
-    }
-
-    pub fn category_name(&self, language: Language) -> String {
-        self.category_name.borrow().get(&language).cloned().unwrap()
-    }
-
-    pub fn set_category_name(&self, language: Language, value: &str) {
-        self.category_name
-            .borrow_mut()
-            .insert(language, value.to_string());
-    }
+    // Functions
 }
