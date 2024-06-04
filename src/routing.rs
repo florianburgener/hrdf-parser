@@ -185,6 +185,12 @@ impl Hrdf {
                     continue;
                 }
 
+                if let Some(bs) = &best_solution {
+                    if parent_node.arrival_time(self.data_storage()) > bs.arrival_time(self.data_storage()) {
+                        continue;
+                    }
+                }
+
                 self.create_node(
                     &parent_node,
                     route_section.journey_id(),

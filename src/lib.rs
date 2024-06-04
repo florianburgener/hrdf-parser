@@ -54,9 +54,9 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     // 8501008     Genève
 
     let before = Instant::now();
-    // hrdf.plan_journey(8592688, 8593189, departure_date, Time::new(14, 31));
+    hrdf.plan_journey(8592688, 8593189, departure_date, Time::new(14, 31));
     // hrdf.plan_journey(8592688, 8587387, departure_date, Time::new(14, 31));
-    hrdf.plan_journey(8592688, 8587057, departure_date, Time::new(14, 31));
+    // hrdf.plan_journey(8592688, 8587057, departure_date, Time::new(14, 31));
     println!("{:.2?}", before.elapsed());
 
     Ok(())
