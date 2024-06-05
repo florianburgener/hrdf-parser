@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use chrono::NaiveDate;
 
@@ -149,10 +149,11 @@ impl Hrdf {
         target_arrival_stop_id: i32,
         departure_date: NaiveDate,
         departure_time: Time,
+        verbose: bool,
     ) {
         const MAX_CONNECTION_COUNT: i32 = 2;
 
-        let mut connection_count = 0;
+        let mut current_connection_count = 0;
         let mut nodes = self.get_initial_nodes(
             departure_stop_id,
             target_arrival_stop_id,
@@ -162,9 +163,12 @@ impl Hrdf {
         let mut next_nodes: Vec<Node> = Vec::new();
 
         let mut best_solution: Option<Node> = None;
+        let mut aaa = HashMap::new();
 
         while !nodes.is_empty() {
-            println!("{}", nodes.len());
+            if verbose {
+                println!("{}", nodes.len());
+            }
 
             while !nodes.is_empty() {
                 let parent_node = nodes.remove(0);
@@ -186,6 +190,19 @@ impl Hrdf {
                     }
                 }
 
+                let connection_count =
+                    aaa.get(&(route_section.journey_id(), route_section.arrival_stop_id()));
+                if let Some(value) = connection_count {
+                    if current_connection_count > *value {
+                        continue;
+                    }
+                }
+
+                aaa.insert(
+                    (route_section.journey_id(), route_section.arrival_stop_id()),
+                    current_connection_count,
+                );
+
                 self.create_node(
                     &parent_node,
                     route_section.journey_id(),
@@ -194,7 +211,7 @@ impl Hrdf {
                 )
                 .map(|node| self.sorted_insert(&mut nodes, vec![node]));
 
-                if connection_count == MAX_CONNECTION_COUNT {
+                if current_connection_count == MAX_CONNECTION_COUNT {
                     continue;
                 }
 
@@ -229,14 +246,16 @@ impl Hrdf {
                 self.sorted_insert(&mut next_nodes, next_nodes_to_insert);
             }
 
-            connection_count += 1;
+            current_connection_count += 1;
             nodes = next_nodes;
             next_nodes = Vec::new();
         }
 
-        if let Some(b) = best_solution {
-            // println!("{:#?}", best_solution);
-            b.print(self.data_storage());
+        if let Some(n) = best_solution {
+            if verbose {
+                // println!("{:#?}", best_solution);
+                n.print(self.data_storage());
+            }
         }
     }
 

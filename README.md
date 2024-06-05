@@ -93,3 +93,6 @@ Quels sont les règles pour l'utilisation des temps de transferts ? Est-ce que c
     * A => B ?
 
 Existe t'il d'autre endroits définissant des temps de transferts ?
+
+
+180 ms
