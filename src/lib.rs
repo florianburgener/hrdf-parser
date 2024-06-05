@@ -40,7 +40,21 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     // println!("{} stops", hrdf.data_storage().stops().items().len());
 
     println!("");
+
+    const TIMES: u32 = 1;
+    let before = Instant::now();
+    for i in 0..TIMES {
+        test_plan_journey(&hrdf, i + 1 == TIMES);
+    }
+    let elapsed = before.elapsed();
+    println!("{:.2?}", elapsed / TIMES);
+
+    Ok(())
+}
+
+fn test_plan_journey(hrdf: &Hrdf, verbose: bool) {
     let departure_date = NaiveDate::from_ymd_opt(2023, 02, 03).unwrap();
+
     // 8592688     Chancy, Les Bouveries
     // 8587031     Avully, village
     // 8508134     Bernex, Vailly
@@ -53,14 +67,7 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     // ...
     // 8501008     Genève
 
-    let before = Instant::now();
-    for _ in 0..10 {
-        hrdf.plan_journey(8592688, 8593189, departure_date, Time::new(14, 31), false);
-        // hrdf.plan_journey(8592688, 8587387, departure_date, Time::new(14, 31));
-        // hrdf.plan_journey(8592688, 8587057, departure_date, Time::new(14, 31));
-    }
-    hrdf.plan_journey(8592688, 8593189, departure_date, Time::new(14, 31), true);
-    println!("{:.2?}", before.elapsed() / 10);
-
-    Ok(())
+    hrdf.plan_journey(8592688, 8593189, departure_date, Time::new(14, 31), verbose);
+    // hrdf.plan_journey(8592688, 8587387, departure_date, Time::new(14, 31), verbose);
+    // hrdf.plan_journey(8592688, 8587057, departure_date, Time::new(14, 31), verbose);
 }
