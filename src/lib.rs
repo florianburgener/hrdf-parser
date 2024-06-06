@@ -67,7 +67,7 @@ fn test_plan_journey(hrdf: &Hrdf, verbose: bool) {
     // ...
     // 8501008     Genève
 
-    hrdf.plan_journey(8592688, 8593189, departure_date, Time::new(14, 31), verbose);
+    // hrdf.plan_journey(8592688, 8593189, departure_date, Time::new(14, 31), verbose);
     // hrdf.plan_journey(8592688, 8587387, departure_date, Time::new(14, 31), verbose);
-    // hrdf.plan_journey(8592688, 8587057, departure_date, Time::new(14, 31), verbose);
+    hrdf.plan_journey(8592688, 8587057, departure_date, Time::new(14, 31), verbose);
 }
