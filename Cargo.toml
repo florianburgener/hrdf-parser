@@ -10,3 +10,6 @@ regex = "1.10.2"
 serde = { version = "1.0", features = ["derive", "rc"] }
 strum = "0.25.0"
 strum_macros = "0.25.3"
+
+[profile.dev]
+opt-level=3

@@ -23,8 +23,7 @@ pub fn run() -> Result<(), Box<dyn Error>> {
         Hrdf::new()?.build_cache()?
     };
     let elapsed = now.elapsed();
-    println!("Elapsed: {:.2?}", elapsed);
-    // sleep(Duration::from_secs(30));
+    println!("{:.2?}", elapsed);
 
     println!();
     println!("------------------------------------------------------------------------------------------------");
@@ -41,13 +40,15 @@ pub fn run() -> Result<(), Box<dyn Error>> {
 
     println!("");
 
-    const TIMES: u32 = 1;
+    const N: u32 = 10;
     let before = Instant::now();
-    for i in 0..TIMES {
-        test_plan_journey(&hrdf, i + 1 == TIMES);
+
+    for i in 0..N {
+        test_plan_journey(&hrdf, i == 0);
     }
+
     let elapsed = before.elapsed();
-    println!("{:.2?}", elapsed / TIMES);
+    println!("{:.2?}", elapsed / N);
 
     Ok(())
 }
@@ -67,7 +68,7 @@ fn test_plan_journey(hrdf: &Hrdf, verbose: bool) {
     // ...
     // 8501008     Genève
 
-    // hrdf.plan_journey(8592688, 8593189, departure_date, Time::new(14, 31), verbose);
+    hrdf.plan_journey(8592688, 8593189, departure_date, Time::new(14, 31), verbose);
     // hrdf.plan_journey(8592688, 8587387, departure_date, Time::new(14, 31), verbose);
-    hrdf.plan_journey(8592688, 8587057, departure_date, Time::new(14, 31), verbose);
+    // hrdf.plan_journey(8592688, 8587057, departure_date, Time::new(14, 31), verbose);
 }
