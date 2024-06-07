@@ -48,25 +48,18 @@ Algorithme de calcul du trajet le plus court (Done) :
 * Ne pas considérer les arrêts où les changements sont désactivés
 * Si une solution est trouvée, alors il faut arrêter les routes qui arriveraient de toute manière plus tard que celle-ci
 * Empêcher de réemprunter le même type de trajet que précédemment (ex. sortir du 14 pour reprendre le 14 d'après)
-
-Algorithme de calcul du trajet le plus court (TODO) :
-* considérer le changement d'arrêt ("Genève, gare" vers "Genève")
-* Considérer les temps de transferts lors d'une correspondance
 * Mettre en place des optimisations
     * Faire attention aux conséquences qu'elles peuvent engendrer
+
+Algorithme de calcul du trajet le plus court (TODO) :
+* Considérer le changement d'arrêt ("Genève, gare" vers "Genève")
+* Considérer les temps de transferts lors d'une correspondance
 * Renvoyer les résultats via une structure
 * Pouvoir paginer les résultats
     * Récupérer N résults plus tôt
     * Récupérer N résults plus tard
 * Gérer le problème du jour d'après (lundi 23 h 59 - mardi 00 h 00)
 * Pouvoir préciser une heure de départ ou d'arrivée
-
-Algorithme de calcul du trajet le plus court (Idées) :
-* Pas de route sur 2 ou plusieurs jours
-* Utiliser une HashMap pour chaque arrêt contenant le temps le plus court pour l'atteindre, si un trajet arrive à un arrêt après le meilleur de temps => terminated
-    * Toujours pas de soluce à ça
-* Avoir une HashMap (journey_id, stop_id) qui maintient en combien de correspondance l'arrêt a été atteint pour tuer ceux qui serait pas meilleur
-
 
 Types de temps de transferts :
 Quels sont les règles pour l'utilisation des temps de transferts ? Est-ce que c'est cumulatif ? Hiérarchique ? Avez-vous un pseudo-code à me fournir ou un document décrivant ceci ?
