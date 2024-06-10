@@ -70,8 +70,8 @@ impl DataStorage {
         let (transport_types, transport_types_pk_type_converter) = parsing::load_transport_types()?;
 
         // Stop data.
-        let stops = parsing::load_stops()?;
         let stop_connections = parsing::load_stop_connections(&attributes_pk_type_converter)?;
+        let stops = parsing::load_stops()?;
 
         // Timetable data.
         let (journeys, journeys_pk_type_converter) = parsing::load_journeys(
@@ -102,8 +102,8 @@ impl DataStorage {
             transport_companies,
             transport_types,
             // Stop data.
-            stops,
             stop_connections,
+            stops,
             // Timetable data.
             journeys,
             journey_platform,
@@ -148,6 +148,10 @@ impl DataStorage {
 
     pub fn platforms(&self) -> &SimpleResourceStorage<Platform> {
         &self.platforms
+    }
+
+    pub fn stop_connections(&self) -> &StopConnectionStorage {
+        &self.stop_connections
     }
 
     pub fn stops(&self) -> &SimpleResourceStorage<Stop> {
@@ -236,16 +240,16 @@ impl JourneyStorage {
         self.data().get(&id).unwrap()
     }
 
-    pub fn resolve_ids(&self, data_storage: &DataStorage, ids: HashSet<i32>) -> Vec<&Journey> {
-        ids.into_iter().map(|id| self.find(id)).collect()
+    pub fn resolve_ids(&self, ids: &HashSet<i32>) -> Vec<&Journey> {
+        ids.into_iter().map(|&id| self.find(id)).collect()
     }
 
     pub fn find_by_day(&self, day: NaiveDate) -> &HashSet<i32> {
         self.journeys_by_day().get(&day).unwrap()
     }
 
-    pub fn find_by_stop_id(&self, stop_id: i32) -> &HashSet<i32> {
-        self.journeys_by_stop_id().get(&stop_id).unwrap()
+    pub fn find_by_stop_id(&self, stop_id: i32) -> Option<&HashSet<i32>> {
+        self.journeys_by_stop_id().get(&stop_id)
     }
 }
 
@@ -330,7 +334,7 @@ impl JourneyStorage {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct StopConnectionStorage {
     data: HashMap<i32, StopConnection>,
-    stop_connections_by_stop_id: HashMap<i32, Vec<i32>>,
+    stop_connections_by_stop_id: HashMap<i32, HashSet<i32>>,
 }
 
 impl StopConnectionStorage {
@@ -342,18 +346,38 @@ impl StopConnectionStorage {
             stop_connections_by_stop_id,
         }
     }
+
+    // Getters/Setters
+
+    fn data(&self) -> &HashMap<i32, StopConnection> {
+        &self.data
+    }
+
+    // Functions
+
+    pub fn find(&self, id: i32) -> &StopConnection {
+        self.data().get(&id).unwrap()
+    }
+
+    pub fn resolve_ids(&self, ids: &HashSet<i32>) -> Vec<&StopConnection> {
+        ids.into_iter().map(|&id| self.find(id)).collect()
+    }
+
+    pub fn find_by_stop_id(&self, stop_id: i32) -> Option<&HashSet<i32>> {
+        self.stop_connections_by_stop_id.get(&stop_id)
+    }
 }
 
 // Manages the creation of indexes.
 impl StopConnectionStorage {
     fn create_stop_connections_by_stop_id(
         data: &HashMap<i32, StopConnection>,
-    ) -> HashMap<i32, Vec<i32>> {
+    ) -> HashMap<i32, HashSet<i32>> {
         data.values()
             .fold(HashMap::new(), |mut acc, stop_connection| {
                 acc.entry(stop_connection.stop_id_1())
-                    .or_insert(Vec::new())
-                    .push(stop_connection.id());
+                    .or_insert(HashSet::new())
+                    .insert(stop_connection.id());
                 acc
             })
     }

@@ -791,6 +791,14 @@ impl StopConnection {
         self.stop_id_1
     }
 
+    pub fn stop_id_2(&self) -> i32 {
+        self.stop_id_2
+    }
+
+    pub fn duration(&self) -> i16 {
+        self.duration
+    }
+
     // Functions
 
     pub fn add_attribute(&mut self, value: i32) {

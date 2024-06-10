@@ -68,9 +68,23 @@ fn test_plan_journey(hrdf: &Hrdf, verbose: bool) {
     // 8592713     Chêne-Bourg, Place Favre
     // ...
     // 8501008     Genève
+    // 8501120     Lausanne
 
+    // Chancy, Les Bouveries => Pont-Céard, gare
     // hrdf.plan_journey(8592688, 8593189, departure_date, Time::new(14, 31), verbose);
-    hrdf.plan_journey(8592688, 8592713, departure_date, Time::new(14, 31), verbose);
+
+    // Chancy, Les Bouveries => Chêne-Bourg, Place Favre
+    // hrdf.plan_journey(8592688, 8592713, departure_date, Time::new(14, 31), verbose);
+
+    // Chancy, Les Bouveries => Genève, Bel-Air
     // hrdf.plan_journey(8592688, 8587387, departure_date, Time::new(14, 31), verbose);
+
+    // Chancy, Les Bouveries => Genève, gare Cornavin
     // hrdf.plan_journey(8592688, 8587057, departure_date, Time::new(14, 31), verbose);
+
+    // Chancy, Les Bouveries => Genève
+    // hrdf.plan_journey(8592688, 8501008, departure_date, Time::new(14, 31), verbose);
+
+    // Chancy, Les Bouveries => Lausanne
+    hrdf.plan_journey(8592688, 8501120, departure_date, Time::new(14, 31), verbose);
 }

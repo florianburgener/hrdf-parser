@@ -12,23 +12,30 @@ const MAX_CONNECTION_COUNT: i32 = 6;
 
 #[derive(Debug, Clone)]
 struct RouteSection {
-    journey_id: i32,
+    journey_id: Option<i32>,
     departure_stop_id: i32,
     arrival_stop_id: i32,
+    duration: Option<i16>,
 }
 
 impl RouteSection {
-    pub fn new(journey_id: i32, departure_stop_id: i32, arrival_stop_id: i32) -> Self {
+    pub fn new(
+        journey_id: Option<i32>,
+        departure_stop_id: i32,
+        arrival_stop_id: i32,
+        duration: Option<i16>,
+    ) -> Self {
         Self {
             journey_id,
             departure_stop_id,
             arrival_stop_id,
+            duration,
         }
     }
 
     // Getters/Setters
 
-    pub fn journey_id(&self) -> i32 {
+    pub fn journey_id(&self) -> Option<i32> {
         self.journey_id
     }
 
@@ -44,14 +51,34 @@ impl RouteSection {
         self.arrival_stop_id = value;
     }
 
+    pub fn duration(&self) -> &Option<i16> {
+        &self.duration
+    }
+
     // Functions
 
-    pub fn journey<'a>(&'a self, data_storage: &'a DataStorage) -> &Journey {
-        data_storage.journeys().find(self.journey_id())
+    pub fn journey<'a>(&'a self, data_storage: &'a DataStorage) -> Option<&Journey> {
+        self.journey_id()
+            .map(|journey_id| data_storage.journeys().find(journey_id))
+    }
+
+    pub fn arrival_time(&self, data_storage: &DataStorage) -> Option<Time> {
+        self.journey(data_storage).map(|journey| {
+            journey
+                .route()
+                .iter()
+                .skip(1)
+                .find(|route_entry| route_entry.stop_id() == self.arrival_stop_id())
+                .unwrap()
+                .arrival_time()
+                .as_ref()
+                .unwrap()
+                .clone()
+        })
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct Route {
     route_sections: Vec<RouteSection>,
     visited_stops: HashSet<i32>,
@@ -83,26 +110,60 @@ impl Route {
         self.last_route_section().arrival_stop_id()
     }
 
-    pub fn arrival_time<'a>(&'a self, data_storage: &'a DataStorage) -> &Time {
+    pub fn arrival_time<'a>(&'a self, data_storage: &'a DataStorage) -> Time {
         self.last_route_section()
-            .journey(data_storage)
-            .route()
-            .iter()
-            .skip(1)
-            .find(|route_entry| route_entry.stop_id() == self.arrival_stop_id())
-            .unwrap()
-            .arrival_time()
-            .as_ref()
-            .unwrap()
+            .arrival_time(data_storage)
+            .unwrap_or_else(|| {
+                // WARNING: If the journey starts with a connection, there will be an error.
+                // The solution is to store the global departure time in the route.
+                let (i, route_section) = self
+                    .route_sections()
+                    .iter()
+                    .enumerate()
+                    .rev()
+                    .find(|(_, route_section)| route_section.journey_id().is_some())
+                    .unwrap();
+
+                let arrival_time = route_section.arrival_time(data_storage).unwrap();
+                let duration: i32 = self.route_sections()[i + 1..self.route_sections().len()]
+                    .iter()
+                    .map(|route_section| route_section.duration().unwrap() as i32)
+                    .sum();
+
+                arrival_time + Time::from(duration)
+            })
     }
 
     pub fn has_visited_any_stops(&self, stops: &HashSet<i32>) -> bool {
         self.visited_stops().intersection(stops).count() != 0
     }
 
+    pub fn route_sections_with_existing_journey(&self) -> Vec<&RouteSection> {
+        self.route_sections()
+            .iter()
+            .filter(|route_section| route_section.journey_id().is_some())
+            .collect()
+    }
+
+    pub fn count_connections(&self) -> usize {
+        self.route_sections_with_existing_journey().len()
+    }
+
     pub fn print(&self, data_storage: &DataStorage) {
         for route_section in self.route_sections() {
             let journey = route_section.journey(data_storage);
+
+            if journey.is_none() {
+                let stop = data_storage.stops().find(route_section.arrival_stop_id());
+                println!(
+                    "Approx. {}-minute walk to {}",
+                    route_section.duration().unwrap(),
+                    stop.name()
+                );
+                continue;
+            }
+
+            let journey = journey.unwrap();
             println!("Journey #{}", journey.id());
 
             let mut route_iter = journey.route().into_iter().peekable();
@@ -182,7 +243,7 @@ fn find_solution(
         departure_stop_id,
         arrival_stop_id,
         departure_date,
-        &departure_time,
+        departure_time,
     );
     let mut solution: Option<Route> = None;
     let mut journeys_to_ignore = HashSet::new();
@@ -243,16 +304,18 @@ fn process_routes(
         }
 
         let last_route_section = route.last_route_section();
-        journeys_to_ignore.insert(last_route_section.journey_id());
+        if let Some(journey_id) = last_route_section.journey_id() {
+            journeys_to_ignore.insert(journey_id);
 
-        create_route_from_another_route(
-            data_storage,
-            &route,
-            last_route_section.journey_id(),
-            last_route_section.arrival_stop_id(),
-            target_arrival_stop_id,
-        )
-        .map(|r| sorted_insert(data_storage, &mut routes, r));
+            create_route_from_another_route(
+                data_storage,
+                &route,
+                journey_id,
+                last_route_section.arrival_stop_id(),
+                target_arrival_stop_id,
+            )
+            .map(|r| sorted_insert(data_storage, &mut routes, r));
+        }
 
         if current_connection_count == MAX_CONNECTION_COUNT {
             continue;
@@ -268,6 +331,10 @@ fn process_routes(
             departure_date,
             target_arrival_stop_id,
         ));
+
+        for r in explore_nearby_stops(data_storage, &route) {
+            sorted_insert(data_storage, &mut routes, r);
+        }
     }
 
     connections = filter_connections(connections, journeys_to_ignore);
@@ -280,7 +347,7 @@ fn create_initial_routes(
     departure_stop_id: i32,
     target_arrival_stop_id: i32,
     departure_date: NaiveDate,
-    departure_time: &Time,
+    departure_time: Time,
 ) -> Vec<Route> {
     let mut connections = next_departures(
         data_storage,
@@ -312,19 +379,19 @@ fn next_departures<'a>(
     data_storage: &'a DataStorage,
     departure_stop_id: i32,
     departure_date: NaiveDate,
-    departure_time: &'a Time,
+    departure_time: Time,
     routes_to_ignore: Option<HashSet<u64>>,
 ) -> Vec<&'a Journey> {
     let mut journeys: Vec<&Journey> =
         get_operating_journeys(data_storage, departure_date, departure_stop_id);
 
-    let departure_time_max = *departure_time + Time::new(2, 0);
+    let departure_time_max = departure_time + Time::new(2, 0);
     journeys = journeys
         .into_iter()
         .filter(|journey| !journey.is_last_stop(departure_stop_id))
         .filter(|journey| {
             let journey_departure_time = get_departure_time(journey, departure_stop_id);
-            journey_departure_time >= departure_time
+            *journey_departure_time >= departure_time
                 && journey_departure_time <= &departure_time_max
         })
         .collect();
@@ -360,9 +427,10 @@ fn get_operating_journeys(
     let journeys_1 = data_storage.journeys().find_by_day(date);
     let journeys_2 = data_storage.journeys().find_by_stop_id(stop_id);
 
-    let ids: HashSet<i32> = journeys_1.intersection(&journeys_2).cloned().collect();
-
-    data_storage.journeys().resolve_ids(data_storage, ids)
+    journeys_2.map_or(Vec::new(), |journeys_2| {
+        let ids: HashSet<i32> = journeys_1.intersection(&journeys_2).cloned().collect();
+        data_storage.journeys().resolve_ids(&ids)
+    })
 }
 
 fn is_improving_solution(
@@ -371,10 +439,8 @@ fn is_improving_solution(
     candidate: &Route,
     target_arrival_stop_id: i32,
 ) -> bool {
-    fn count_stops(data_storage: &DataStorage, c: &Route, i: usize) -> i32 {
-        let route_section = &c.route_sections()[i];
-
-        route_section.journey(data_storage).count_stops(
+    fn count_stops(data_storage: &DataStorage, route_section: &RouteSection) -> i32 {
+        route_section.journey(data_storage).unwrap().count_stops(
             route_section.departure_stop_id(),
             route_section.arrival_stop_id(),
         )
@@ -397,16 +463,19 @@ fn is_improving_solution(
         return t1 < t2;
     }
 
-    let connection_count_1 = candidate.route_sections().len();
-    let connection_count_2 = solution.route_sections().len();
+    let connection_count_1 = candidate.count_connections();
+    let connection_count_2 = solution.count_connections();
 
     if connection_count_1 != connection_count_2 {
         return connection_count_1 < connection_count_2;
     }
 
+    let route_sections_1 = candidate.route_sections_with_existing_journey();
+    let route_sections_2 = solution.route_sections_with_existing_journey();
+
     for i in 0..connection_count_1 {
-        let stop_count_1 = count_stops(data_storage, candidate, i);
-        let stop_count_2 = count_stops(data_storage, solution, i);
+        let stop_count_1 = count_stops(data_storage, route_sections_1[i]);
+        let stop_count_2 = count_stops(data_storage, route_sections_2[i]);
 
         if stop_count_1 != stop_count_2 {
             return stop_count_1 > stop_count_2;
@@ -454,6 +523,38 @@ fn get_connections(
     .collect()
 }
 
+fn explore_nearby_stops(data_storage: &DataStorage, route: &Route) -> Vec<Route> {
+    let ids = data_storage
+        .stop_connections()
+        .find_by_stop_id(route.arrival_stop_id());
+
+    if ids.is_none() {
+        return Vec::new();
+    }
+
+    let stop_connections = data_storage.stop_connections().resolve_ids(ids.unwrap());
+
+    stop_connections
+        .into_iter()
+        // It should never ahppend in fact
+        .filter(|stop_connection| !route.visited_stops().contains(&stop_connection.stop_id_2()))
+        .map(|stop_connection| {
+            let mut cloned_route_sections = route.route_sections().clone();
+            let mut cloned_visited_stops = route.visited_stops().clone();
+
+            cloned_route_sections.push(RouteSection::new(
+                None,
+                stop_connection.stop_id_1(),
+                stop_connection.stop_id_2(),
+                Some(stop_connection.duration()),
+            ));
+            cloned_visited_stops.insert(stop_connection.stop_id_2());
+
+            Route::new(cloned_route_sections, cloned_visited_stops)
+        })
+        .collect()
+}
+
 fn create_route_from_another_route(
     data_storage: &DataStorage,
     route: &Route,
@@ -461,7 +562,10 @@ fn create_route_from_another_route(
     departure_stop_id: i32,
     target_arrival_stop_id: i32,
 ) -> Option<Route> {
-    let is_same_journey = route.last_route_section().journey_id() == journey_id;
+    let is_same_journey = route
+        .last_route_section()
+        .journey_id()
+        .map_or(false, |j| j == journey_id);
 
     get_next_route_section(
         data_storage,
@@ -521,7 +625,7 @@ fn get_next_route_section(
 
         if stop.transfer_flag() != 0 || stop.id() == target_arrival_stop_id {
             return Some((
-                RouteSection::new(journey.id(), departure_stop_id, stop.id()),
+                RouteSection::new(Some(journey.id()), departure_stop_id, stop.id(), None),
                 visited_stops,
             ));
         }
@@ -537,7 +641,7 @@ fn can_explore_connections(
     route: &Route,
     earliest_arrival_time_by_stop_id: &mut HashMap<i32, Time>,
 ) -> bool {
-    let t1 = *route.arrival_time(data_storage);
+    let t1 = route.arrival_time(data_storage);
 
     if earliest_arrival_time_by_stop_id.contains_key(&route.arrival_stop_id()) {
         let t2 = *earliest_arrival_time_by_stop_id
@@ -557,14 +661,11 @@ fn can_explore_connections(
     }
 }
 
-fn filter_connections(
-    connections: Vec<Route>,
-    journeys_to_ignore: &HashSet<i32>,
-) -> Vec<Route> {
+fn filter_connections(connections: Vec<Route>, journeys_to_ignore: &HashSet<i32>) -> Vec<Route> {
     connections
         .into_iter()
         .filter(|connection| {
-            !journeys_to_ignore.contains(&connection.last_route_section().journey_id())
+            !journeys_to_ignore.contains(&connection.last_route_section().journey_id().unwrap())
         })
         .collect()
 }
@@ -591,7 +692,7 @@ fn get_routes_to_ignore(data_storage: &DataStorage, route: &Route) -> HashSet<u6
         .filter_map(|route_section| {
             route_section
                 .journey(data_storage)
-                .hash_route(route.arrival_stop_id())
+                .and_then(|journey| journey.hash_route(route.arrival_stop_id()))
         })
         .collect()
 }
@@ -599,15 +700,11 @@ fn get_routes_to_ignore(data_storage: &DataStorage, route: &Route) -> HashSet<u6
 fn sort_routes(data_storage: &DataStorage, routes: &mut Vec<Route>) {
     routes.sort_by(|a, b| {
         a.arrival_time(data_storage)
-            .cmp(b.arrival_time(data_storage))
+            .cmp(&b.arrival_time(data_storage))
     });
 }
 
-fn sorted_insert(
-    data_storage: &DataStorage,
-    routes: &mut Vec<Route>,
-    route_to_insert: Route,
-) {
+fn sorted_insert(data_storage: &DataStorage, routes: &mut Vec<Route>, route_to_insert: Route) {
     let mut i = 0;
 
     while i < routes.len() {
