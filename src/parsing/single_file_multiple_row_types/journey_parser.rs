@@ -349,8 +349,20 @@ fn add_route_entry(mut values: Vec<ParsedValue>, journey: &mut Journey) {
     let arrival_time: Option<i32> = values.remove(0).into();
     let departure_time: Option<i32> = values.remove(0).into();
 
-    let arrival_time = arrival_time.map(|x| Time::from(x));
-    let departure_time = departure_time.map(|x| Time::from(x));
+    let arrival_time = arrival_time.map(|x| {
+        Time::from(match x {
+            x if x <= -2400 => x + 2400,
+            x if x >= 2400 => x - 2400,
+            x => x,
+        })
+    });
+    let departure_time = departure_time.map(|x| {
+        Time::from(match x {
+            x if x <= -2400 => x + 2400,
+            x if x >= 2400 => x - 2400,
+            x => x,
+        })
+    });
 
     journey.add_route_entry(JourneyRouteEntry::new(
         stop_id,

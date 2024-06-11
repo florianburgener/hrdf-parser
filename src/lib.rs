@@ -7,9 +7,9 @@ mod utils;
 
 use std::{error::Error, path::Path, time::Instant};
 
-use chrono::NaiveDate;
+use utils::create_date_time;
 
-use crate::{hrdf::Hrdf, models::Time};
+use crate::hrdf::Hrdf;
 
 pub fn run() -> Result<(), Box<dyn Error>> {
     const CACHED_PATH: &str = "data.cache";
@@ -35,8 +35,6 @@ pub fn run() -> Result<(), Box<dyn Error>> {
         "{} journeys",
         hrdf.data_storage().journeys().entries().len()
     );
-    // println!("{} platforms", hrdf.data_storage().platforms().items().len());
-    // println!("{} stops", hrdf.data_storage().stops().items().len());
 
     println!("");
 
@@ -53,14 +51,14 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+#[rustfmt::skip]
 fn test_plan_journey(hrdf: &Hrdf, verbose: bool) {
-    let departure_date = NaiveDate::from_ymd_opt(2023, 2, 3).unwrap();
-
     // 8592688     Chancy, Les Bouveries
     // 8587031     Avully, village
     // 8508134     Bernex, Vailly
     // 8587418     Petit-Lancy, Les Esserts
     // 8592995     Petit-Lancy, Quidort
+    // 8587062     Genève, Jonction
     // 8587387     Genève, Bel-Air
     // 8592910     Genève, Terrassière
     // 8587057     Genève, gare Cornavin
@@ -72,25 +70,31 @@ fn test_plan_journey(hrdf: &Hrdf, verbose: bool) {
     // 8501120     Lausanne
 
     // Chancy, Les Bouveries => Pont-Céard, gare
-    // hrdf.plan_journey(8592688, 8593189, departure_date, Time::new(14, 31), verbose);
+    // hrdf.plan_journey(8592688, 8593189, create_date_time(2023, 2, 3, 14, 13), verbose);
 
     // Chancy, Les Bouveries => Chêne-Bourg, Place Favre
-    // hrdf.plan_journey(8592688, 8592713, departure_date, Time::new(14, 31), verbose);
+    // hrdf.plan_journey(8592688, 8592713, create_date_time(2023, 2, 3, 14, 31), verbose);
 
     // Chancy, Les Bouveries => Genève, Bel-Air
-    // hrdf.plan_journey(8592688, 8587387, departure_date, Time::new(14, 31), verbose);
+    // hrdf.plan_journey(8592688, 8587387, create_date_time(2023, 2, 3, 14, 31), verbose);
 
     // Chancy, Les Bouveries => Genève, gare Cornavin
-    // hrdf.plan_journey(8592688, 8587057, departure_date, Time::new(14, 31), verbose);
-    hrdf.plan_journey(8592688, 8587057, departure_date, Time::new(12, 55), verbose);
+    // hrdf.plan_journey(8592688, 8587057, create_date_time(2023, 2, 3, 14, 31), verbose);
+    // hrdf.plan_journey(8592688, 8587057, create_date_time(2023, 2, 3, 12, 55), verbose);
 
     // Chancy, Les Bouveries => Genève
-    // hrdf.plan_journey(8592688, 8501008, departure_date, Time::new(14, 31), verbose);
+    // hrdf.plan_journey(8592688, 8501008, create_date_time(2023, 2, 3, 14, 31), verbose);
 
     // Chancy, Les Bouveries => Lausanne
-    // hrdf.plan_journey(8592688, 8501120, departure_date, Time::new(14, 31), verbose);
+    // hrdf.plan_journey(8592688, 8501120, create_date_time(2023, 2, 3, 14, 31), verbose);
 
     // Chancy, Les Bouveries => Sevelen, Post
-    // hrdf.plan_journey(8592688, 8588197, departure_date, Time::new(14, 31), verbose); // Impossible to add these two times together!
-    // hrdf.plan_journey(8592688, 8588197, departure_date, Time::new(6, 31), verbose);
+    // hrdf.plan_journey(8592688, 8588197, create_date_time(2023, 2, 3, 14, 31), verbose);
+    // hrdf.plan_journey(8592688, 8588197, create_date_time(2023, 2, 1, 6, 31), verbose);
+
+    // Genève => Chancy, Les Bouveries
+    // hrdf.plan_journey(8501008, 8592688, create_date_time(2023, 2, 3, 12, 16), verbose);
+
+    // Genève => Genève, Jonction
+    hrdf.plan_journey(8501008, 8587062, create_date_time(2023, 2, 3, 8, 25), verbose);
 }

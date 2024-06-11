@@ -6,7 +6,7 @@ use std::{
     ops,
 };
 
-use chrono::NaiveDate;
+use chrono::{NaiveDate, NaiveTime};
 use serde::{Deserialize, Serialize};
 use strum_macros::{self, Display, EnumString};
 
@@ -397,6 +397,25 @@ impl Journey {
             .collect::<BTreeSet<_>>()
             .hash(&mut hasher);
         Some(hasher.finish())
+    }
+
+    pub fn departure_time_of(&self, stop_id: i32) -> Time {
+        self.route()
+            .iter()
+            .find(|route_entry| route_entry.stop_id() == stop_id)
+            .unwrap()
+            .departure_time()
+            .unwrap()
+    }
+
+    pub fn arrival_time_of(&self, stop_id: i32) -> Time {
+        self.route()
+            .iter()
+            .skip(1)
+            .find(|route_entry| route_entry.stop_id() == stop_id)
+            .unwrap()
+            .arrival_time()
+            .unwrap()
     }
 }
 
@@ -901,6 +920,12 @@ impl From<i32> for Time {
             u8::try_from(value / 100).unwrap(),
             u8::try_from(value % 100).unwrap(),
         )
+    }
+}
+
+impl Into<NaiveTime> for Time {
+    fn into(self) -> NaiveTime {
+        NaiveTime::from_hms_opt(self.hour as u32, self.minute as u32, 0).unwrap()
     }
 }
 
