@@ -852,12 +852,12 @@ impl ThroughService {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Time {
-    hour: i8,
-    minute: i8,
+    hour: u8,
+    minute: u8,
 }
 
 impl Time {
-    pub fn new(hour: i8, minute: i8) -> Self {
+    pub fn new(hour: u8, minute: u8) -> Self {
         Self { hour, minute }
     }
 
@@ -870,11 +870,12 @@ impl ops::Add for Time {
     type Output = Self;
 
     fn add(self, other: Self) -> Self {
-        let hour = self.hour + other.hour;
-        let minute = self.minute + other.minute;
+        // println!("{self} {other}");
+        let hour = self.hour as u32 + other.hour as u32;
+        let minute = self.minute as u32 + other.minute as u32;
 
         let (hour, minute) = if minute >= 60 {
-            (hour + 1, minute % 60)
+            (hour + minute / 60, minute % 60)
         } else {
             (hour, minute)
         };
@@ -883,7 +884,7 @@ impl ops::Add for Time {
             panic!("Impossible to add these two times together!");
         }
 
-        Time::new(hour, minute)
+        Time::new(hour as u8, minute as u8)
     }
 }
 
@@ -897,8 +898,8 @@ impl From<i32> for Time {
     fn from(value: i32) -> Self {
         let value = value.abs();
         Time::new(
-            i8::try_from(value / 100).unwrap(),
-            i8::try_from(value % 100).unwrap(),
+            u8::try_from(value / 100).unwrap(),
+            u8::try_from(value % 100).unwrap(),
         )
     }
 }

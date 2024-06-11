@@ -57,13 +57,15 @@ Algorithme de calcul du trajet le plus court (Done) :
 * Empêcher de réemprunter le même type de trajet que précédemment (ex. sortir du 14 pour reprendre le 14 d'après)
 * Mettre en place des optimisations
     * Faire attention aux conséquences qu'elles peuvent engendrer
+* Considérer le changement d'arrêt ("Genève, gare" vers "Genève")
 
 Algorithme de calcul du trajet le plus court (TODO) :
-* Considérer le changement d'arrêt ("Genève, gare" vers "Genève")
 * Considérer les temps de transferts lors d'une correspondance
 * Renvoyer les résultats via une structure
+* Gérer le problème du jour d'après (lundi 23 h 59 - mardi 00 h 00)
+
+Algorithme de calcul du trajet le plus court (Optionnel) :
 * Pouvoir paginer les résultats
     * Récupérer N résults plus tôt
     * Récupérer N résults plus tard
-* Gérer le problème du jour d'après (lundi 23 h 59 - mardi 00 h 00)
 * Pouvoir préciser une heure de départ ou d'arrivée

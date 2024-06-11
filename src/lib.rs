@@ -54,7 +54,7 @@ pub fn run() -> Result<(), Box<dyn Error>> {
 }
 
 fn test_plan_journey(hrdf: &Hrdf, verbose: bool) {
-    let departure_date = NaiveDate::from_ymd_opt(2023, 02, 03).unwrap();
+    let departure_date = NaiveDate::from_ymd_opt(2023, 2, 3).unwrap();
 
     // 8592688     Chancy, Les Bouveries
     // 8587031     Avully, village
@@ -66,6 +66,7 @@ fn test_plan_journey(hrdf: &Hrdf, verbose: bool) {
     // 8587057     Genève, gare Cornavin
     // 8593189     Pont-Céard, gare
     // 8592713     Chêne-Bourg, Place Favre
+    // 8588197     Sevelen, Post
     // ...
     // 8501008     Genève
     // 8501120     Lausanne
@@ -81,10 +82,15 @@ fn test_plan_journey(hrdf: &Hrdf, verbose: bool) {
 
     // Chancy, Les Bouveries => Genève, gare Cornavin
     // hrdf.plan_journey(8592688, 8587057, departure_date, Time::new(14, 31), verbose);
+    hrdf.plan_journey(8592688, 8587057, departure_date, Time::new(12, 55), verbose);
 
     // Chancy, Les Bouveries => Genève
     // hrdf.plan_journey(8592688, 8501008, departure_date, Time::new(14, 31), verbose);
 
     // Chancy, Les Bouveries => Lausanne
-    hrdf.plan_journey(8592688, 8501120, departure_date, Time::new(14, 31), verbose);
+    // hrdf.plan_journey(8592688, 8501120, departure_date, Time::new(14, 31), verbose);
+
+    // Chancy, Les Bouveries => Sevelen, Post
+    // hrdf.plan_journey(8592688, 8588197, departure_date, Time::new(14, 31), verbose); // Impossible to add these two times together!
+    // hrdf.plan_journey(8592688, 8588197, departure_date, Time::new(6, 31), verbose);
 }

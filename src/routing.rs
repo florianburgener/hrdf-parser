@@ -536,7 +536,6 @@ fn explore_nearby_stops(data_storage: &DataStorage, route: &Route) -> Vec<Route>
 
     stop_connections
         .into_iter()
-        // It should never ahppend in fact
         .filter(|stop_connection| !route.visited_stops().contains(&stop_connection.stop_id_2()))
         .map(|stop_connection| {
             let mut cloned_route_sections = route.route_sections().clone();
