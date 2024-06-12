@@ -4,7 +4,7 @@ use chrono::{Duration, NaiveDate, NaiveDateTime, NaiveTime};
 
 use crate::{
     hrdf::Hrdf,
-    models::{Journey, Model},
+    models::{Journey, Model, StopConnection},
     storage::DataStorage,
     utils::add_1_day,
 };
@@ -183,6 +183,8 @@ impl Route {
                     stop.transfer_flag(),
                 );
             }
+
+            println!("  Arrival date: {}", route_section.arrival_at().date());
         }
     }
 }
@@ -246,6 +248,7 @@ fn find_solution(
 
     if verbose {
         if let Some(solution) = solution {
+            println!("");
             solution.print(data_storage);
         }
     }
@@ -319,23 +322,41 @@ fn create_initial_routes(
     target_arrival_stop_id: i32,
     departure_at: NaiveDateTime,
 ) -> Vec<Route> {
-    let mut routes = next_departures(data_storage, departure_stop_id, departure_at, None)
-        .iter()
-        .filter_map(|(journey, journey_departure_at)| {
-            get_next_route_section(
-                data_storage,
-                journey,
-                departure_stop_id,
-                *journey_departure_at,
-                target_arrival_stop_id,
-                false,
-            )
-            .map(|(route_section, mut visited_stops)| {
-                visited_stops.insert(departure_stop_id);
-                Route::new(vec![route_section], visited_stops)
+    let mut routes: Vec<Route> =
+        next_departures(data_storage, departure_stop_id, departure_at, None)
+            .iter()
+            .filter_map(|(journey, journey_departure_at)| {
+                get_next_route_section(
+                    data_storage,
+                    journey,
+                    departure_stop_id,
+                    *journey_departure_at,
+                    target_arrival_stop_id,
+                    false,
+                )
+                .map(|(route_section, mut visited_stops)| {
+                    visited_stops.insert(departure_stop_id);
+                    Route::new(vec![route_section], visited_stops)
+                })
             })
-        })
-        .collect();
+            .collect();
+    get_nearby_stops(data_storage, departure_stop_id).map(|stop_connections| {
+        routes.extend(stop_connections.iter().map(|stop_connection| {
+            let mut visited_stops = HashSet::new();
+            visited_stops.insert(stop_connection.stop_id_1());
+            visited_stops.insert(stop_connection.stop_id_2());
+
+            let route_section = RouteSection::new(
+                None,
+                stop_connection.stop_id_1(),
+                stop_connection.stop_id_2(),
+                departure_at,
+                Some(stop_connection.duration()),
+            );
+
+            Route::new(vec![route_section], visited_stops)
+        }));
+    });
     sort_routes(&mut routes);
     routes
 }
@@ -349,37 +370,42 @@ fn next_departures<'a>(
     let departure_date_1 = departure_at.date();
     let departure_date_2 = add_1_day(departure_at.date());
 
-    let journeys_1: Vec<&Journey> =
+    // Pas incroyable :
+
+    let journeys_1: Vec<(&Journey, NaiveDateTime)> =
         get_operating_journeys(data_storage, departure_date_1, departure_stop_id)
             .into_iter()
-            // Pas incroyable :
             .filter(|journey| !journey.is_last_stop(departure_stop_id))
-            .filter(|journey: &&Journey| {
+            .map(|journey| {
                 let journey_departure_time: NaiveTime =
                     journey.departure_time_of(departure_stop_id).into();
-                journey_departure_time < departure_at.time()
+                let journey_departure_at =
+                    NaiveDateTime::new(departure_date_1, journey_departure_time);
+
+                (journey, journey_departure_at)
             })
             .collect();
-    let journeys_2 = get_operating_journeys(data_storage, departure_date_2, departure_stop_id);
 
+    let journeys_2: Vec<(&Journey, NaiveDateTime)> =
+        get_operating_journeys(data_storage, departure_date_2, departure_stop_id)
+            .into_iter()
+            .filter(|journey| !journey.is_last_stop(departure_stop_id))
+            .map(|journey| {
+                let journey_departure_time: NaiveTime =
+                    journey.departure_time_of(departure_stop_id).into();
+                let journey_departure_at =
+                    NaiveDateTime::new(departure_date_2, journey_departure_time);
+
+                (journey, journey_departure_at)
+            })
+            .collect();
+
+    let max_departure_at = departure_at.checked_add_signed(Duration::hours(4)).unwrap();
     let mut journeys: Vec<(&Journey, NaiveDateTime)> = [journeys_1, journeys_2]
         .concat()
         .into_iter()
-        .filter(|journey| !journey.is_last_stop(departure_stop_id))
-        .map(|journey| {
-            let journey_departure_time: NaiveTime =
-                journey.departure_time_of(departure_stop_id).into();
-
-            let journey_departure_at = if journey_departure_time >= departure_at.time() {
-                NaiveDateTime::new(departure_date_1, journey_departure_time)
-            } else {
-                NaiveDateTime::new(departure_date_2, journey_departure_time)
-            };
-
-            (journey, journey_departure_at)
-        })
         .filter(|(_, journey_departure_at)| {
-            *journey_departure_at < departure_at.checked_add_signed(Duration::hours(8)).unwrap()
+            *journey_departure_at >= departure_at && *journey_departure_at <= max_departure_at
         })
         .collect();
 
@@ -469,8 +495,8 @@ fn is_improving_solution(
 }
 
 fn can_improve_solution(solution: &Option<Route>, candidate: &Route) -> bool {
-    if let Some(solution) = &solution {
-        candidate.arrival_at() <= solution.arrival_at()
+    if let Some(sol) = &solution {
+        candidate.arrival_at() <= sol.arrival_at()
     } else {
         true
     }
@@ -501,18 +527,22 @@ fn get_connections(
     .collect()
 }
 
-fn explore_nearby_stops(data_storage: &DataStorage, route: &Route) -> Vec<Route> {
-    let ids = data_storage
+fn get_nearby_stops(data_storage: &DataStorage, stop_id: i32) -> Option<Vec<&StopConnection>> {
+    data_storage
         .stop_connections()
-        .find_by_stop_id(route.arrival_stop_id());
+        .find_by_stop_id(stop_id)
+        .map(|ids| data_storage.stop_connections().resolve_ids(ids))
+}
 
-    if ids.is_none() {
+fn explore_nearby_stops(data_storage: &DataStorage, route: &Route) -> Vec<Route> {
+    let stop_connections = get_nearby_stops(data_storage, route.arrival_stop_id());
+
+    if stop_connections.is_none() {
         return Vec::new();
     }
 
-    let stop_connections = data_storage.stop_connections().resolve_ids(ids.unwrap());
-
     stop_connections
+        .unwrap()
         .into_iter()
         .filter(|stop_connection| !route.visited_stops().contains(&stop_connection.stop_id_2()))
         .map(|stop_connection| {
