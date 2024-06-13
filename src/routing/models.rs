@@ -111,7 +111,7 @@ impl Route {
     pub fn sections_having_journey(&self) -> Vec<&RouteSection> {
         self.sections()
             .iter()
-            .filter(|sec| sec.journey_id().is_some())
+            .filter(|section| section.journey_id().is_some())
             .collect()
     }
 

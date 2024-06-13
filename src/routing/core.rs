@@ -52,9 +52,9 @@ pub fn find_solution(
     }
 
     if verbose {
-        if let Some(solution) = solution {
+        if let Some(sol) = solution {
             println!();
-            solution.print(data_storage);
+            sol.print(data_storage);
         }
     }
 }
@@ -62,7 +62,7 @@ pub fn find_solution(
 fn process_routes(
     data_storage: &DataStorage,
     mut routes: Vec<Route>,
-    arrival_stop_id: i32,
+    target_arrival_stop_id: i32,
     num_explored_connections: i32,
     solution: &mut Option<Route>,
     journeys_to_ignore: &mut HashSet<i32>,
@@ -77,7 +77,7 @@ fn process_routes(
             continue;
         }
 
-        if is_improving_solution(data_storage, solution, &route, arrival_stop_id) {
+        if is_improving_solution(data_storage, solution, &route, target_arrival_stop_id) {
             *solution = Some(route);
             continue;
         }
@@ -92,7 +92,7 @@ fn process_routes(
                 journey_id,
                 last_section.arrival_stop_id(),
                 last_section.arrival_at(),
-                arrival_stop_id,
+                target_arrival_stop_id,
             ) {
                 sorted_insert(&mut routes, new_route)
             }
@@ -106,7 +106,11 @@ fn process_routes(
             continue;
         }
 
-        next_routes.extend(get_connections(data_storage, &route, arrival_stop_id));
+        next_routes.extend(get_connections(
+            data_storage,
+            &route,
+            target_arrival_stop_id,
+        ));
 
         get_connections_from_explorable_nearby_stops(data_storage, &route)
             .into_iter()
@@ -131,10 +135,10 @@ fn is_improving_solution(
     target_arrival_stop_id: i32,
 ) -> bool {
     fn count_stops(data_storage: &DataStorage, section: &RouteSection) -> i32 {
-        section.journey(data_storage).unwrap().count_stops(
-            section.departure_stop_id(),
-            section.arrival_stop_id(),
-        )
+        section
+            .journey(data_storage)
+            .unwrap()
+            .count_stops(section.departure_stop_id(), section.arrival_stop_id())
     }
 
     if candidate.arrival_stop_id() != target_arrival_stop_id {
@@ -183,9 +187,9 @@ fn can_explore_connections(
     let arrival_at = route.arrival_at();
     let stop_id = route.arrival_stop_id();
 
-    if let Some(&earliest_known_arrival) = earliest_arrival_by_stop_id.get(&stop_id) {
+    if let Some(&earliest_arrival) = earliest_arrival_by_stop_id.get(&stop_id) {
         // WARNING: Consider putting the "<=" back.
-        if arrival_at < earliest_known_arrival {
+        if arrival_at < earliest_arrival {
             earliest_arrival_by_stop_id.insert(stop_id, arrival_at);
             true
         } else {

@@ -41,7 +41,7 @@ pub fn create_initial_routes(
             })
             .collect();
 
-    get_stop_connections(data_storage, departure_stop_id).map(|stop_connections| {
+    if let Some(stop_connections) = get_stop_connections(data_storage, departure_stop_id) {
         routes.extend(stop_connections.iter().map(|stop_connection| {
             let mut visited_stops = HashSet::new();
             visited_stops.insert(stop_connection.stop_id_1());
@@ -57,7 +57,7 @@ pub fn create_initial_routes(
 
             Route::new(vec![section], visited_stops)
         }));
-    });
+    }
 
     sort_routes(&mut routes);
     routes
@@ -75,13 +75,13 @@ pub fn get_connections(
         Some(get_routes_to_ignore(data_storage, &route)),
     )
     .iter()
-    .filter_map(|(journey, departure_at)| {
+    .filter_map(|(journey, journey_departure_at)| {
         create_route_from_another_route(
             data_storage,
             &route,
             journey.id(),
             route.last_section().arrival_stop_id(),
-            *departure_at,
+            *journey_departure_at,
             target_arrival_stop_id,
         )
     })
@@ -136,7 +136,7 @@ pub fn next_departures<'a>(
         })
         .collect();
 
-    journeys.sort_by(|(_, a), (_, b)| a.cmp(b));
+    journeys.sort_by_key(|(_, journey_departure_at)| *journey_departure_at);
 
     let mut routes_to_ignore = routes_to_ignore.unwrap_or_else(HashSet::new);
 
@@ -166,7 +166,7 @@ pub fn create_route_from_another_route(
     let is_same_journey = route
         .last_section()
         .journey_id()
-        .map_or(false, |j| j == journey_id);
+        .map_or(false, |journey_id_i| journey_id_i == journey_id);
 
     get_next_route_section(
         data_storage,
@@ -252,7 +252,7 @@ pub fn get_connections_from_explorable_nearby_stops(
     route: &Route,
 ) -> Vec<Route> {
     let stop_connections = match get_stop_connections(data_storage, route.arrival_stop_id()) {
-        Some(con) => con,
+        Some(stop_connections) => stop_connections,
         None => return Vec::new(),
     };
 
