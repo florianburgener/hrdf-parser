@@ -40,15 +40,18 @@ Progression (38/38) :
 
 Affichage : ATTRIBUT, BAHNHOF, BETRIEB_DE, BETRIEB_EN, BETRIEB_FR, BETRIEB_IT, BFKOORD_LV95, BFKOORD_WGS, DURCHBI, FEIERTAG, GLEIS, GLEIS_LV95, GLEIS_WGS
             INFOTEXT_DE, INFOTEXT_EN, INFOTEXT_FR, INFOTEXT_IT, LINIE, RICHTUNG, ZUGART
-Affichage + Algorithme : ECKDATEN, FPLAN
-Algorithme : BFPRIOS, BITFELD, KMINFO, METABHF, UMSTEIGB, UMSTEIGL, UMSTEIGV, UMSTEIGZ
+Affichage + Algorithme : ECKDATEN, FPLAN, METABHF
+Algorithme : BFPRIOS, BITFELD, KMINFO, UMSTEIGB, UMSTEIGL, UMSTEIGV, UMSTEIGZ
 Incertain : BHFART_60
 Inutile : ATTRIBUT_DE, ATTRIBUT_EN, ATTRIBUT_FR, ATTRIBUT_IT, BHFART, GREENZHLT, ZEITVS
 
 TODO :
 * Ajouter thiserror
 
-Algorithme de calcul du trajet le plus court (Done) :
+Algorithme de calcul du trajet le plus court (Résumé) :
+*
+
+
 * Maximum N connexions
 * Seulement les trajets possibles
 * On ne revient pas sur ses pas
@@ -62,10 +65,23 @@ Algorithme de calcul du trajet le plus court (Done) :
 
 Algorithme de calcul du trajet le plus court (TODO) :
 * Considérer les temps de transferts lors d'une correspondance
-* Renvoyer les résultats via une structure
 
 Algorithme de calcul du trajet le plus court (Optionnel) :
 * Pouvoir paginer les résultats
     * Récupérer N résults plus tôt
     * Récupérer N résults plus tard
 * Pouvoir préciser une heure de départ ou d'arrivée
+* Renvoyer les résultats via une structure
+
+3.21s => 1.65s
+
+Problèmes de l'agorithme :
+* Lent quand il y a beaucoup de connexions
+* Lent quand le temps d'arrivée est relativement lointain
+* Ne maximise pas le temps de départ
+
+
+
+* Vérifier le nom des paramètre de closures + if let Some() = + match
+* Ajouter les commentaires + noter les features
+* Renommer routes vers connections ?
