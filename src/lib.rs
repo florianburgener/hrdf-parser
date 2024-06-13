@@ -36,6 +36,11 @@ pub fn run() -> Result<(), Box<dyn Error>> {
         hrdf.data_storage().journeys().entries().len()
     );
 
+    #[rustfmt::skip]
+    println!("{}", hrdf.data_storage().journeys().journeys_by_day().values().map(|v| v.len()).sum::<usize>());
+    #[rustfmt::skip]
+    println!("{}", hrdf.data_storage().journeys().journeys_by_stop_id().values().map(|v| v.len()).sum::<usize>());
+
     println!("");
 
     const N: u32 = 10;
@@ -71,7 +76,7 @@ fn test_plan_journey(hrdf: &Hrdf, verbose: bool) {
     // 8768600     Paris Gare de Lyon
 
     // Chancy, Les Bouveries => Pont-Céard, gare
-    hrdf.plan_journey(8592688, 8593189, create_date_time(2023, 2, 3, 14, 13), verbose);
+    // hrdf.plan_journey(8592688, 8593189, create_date_time(2023, 2, 3, 14, 13), verbose);
 
     // Chancy, Les Bouveries => Petit-Lancy, Les Esserts
     // hrdf.plan_journey(8592688, 8587418, create_date_time(2023, 2, 3, 23, 33), verbose);
@@ -107,5 +112,5 @@ fn test_plan_journey(hrdf: &Hrdf, verbose: bool) {
     // hrdf.plan_journey(8501008, 8587062, create_date_time(2023, 2, 3, 13, 25), verbose);
 
     // Genève, gare Cornavin => Paris Gare de Lyon
-    // hrdf.plan_journey(8587057, 8768600, create_date_time(2023, 2, 3, 13, 25), verbose);
+    hrdf.plan_journey(8587057, 8768600, create_date_time(2023, 2, 3, 13, 25), verbose);
 }

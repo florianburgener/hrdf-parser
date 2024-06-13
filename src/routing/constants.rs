@@ -1,0 +1,1 @@
+pub const MAX_CONNECTION_COUNT: i32 = 6;
