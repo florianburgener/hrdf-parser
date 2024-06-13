@@ -7,9 +7,24 @@ use crate::{
     storage::DataStorage,
 };
 
-use super::models::Route;
+use super::models::{Route, RouteSection};
 
-pub fn get_nearby_stops(data_storage: &DataStorage, stop_id: i32) -> Option<Vec<&StopConnection>> {
+pub fn clone_update_route<F>(route: &Route, f: F) -> Route
+where
+    F: FnOnce(&mut Vec<RouteSection>, &mut HashSet<i32>),
+{
+    let mut cloned_sections = route.sections().clone();
+    let mut cloned_visited_stops = route.visited_stops().clone();
+
+    f(&mut cloned_sections, &mut cloned_visited_stops);
+
+    Route::new(cloned_sections, cloned_visited_stops)
+}
+
+pub fn get_stop_connections(
+    data_storage: &DataStorage,
+    stop_id: i32,
+) -> Option<Vec<&StopConnection>> {
     data_storage
         .stop_connections()
         .find_by_stop_id(stop_id)
@@ -25,41 +40,30 @@ pub fn get_operating_journeys(
     let journeys_2 = data_storage.journeys().find_by_stop_id(stop_id);
 
     journeys_2.map_or(Vec::new(), |journeys_2| {
-        let ids: HashSet<i32> = journeys_1.intersection(&journeys_2).cloned().collect();
+        let ids = journeys_1.intersection(&journeys_2).cloned().collect();
         data_storage.journeys().resolve_ids(&ids)
     })
 }
 
 pub fn get_routes_to_ignore(data_storage: &DataStorage, route: &Route) -> HashSet<u64> {
     route
-        .route_sections()
+        .sections()
         .iter()
-        .filter_map(|route_section| {
-            route_section
-                .journey(data_storage)
-                .and_then(|journey| journey.hash_route(route.arrival_stop_id()))
+        .filter_map(|sec| {
+            sec.journey(data_storage)
+                .and_then(|jou| jou.hash_route(route.arrival_stop_id()))
         })
         .collect()
 }
 
 pub fn sort_routes(routes: &mut Vec<Route>) {
-    routes.sort_by(|a, b| a.arrival_at().cmp(&b.arrival_at()));
+    routes.sort_by_key(|rou| rou.arrival_at());
 }
 
 pub fn sorted_insert(routes: &mut Vec<Route>, route_to_insert: Route) {
-    let mut i = 0;
-
-    while i < routes.len() {
-        let t1 = route_to_insert.arrival_at();
-        let t2 = routes[i].arrival_at();
-
-        if t1 < t2 {
-            routes.insert(i, route_to_insert);
-            return;
-        }
-
-        i += 1;
-    }
-
-    routes.push(route_to_insert);
+    let index = routes
+        .iter()
+        .position(|rou| route_to_insert.arrival_at() < rou.arrival_at())
+        .unwrap_or_else(|| routes.len());
+    routes.insert(index, route_to_insert);
 }

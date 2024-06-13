@@ -73,7 +73,8 @@ Algorithme de calcul du trajet le plus court (Optionnel) :
 * Pouvoir préciser une heure de départ ou d'arrivée
 * Renvoyer les résultats via une structure
 
-3.21s => 1.65s
+
+
 
 Problèmes de l'agorithme :
 * Lent quand il y a beaucoup de connexions

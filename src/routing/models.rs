@@ -63,27 +63,26 @@ impl RouteSection {
     // Functions
 
     pub fn journey<'a>(&'a self, data_storage: &'a DataStorage) -> Option<&Journey> {
-        self.journey_id()
-            .map(|journey_id| data_storage.journeys().find(journey_id))
+        self.journey_id().map(|id| data_storage.journeys().find(id))
     }
 }
 
 #[derive(Debug)]
 pub struct Route {
-    route_sections: Vec<RouteSection>,
+    sections: Vec<RouteSection>,
     visited_stops: HashSet<i32>,
 }
 
 impl Route {
-    pub fn new(route_sections: Vec<RouteSection>, visited_stops: HashSet<i32>) -> Self {
+    pub fn new(sections: Vec<RouteSection>, visited_stops: HashSet<i32>) -> Self {
         Self {
-            route_sections,
+            sections,
             visited_stops,
         }
     }
 
-    pub fn route_sections(&self) -> &Vec<RouteSection> {
-        &self.route_sections
+    pub fn sections(&self) -> &Vec<RouteSection> {
+        &self.sections
     }
 
     pub fn visited_stops(&self) -> &HashSet<i32> {
@@ -92,30 +91,31 @@ impl Route {
 
     // Functions
 
-    pub fn last_route_section(&self) -> &RouteSection {
-        self.route_sections().last().unwrap()
+    pub fn last_section(&self) -> &RouteSection {
+        // A route always contains at least one section.
+        self.sections().last().unwrap()
     }
 
     pub fn arrival_stop_id(&self) -> i32 {
-        self.last_route_section().arrival_stop_id()
+        self.last_section().arrival_stop_id()
     }
 
     pub fn arrival_at(&self) -> NaiveDateTime {
-        self.last_route_section().arrival_at()
+        self.last_section().arrival_at()
     }
 
     pub fn has_visited_any_stops(&self, stops: &HashSet<i32>) -> bool {
-        self.visited_stops().intersection(stops).count() != 0
+        !self.visited_stops().is_disjoint(stops)
     }
 
-    pub fn route_sections_with_existing_journey(&self) -> Vec<&RouteSection> {
-        self.route_sections()
+    pub fn sections_having_journey(&self) -> Vec<&RouteSection> {
+        self.sections()
             .iter()
-            .filter(|route_section| route_section.journey_id().is_some())
+            .filter(|sec| sec.journey_id().is_some())
             .collect()
     }
 
     pub fn count_connections(&self) -> usize {
-        self.route_sections_with_existing_journey().len()
+        self.sections_having_journey().len()
     }
 }

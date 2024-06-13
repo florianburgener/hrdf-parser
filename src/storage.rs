@@ -222,7 +222,7 @@ impl JourneyStorage {
         self.journeys_by_day = value;
     }
 
-    pub  fn journeys_by_stop_id(&self) -> &JourneyIndex2 {
+    pub fn journeys_by_stop_id(&self) -> &JourneyIndex2 {
         &self.journeys_by_stop_id
     }
 
