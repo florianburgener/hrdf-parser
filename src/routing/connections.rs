@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use chrono::{Duration, NaiveDateTime, NaiveTime};
+use chrono::{Duration, NaiveDateTime};
 
 use crate::{
     models::{Journey, Model},
@@ -104,8 +104,7 @@ pub fn next_departures<'a>(
             .into_iter()
             .filter(|journey| !journey.is_last_stop(departure_stop_id))
             .map(|journey| {
-                let journey_departure_time: NaiveTime =
-                    journey.departure_time_of(departure_stop_id).into();
+                let journey_departure_time = journey.departure_time_of(departure_stop_id);
                 let journey_departure_at =
                     NaiveDateTime::new(departure_date_1, journey_departure_time);
 
@@ -118,8 +117,7 @@ pub fn next_departures<'a>(
             .into_iter()
             .filter(|journey| !journey.is_last_stop(departure_stop_id))
             .map(|journey| {
-                let journey_departure_time: NaiveTime =
-                    journey.departure_time_of(departure_stop_id).into();
+                let journey_departure_time = journey.departure_time_of(departure_stop_id);
                 let journey_departure_at =
                     NaiveDateTime::new(departure_date_2, journey_departure_time);
 
@@ -223,7 +221,7 @@ pub fn get_next_route_section(
         visited_stops.insert(stop.id());
 
         if stop.transfer_flag() != 0 || stop.id() == target_arrival_stop_id {
-            let arrival_time: NaiveTime = journey.arrival_time_of(stop.id()).into();
+            let arrival_time = journey.arrival_time_of(stop.id());
 
             let arrival_at = if arrival_time >= departure_at.time() {
                 NaiveDateTime::new(departure_at.date(), arrival_time)

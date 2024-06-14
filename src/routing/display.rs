@@ -40,13 +40,23 @@ impl Route {
                 let arrival_time = if i == 0 {
                     " ".repeat(5)
                 } else {
-                    format!("{}", route_entry.arrival_time().as_ref().unwrap())
+                    format!(
+                        "{}",
+                        route_entry.arrival_time().as_ref().unwrap().format("%H:%M")
+                    )
                 };
 
                 let departure_time = if i == route.len() - 1 {
                     " ".repeat(5)
                 } else {
-                    format!("{}", route_entry.departure_time().as_ref().unwrap())
+                    format!(
+                        "{}",
+                        route_entry
+                            .departure_time()
+                            .as_ref()
+                            .unwrap()
+                            .format("%H:%M")
+                    )
                 };
 
                 let stop = route_entry.stop(data_storage);
@@ -61,7 +71,10 @@ impl Route {
                 );
             }
 
-            println!("  Arrival at: {}", section.arrival_at());
+            println!(
+                "  Arrival at: {}",
+                section.arrival_at().format("%Y-%m-%d %H:%M")
+            );
         }
     }
 }

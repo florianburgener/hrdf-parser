@@ -48,7 +48,7 @@ pub fn parse(
                 let stop_connection = data.last_mut().unwrap();
 
                 match id {
-                    ROW_B => add_attribute(values, stop_connection, attributes_pk_type_converter),
+                    ROW_B => set_attribute(values, stop_connection, attributes_pk_type_converter),
                     ROW_C => {}
                     _ => unreachable!(),
                 }
@@ -73,7 +73,7 @@ fn create_instance(mut values: Vec<ParsedValue>, auto_increment: &AutoIncrement)
     StopConnection::new(auto_increment.next(), stop_id_1, stop_id_2, duration)
 }
 
-fn add_attribute(
+fn set_attribute(
     mut values: Vec<ParsedValue>,
     current_instance: &mut StopConnection,
     attributes_pk_type_converter: &HashMap<String, i32>,
@@ -82,5 +82,5 @@ fn add_attribute(
     let attribute_id = *attributes_pk_type_converter
         .get(&attribute_designation)
         .unwrap();
-    current_instance.add_attribute(attribute_id);
+    current_instance.set_attribute(attribute_id);
 }

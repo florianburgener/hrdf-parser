@@ -399,7 +399,7 @@ impl Journey {
         Some(hasher.finish())
     }
 
-    pub fn departure_time_of(&self, stop_id: i32) -> Time {
+    pub fn departure_time_of(&self, stop_id: i32) -> NaiveTime {
         self.route()
             .iter()
             .find(|route_entry| route_entry.stop_id() == stop_id)
@@ -408,7 +408,7 @@ impl Journey {
             .unwrap()
     }
 
-    pub fn arrival_time_of(&self, stop_id: i32) -> Time {
+    pub fn arrival_time_of(&self, stop_id: i32) -> NaiveTime {
         self.route()
             .iter()
             .skip(1)
@@ -446,8 +446,8 @@ pub struct JourneyMetadataEntry {
     until_stop_id: Option<i32>,
     resource_id: Option<i32>,
     bit_field_id: Option<i32>,
-    departure_time: Option<Time>,
-    arrival_time: Option<Time>,
+    departure_time: Option<NaiveTime>,
+    arrival_time: Option<NaiveTime>,
     extra_field_1: Option<String>,
     extra_field_2: Option<i32>,
 }
@@ -458,8 +458,8 @@ impl JourneyMetadataEntry {
         until_stop_id: Option<i32>,
         resource_id: Option<i32>,
         bit_field_id: Option<i32>,
-        departure_time: Option<Time>,
-        arrival_time: Option<Time>,
+        departure_time: Option<NaiveTime>,
+        arrival_time: Option<NaiveTime>,
         extra_field_1: Option<String>,
         extra_field_2: Option<i32>,
     ) -> Self {
@@ -487,12 +487,12 @@ impl JourneyMetadataEntry {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct JourneyRouteEntry {
     stop_id: i32,
-    arrival_time: Option<Time>,
-    departure_time: Option<Time>,
+    arrival_time: Option<NaiveTime>,
+    departure_time: Option<NaiveTime>,
 }
 
 impl JourneyRouteEntry {
-    pub fn new(stop_id: i32, arrival_time: Option<Time>, departure_time: Option<Time>) -> Self {
+    pub fn new(stop_id: i32, arrival_time: Option<NaiveTime>, departure_time: Option<NaiveTime>) -> Self {
         Self {
             stop_id,
             arrival_time,
@@ -506,11 +506,11 @@ impl JourneyRouteEntry {
         self.stop_id
     }
 
-    pub fn arrival_time(&self) -> &Option<Time> {
+    pub fn arrival_time(&self) -> &Option<NaiveTime> {
         &self.arrival_time
     }
 
-    pub fn departure_time(&self) -> &Option<Time> {
+    pub fn departure_time(&self) -> &Option<NaiveTime> {
         &self.departure_time
     }
 
@@ -788,7 +788,7 @@ pub struct StopConnection {
     stop_id_1: i32,
     stop_id_2: i32,
     duration: i16, // Transfer time from stop 1 to stop 2 is in minutes.
-    attributes: Vec<i32>,
+    attribute: i32,
 }
 
 impl_Model!(StopConnection);
@@ -800,7 +800,7 @@ impl StopConnection {
             stop_id_1,
             stop_id_2,
             duration,
-            attributes: Vec::new(),
+            attribute: 0,
         }
     }
 
@@ -818,11 +818,11 @@ impl StopConnection {
         self.duration
     }
 
-    // Functions
-
-    pub fn add_attribute(&mut self, value: i32) {
-        self.attributes.push(value);
+    pub fn set_attribute(&mut self, value: i32) {
+        self.attribute = value;
     }
+
+    // Functions
 }
 
 // ------------------------------------------------------------------------------------------------

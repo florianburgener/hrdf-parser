@@ -3,14 +3,16 @@
 // FPLAN
 use std::{collections::HashMap, error::Error};
 
+use chrono::NaiveTime;
+
 use crate::{
-    models::{Journey, JourneyMetadataEntry, JourneyMetadataType, JourneyRouteEntry, Model, Time},
+    models::{Journey, JourneyMetadataEntry, JourneyMetadataType, JourneyRouteEntry, Model},
     parsing::{
         ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, ParsedValue, RowDefinition,
         RowParser,
     },
     storage::JourneyStorage,
-    utils::AutoIncrement,
+    utils::{create_time_from_value, AutoIncrement},
 };
 
 pub fn parse(
@@ -232,8 +234,8 @@ fn add_information_text(mut values: Vec<ParsedValue>, journey: &mut Journey) {
     let departure_time: Option<i32> = values.remove(0).into();
     let arrival_time: Option<i32> = values.remove(0).into();
 
-    let arrival_time = arrival_time.map(|x| Time::from(x));
-    let departure_time = departure_time.map(|x| Time::from(x));
+    let arrival_time = create_time(arrival_time);
+    let departure_time = create_time(departure_time);
 
     journey.add_metadata_entry(
         JourneyMetadataType::InformationText,
@@ -257,8 +259,8 @@ fn set_line(mut values: Vec<ParsedValue>, journey: &mut Journey) {
     let departure_time: Option<i32> = values.remove(0).into();
     let arrival_time: Option<i32> = values.remove(0).into();
 
-    let arrival_time = arrival_time.map(|x| Time::from(x));
-    let departure_time = departure_time.map(|x| Time::from(x));
+    let arrival_time = create_time(arrival_time);
+    let departure_time = create_time(departure_time);
 
     let (resource_id, extra_field_1) = if line_designation.chars().next().unwrap() == '#' {
         (Some(line_designation[1..].parse::<i32>().unwrap()), None)
@@ -293,8 +295,8 @@ fn set_direction(
     let departure_time: Option<i32> = values.remove(0).into();
     let arrival_time: Option<i32> = values.remove(0).into();
 
-    let arrival_time = arrival_time.map(|x| Time::from(x));
-    let departure_time = departure_time.map(|x| Time::from(x));
+    let arrival_time = create_time(arrival_time);
+    let departure_time = create_time(departure_time);
 
     let direction_id = if direction_id.is_empty() {
         None
@@ -349,24 +351,25 @@ fn add_route_entry(mut values: Vec<ParsedValue>, journey: &mut Journey) {
     let arrival_time: Option<i32> = values.remove(0).into();
     let departure_time: Option<i32> = values.remove(0).into();
 
-    let arrival_time = arrival_time.map(|x| {
-        Time::from(match x {
-            x if x <= -2400 => x + 2400,
-            x if x >= 2400 => x - 2400,
-            x => x,
-        })
-    });
-    let departure_time = departure_time.map(|x| {
-        Time::from(match x {
-            x if x <= -2400 => x + 2400,
-            x if x >= 2400 => x - 2400,
-            x => x,
-        })
-    });
+    let arrival_time = create_time(arrival_time);
+    let departure_time = create_time(departure_time);
 
     journey.add_route_entry(JourneyRouteEntry::new(
         stop_id,
         arrival_time,
         departure_time,
     ));
+}
+
+// ------------------------------------------------------------------------------------------------
+// --- Helper Functions
+// ------------------------------------------------------------------------------------------------
+
+fn create_time(time: Option<i32>) -> Option<NaiveTime> {
+    time.map(|value| {
+        create_time_from_value(match value.abs() {
+            val if val >= 2400 => val % 2400,
+            val => val,
+        } as u32)
+    })
 }

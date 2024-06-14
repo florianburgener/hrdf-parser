@@ -111,8 +111,8 @@ fn test_plan_journey(hrdf: &Hrdf, verbose: bool) {
     // hrdf.plan_journey(8501008, 8592688, create_date_time(2023, 2, 3, 12, 16), verbose);
 
     // Genève => Genève, Jonction
-    // hrdf.plan_journey(8501008, 8587062, create_date_time(2023, 2, 3, 13, 25), verbose);
+    hrdf.plan_journey(8501008, 8587062, create_date_time(2023, 2, 3, 13, 25), verbose);
 
     // Genève, gare Cornavin => Paris Gare de Lyon
-    hrdf.plan_journey(8587057, 8768600, create_date_time(2023, 2, 3, 13, 25), verbose);
+    // hrdf.plan_journey(8587057, 8768600, create_date_time(2023, 2, 3, 13, 25), verbose);
 }

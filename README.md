@@ -41,12 +41,19 @@ Progression (38/38) :
 Affichage : ATTRIBUT, BAHNHOF, BETRIEB_DE, BETRIEB_EN, BETRIEB_FR, BETRIEB_IT, BFKOORD_LV95, BFKOORD_WGS, DURCHBI, FEIERTAG, GLEIS, GLEIS_LV95, GLEIS_WGS
             INFOTEXT_DE, INFOTEXT_EN, INFOTEXT_FR, INFOTEXT_IT, LINIE, RICHTUNG, ZUGART
 Affichage + Algorithme : ECKDATEN, FPLAN, METABHF
-Algorithme : BFPRIOS, BITFELD, KMINFO, UMSTEIGB, UMSTEIGL, UMSTEIGV, UMSTEIGZ
-Incertain : BHFART_60
+Algorithme : BITFELD, KMINFO, UMSTEIGB, UMSTEIGL, UMSTEIGV, UMSTEIGZ
+Incertain : BFPRIOS, BHFART_60
 Inutile : ATTRIBUT_DE, ATTRIBUT_EN, ATTRIBUT_FR, ATTRIBUT_IT, BHFART, GREENZHLT, ZEITVS
 
 TODO :
 * Ajouter thiserror
+* Temps de correspondance
+* Algorithme pour trouver tous les arrêts dans un temps max
+* Automatiquement télécharger les dernières données
+* Pouvoir parse la dernière version HRDF
+* Logging
+* Créer un projet API qui utilise la lib
+* Créer l'application web
 
 Algorithme de calcul du trajet le plus court (Résumé) :
 * Maximum N connexions
@@ -82,5 +89,6 @@ Algorithme de calcul du trajet le plus court (Optionnel) :
     * Récupérer N résults plus tard
 * Pouvoir préciser une heure de départ ou d'arrivée
 * Renvoyer les résultats via une structure
+* Ajouter un warning quand arrêt n'existe pas dans FPLAN mais dans BAHNHOF
 
 Forcer l'utilisation de train quand l'arrêt d'arrivée est loin
