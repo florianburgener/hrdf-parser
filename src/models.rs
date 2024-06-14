@@ -1,9 +1,6 @@
-use core::fmt;
 use std::{
-    cmp::Ordering,
     collections::{BTreeSet, HashMap},
     hash::{DefaultHasher, Hash, Hasher},
-    ops,
 };
 
 use chrono::{NaiveDate, NaiveTime};
@@ -492,7 +489,11 @@ pub struct JourneyRouteEntry {
 }
 
 impl JourneyRouteEntry {
-    pub fn new(stop_id: i32, arrival_time: Option<NaiveTime>, departure_time: Option<NaiveTime>) -> Self {
+    pub fn new(
+        stop_id: i32,
+        arrival_time: Option<NaiveTime>,
+        departure_time: Option<NaiveTime>,
+    ) -> Self {
         Self {
             stop_id,
             arrival_time,
@@ -529,7 +530,7 @@ impl JourneyRouteEntry {
 pub struct JourneyPlatform {
     journey_id: i32,
     platform_id: i32,
-    time: Option<Time>,
+    time: Option<NaiveTime>,
     bit_field_id: Option<i32>,
 }
 
@@ -537,7 +538,7 @@ impl JourneyPlatform {
     pub fn new(
         journey_id: i32,
         platform_id: i32,
-        time: Option<Time>,
+        time: Option<NaiveTime>,
         bit_field_id: Option<i32>,
     ) -> Self {
         Self {
@@ -863,85 +864,6 @@ impl ThroughService {
     // Getters/Setters
 
     // Functions
-}
-
-// ------------------------------------------------------------------------------------------------
-// --- Time
-// ------------------------------------------------------------------------------------------------
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
-pub struct Time {
-    hour: u8,
-    minute: u8,
-}
-
-impl Time {
-    pub fn new(hour: u8, minute: u8) -> Self {
-        Self { hour, minute }
-    }
-
-    // Getters/Setters
-
-    // Functions
-}
-
-impl ops::Add for Time {
-    type Output = Self;
-
-    fn add(self, other: Self) -> Self {
-        // println!("{self} {other}");
-        let hour = self.hour as u32 + other.hour as u32;
-        let minute = self.minute as u32 + other.minute as u32;
-
-        let (hour, minute) = if minute >= 60 {
-            (hour + minute / 60, minute % 60)
-        } else {
-            (hour, minute)
-        };
-
-        if hour >= 24 {
-            panic!("Impossible to add these two times together!");
-        }
-
-        Time::new(hour as u8, minute as u8)
-    }
-}
-
-impl fmt::Display for Time {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:0>2}:{:0>2}", self.hour, self.minute)
-    }
-}
-
-impl From<i32> for Time {
-    fn from(value: i32) -> Self {
-        let value = value.abs();
-        Time::new(
-            u8::try_from(value / 100).unwrap(),
-            u8::try_from(value % 100).unwrap(),
-        )
-    }
-}
-
-impl Into<NaiveTime> for Time {
-    fn into(self) -> NaiveTime {
-        NaiveTime::from_hms_opt(self.hour as u32, self.minute as u32, 0).unwrap()
-    }
-}
-
-impl Ord for Time {
-    fn cmp(&self, other: &Self) -> Ordering {
-        match self.hour.cmp(&other.hour) {
-            std::cmp::Ordering::Equal => self.minute.cmp(&other.minute),
-            o => o,
-        }
-    }
-}
-
-impl PartialOrd for Time {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
 }
 
 // ------------------------------------------------------------------------------------------------

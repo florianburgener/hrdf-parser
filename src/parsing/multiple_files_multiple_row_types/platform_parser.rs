@@ -6,13 +6,13 @@
 use std::{collections::HashMap, error::Error};
 
 use crate::{
-    models::{Coordinate, CoordinateType, JourneyPlatform, Model, Platform, Time},
+    models::{Coordinate, CoordinateType, JourneyPlatform, Model, Platform},
     parsing::{
         ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, ParsedValue, RowDefinition,
         RowParser,
     },
     storage::SimpleResourceStorage,
-    utils::AutoIncrement,
+    utils::{create_time_from_value, AutoIncrement},
 };
 
 pub fn parse(
@@ -166,7 +166,7 @@ fn create_journey_platform(
 
     let platform_id = *platforms_pk_type_converter.get(&(stop_id, index)).unwrap();
 
-    let time = time.map(|x| Time::from(x));
+    let time = time.map(|x| create_time_from_value(x as u32));
 
     JourneyPlatform::new(journey_id, platform_id, time, bit_field_id)
 }
