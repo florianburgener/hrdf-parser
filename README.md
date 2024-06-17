@@ -92,3 +92,11 @@ Algorithme de calcul du trajet le plus court (Optionnel) :
 * Ajouter un warning quand arrêt n'existe pas dans FPLAN mais dans BAHNHOF
 
 Forcer l'utilisation de train quand l'arrêt d'arrivée est loin
+
+
+* Essayer d'améliorer les perfomances (intersection)
+* Changer comment les déplacements à pied sont stocker
+* Coder l'algorithme multiple
+
+hrdf.plan_journey(8592688, 8501120, create_date_time(2023, 2, 3, 14, 31), verbose);
+99.10ms ; 100.31ms

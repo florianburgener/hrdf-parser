@@ -4,7 +4,7 @@
 
 use std::cell::RefCell;
 
-use chrono::{Days, NaiveDate, NaiveDateTime, NaiveTime};
+use chrono::{Days, Duration, NaiveDate, NaiveDateTime, NaiveTime};
 
 pub struct AutoIncrement {
     value: RefCell<i32>,
@@ -25,6 +25,12 @@ impl AutoIncrement {
 
 pub fn add_1_day(date: NaiveDate) -> NaiveDate {
     date.checked_add_days(Days::new(1)).unwrap()
+}
+
+pub fn add_minutes_to_date_time(date_time: NaiveDateTime, minutes: i64) -> NaiveDateTime {
+    date_time
+        .checked_add_signed(Duration::minutes(minutes))
+        .unwrap()
 }
 
 pub fn count_days_between_two_dates(date_1: NaiveDate, date_2: NaiveDate) -> usize {

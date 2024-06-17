@@ -5,124 +5,95 @@ use chrono::NaiveDateTime;
 use crate::storage::DataStorage;
 
 use super::{
-    connections::{
-        create_initial_routes, create_route_from_another_route, get_connections,
-        get_connections_from_explorable_nearby_stops,
-    },
+    connections::create_initial_routes,
     constants::MAXIMUM_NUMBER_OF_EXPLORABLE_CONNECTIONS,
-    models::{Route, RouteSection},
-    utils::{sort_routes, sorted_insert},
+    exploration::explore_routes,
+    models::{Route, RouteSection, RoutingAlgorithmArgs, RoutingAlgorithmMode},
 };
 
-pub fn find_solution(
+pub fn compute_routing(
     data_storage: &DataStorage,
     departure_stop_id: i32,
-    arrival_stop_id: i32,
     departure_at: NaiveDateTime,
     verbose: bool,
-) {
-    let mut routes = create_initial_routes(
-        data_storage,
-        departure_stop_id,
-        arrival_stop_id,
-        departure_at,
-    );
-    let mut solution = None;
+    args: RoutingAlgorithmArgs,
+) -> HashMap<i32, Route> {
+    let mut routes = create_initial_routes(data_storage, departure_stop_id, departure_at);
     let mut journeys_to_ignore = HashSet::new();
     let mut earliest_arrival_by_stop_id = HashMap::new();
+    let mut solutions = HashMap::new();
 
-    for num_explored_connections in 0..MAXIMUM_NUMBER_OF_EXPLORABLE_CONNECTIONS {
+    for _ in 0..MAXIMUM_NUMBER_OF_EXPLORABLE_CONNECTIONS {
         if verbose {
             println!("{}", routes.len());
         }
 
-        routes = process_routes(
+        let can_continue_exploration = match args.mode() {
+            RoutingAlgorithmMode::SolveFromDepartureStopToArrivalStop => |route: &_| {
+                can_continue_exploration_one_to_one(
+                    data_storage,
+                    route,
+                    &mut solutions,
+                    args.arrival_stop_id(),
+                )
+            },
+            // RoutingAlgorithmMode::SolveFromDepartureStopToReachableArrivalStops => panic!(),
+        };
+
+        let new_routes = explore_routes(
             data_storage,
             routes,
-            arrival_stop_id,
-            num_explored_connections,
-            &mut solution,
             &mut journeys_to_ignore,
             &mut earliest_arrival_by_stop_id,
+            can_continue_exploration,
         );
 
-        if routes.is_empty() {
+        if new_routes.is_empty() {
             break;
         }
+
+        routes = new_routes;
     }
 
-    if verbose {
-        if let Some(sol) = solution {
+    if verbose && args.mode() == RoutingAlgorithmMode::SolveFromDepartureStopToArrivalStop {
+        if let Some(sol) = solutions.get(&args.arrival_stop_id()) {
             println!();
             sol.print(data_storage);
         }
     }
+
+    solutions
 }
 
-fn process_routes(
+fn can_continue_exploration_one_to_one(
     data_storage: &DataStorage,
-    mut routes: Vec<Route>,
-    target_arrival_stop_id: i32,
-    num_explored_connections: i32,
-    solution: &mut Option<Route>,
-    journeys_to_ignore: &mut HashSet<i32>,
-    earliest_arrival_by_stop_id: &mut HashMap<i32, NaiveDateTime>,
-) -> Vec<Route> {
-    let mut next_routes = Vec::new();
+    route: &Route,
+    solutions: &mut HashMap<i32, Route>,
+    arrival_stop_id: i32,
+) -> bool {
+    let solution = solutions.get(&arrival_stop_id);
 
-    while !routes.is_empty() {
-        let route = routes.remove(0);
-
-        if !can_improve_solution(solution, &route) {
-            continue;
-        }
-
-        if is_improving_solution(data_storage, solution, &route, target_arrival_stop_id) {
-            *solution = Some(route);
-            continue;
-        }
-
-        let last_section = route.last_section();
-        if let Some(journey_id) = last_section.journey_id() {
-            journeys_to_ignore.insert(journey_id);
-
-            if let Some(new_route) = create_route_from_another_route(
-                data_storage,
-                &route,
-                journey_id,
-                last_section.arrival_stop_id(),
-                last_section.arrival_at(),
-                target_arrival_stop_id,
-            ) {
-                sorted_insert(&mut routes, new_route)
-            }
-        }
-
-        if num_explored_connections == MAXIMUM_NUMBER_OF_EXPLORABLE_CONNECTIONS {
-            continue;
-        }
-
-        if !can_explore_connections(&route, earliest_arrival_by_stop_id) {
-            continue;
-        }
-
-        next_routes.extend(get_connections(
-            data_storage,
-            &route,
-            target_arrival_stop_id,
-        ));
-
-        get_connections_from_explorable_nearby_stops(data_storage, &route)
-            .into_iter()
-            .for_each(|new_route| sorted_insert(&mut routes, new_route));
+    if !can_improve_solution(route, &solution) {
+        return false;
     }
 
-    next_routes = filter_next_routes(next_routes, journeys_to_ignore);
-    sort_routes(&mut next_routes);
-    next_routes
+    if !route.visited_stops().contains(&arrival_stop_id) {
+        return true;
+    }
+
+    let mut cloned_route = route.clone();
+    cloned_route
+        .last_section_mut()
+        .set_arrival_stop_id(arrival_stop_id);
+
+    if is_improving_solution(data_storage, &cloned_route, &solution) {
+        solutions.insert(arrival_stop_id, cloned_route);
+    }
+
+    false
 }
 
-fn can_improve_solution(solution: &Option<Route>, candidate: &Route) -> bool {
+fn can_improve_solution(candidate: &Route, solution: &Option<&Route>) -> bool {
     solution
         .as_ref()
         .map_or(true, |sol| candidate.arrival_at() <= sol.arrival_at())
@@ -130,9 +101,8 @@ fn can_improve_solution(solution: &Option<Route>, candidate: &Route) -> bool {
 
 fn is_improving_solution(
     data_storage: &DataStorage,
-    solution: &Option<Route>,
     candidate: &Route,
-    target_arrival_stop_id: i32,
+    solution: &Option<&Route>,
 ) -> bool {
     fn count_stops(data_storage: &DataStorage, section: &RouteSection) -> i32 {
         section
@@ -141,15 +111,11 @@ fn is_improving_solution(
             .count_stops(section.departure_stop_id(), section.arrival_stop_id())
     }
 
-    if candidate.arrival_stop_id() != target_arrival_stop_id {
-        return false;
-    }
-
     if solution.is_none() {
         return true;
     }
 
-    let solution = solution.as_ref().unwrap();
+    let solution = solution.unwrap();
 
     let t1 = candidate.arrival_at();
     let t2 = solution.arrival_at();
@@ -178,32 +144,4 @@ fn is_improving_solution(
     }
 
     false
-}
-
-fn can_explore_connections(
-    route: &Route,
-    earliest_arrival_by_stop_id: &mut HashMap<i32, NaiveDateTime>,
-) -> bool {
-    let arrival_at = route.arrival_at();
-    let stop_id = route.arrival_stop_id();
-
-    if let Some(&earliest_arrival) = earliest_arrival_by_stop_id.get(&stop_id) {
-        // WARNING: Consider putting the "<=" back.
-        if arrival_at < earliest_arrival {
-            earliest_arrival_by_stop_id.insert(stop_id, arrival_at);
-            true
-        } else {
-            false
-        }
-    } else {
-        earliest_arrival_by_stop_id.insert(stop_id, arrival_at);
-        true
-    }
-}
-
-fn filter_next_routes(next_routes: Vec<Route>, journeys_to_ignore: &HashSet<i32>) -> Vec<Route> {
-    next_routes
-        .into_iter()
-        .filter(|route| !journeys_to_ignore.contains(&route.last_section().journey_id().unwrap()))
-        .collect()
 }

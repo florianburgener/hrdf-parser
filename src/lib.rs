@@ -59,8 +59,10 @@ pub fn run() -> Result<(), Box<dyn Error>> {
 #[rustfmt::skip]
 fn test_plan_journey(hrdf: &Hrdf, verbose: bool) {
     // 8592688     Chancy, Les Bouveries
+    // 8592690     Chancy, usine
     // 8587031     Avully, village
     // 8508134     Bernex, Vailly
+    // 8587386     Confignon, croisée
     // 8587418     Petit-Lancy, Les Esserts
     // 8592995     Petit-Lancy, Quidort
     // 8587062     Genève, Jonction
@@ -77,6 +79,9 @@ fn test_plan_journey(hrdf: &Hrdf, verbose: bool) {
 
     // Chancy, Les Bouveries => Pont-Céard, gare
     // hrdf.plan_journey(8592688, 8593189, create_date_time(2023, 2, 3, 14, 13), verbose);
+
+    // Chancy, Les Bouveries => Chancy, usine
+    // hrdf.plan_journey(8592688, 8592690, create_date_time(2023, 2, 3, 14, 2), verbose);
 
     // Chancy, Les Bouveries => Petit-Lancy, Les Esserts
     // hrdf.plan_journey(8592688, 8587418, create_date_time(2023, 2, 3, 23, 2), verbose);
@@ -95,7 +100,7 @@ fn test_plan_journey(hrdf: &Hrdf, verbose: bool) {
 
     // Chancy, Les Bouveries => Lausanne
     // hrdf.plan_journey(8592688, 8501120, create_date_time(2023, 2, 3, 14, 31), verbose);
-    // hrdf.plan_journey(8592688, 8501120, create_date_time(2023, 2, 3, 23, 31), verbose);
+    hrdf.plan_journey(8592688, 8501120, create_date_time(2023, 2, 3, 23, 31), verbose);
 
     // Chancy, Les Bouveries => Sevelen, Post
     // hrdf.plan_journey(8592688, 8588197, create_date_time(2023, 2, 1, 6, 31), verbose);
@@ -104,6 +109,9 @@ fn test_plan_journey(hrdf: &Hrdf, verbose: bool) {
 
     // ...
 
+    // Confignon, croisée => Petit-Lancy, Les Esserts
+    // hrdf.plan_journey(8587386, 8587418, create_date_time(2023, 2, 3, 16, 33), verbose);
+
     // Petit-Lancy, Les Esserts => Chancy, Les Bouveries
     // hrdf.plan_journey(8587418, 8592688, create_date_time(2023, 2, 3, 23, 33), verbose);
 
@@ -111,7 +119,7 @@ fn test_plan_journey(hrdf: &Hrdf, verbose: bool) {
     // hrdf.plan_journey(8501008, 8592688, create_date_time(2023, 2, 3, 12, 16), verbose);
 
     // Genève => Genève, Jonction
-    hrdf.plan_journey(8501008, 8587062, create_date_time(2023, 2, 3, 13, 25), verbose);
+    // hrdf.plan_journey(8501008, 8587062, create_date_time(2023, 2, 3, 13, 25), verbose);
 
     // Genève, gare Cornavin => Paris Gare de Lyon
     // hrdf.plan_journey(8587057, 8768600, create_date_time(2023, 2, 3, 13, 25), verbose);

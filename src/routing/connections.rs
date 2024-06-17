@@ -9,6 +9,7 @@ use crate::{
 };
 
 use super::{
+    constants::MAXIMUM_NUMBER_OF_HOURS_TO_CHECK_FOR_NEXT_DEPARTURES,
     models::{Route, RouteSection},
     utils::{
         clone_update_route, get_operating_journeys, get_routes_to_ignore, get_stop_connections,
@@ -19,7 +20,6 @@ use super::{
 pub fn create_initial_routes(
     data_storage: &DataStorage,
     departure_stop_id: i32,
-    arrival_stop_id: i32,
     departure_at: NaiveDateTime,
 ) -> Vec<Route> {
     let mut routes: Vec<Route> =
@@ -31,8 +31,6 @@ pub fn create_initial_routes(
                     journey,
                     departure_stop_id,
                     journey_departure_at,
-                    arrival_stop_id,
-                    false,
                 )
                 .map(|(section, mut visited_stops)| {
                     visited_stops.insert(departure_stop_id);
@@ -63,11 +61,7 @@ pub fn create_initial_routes(
     routes
 }
 
-pub fn get_connections(
-    data_storage: &DataStorage,
-    route: &Route,
-    target_arrival_stop_id: i32,
-) -> Vec<Route> {
+pub fn get_connections(data_storage: &DataStorage, route: &Route) -> Vec<Route> {
     next_departures(
         data_storage,
         route.arrival_stop_id(),
@@ -76,14 +70,7 @@ pub fn get_connections(
     )
     .iter()
     .filter_map(|(journey, journey_departure_at)| {
-        create_route_from_another_route(
-            data_storage,
-            &route,
-            journey.id(),
-            route.last_section().arrival_stop_id(),
-            *journey_departure_at,
-            target_arrival_stop_id,
-        )
+        create_route_from_another_route(data_storage, &route, journey.id(), *journey_departure_at)
     })
     .collect()
 }
@@ -97,12 +84,10 @@ pub fn next_departures<'a>(
     let departure_date_1 = departure_at.date();
     let departure_date_2 = add_1_day(departure_at.date());
 
-    // Pas incroyable :
-
     let journeys_1: Vec<(&Journey, NaiveDateTime)> =
         get_operating_journeys(data_storage, departure_date_1, departure_stop_id)
             .into_iter()
-            .filter(|journey| !journey.is_last_stop(departure_stop_id))
+            .filter(|journey| !journey.is_last_stop(departure_stop_id, true))
             .map(|journey| {
                 let journey_departure_time = journey.departure_time_of(departure_stop_id);
                 let journey_departure_at =
@@ -115,7 +100,7 @@ pub fn next_departures<'a>(
     let journeys_2: Vec<(&Journey, NaiveDateTime)> =
         get_operating_journeys(data_storage, departure_date_2, departure_stop_id)
             .into_iter()
-            .filter(|journey| !journey.is_last_stop(departure_stop_id))
+            .filter(|journey| !journey.is_last_stop(departure_stop_id, true))
             .map(|journey| {
                 let journey_departure_time = journey.departure_time_of(departure_stop_id);
                 let journey_departure_at =
@@ -125,7 +110,11 @@ pub fn next_departures<'a>(
             })
             .collect();
 
-    let max_departure_at = departure_at.checked_add_signed(Duration::hours(4)).unwrap();
+    let max_departure_at = departure_at
+        .checked_add_signed(Duration::hours(
+            MAXIMUM_NUMBER_OF_HOURS_TO_CHECK_FOR_NEXT_DEPARTURES,
+        ))
+        .unwrap();
     let mut journeys: Vec<(&Journey, NaiveDateTime)> = [journeys_1, journeys_2]
         .concat()
         .into_iter()
@@ -157,35 +146,39 @@ pub fn create_route_from_another_route(
     data_storage: &DataStorage,
     route: &Route,
     journey_id: i32,
-    departure_stop_id: i32,
     departure_at: NaiveDateTime,
-    target_arrival_stop_id: i32,
 ) -> Option<Route> {
+    let journey = data_storage.journeys().find(journey_id);
+
+    if journey.is_last_stop(route.last_section().arrival_stop_id(), false) {
+        return None;
+    }
+
     let is_same_journey = route
         .last_section()
         .journey_id()
-        .map_or(false, |journey_id_i| journey_id_i == journey_id);
+        .map_or(false, |id| id == journey_id);
 
     get_next_route_section(
         data_storage,
-        data_storage.journeys().find(journey_id),
-        departure_stop_id,
+        journey,
+        route.last_section().arrival_stop_id(),
         departure_at,
-        target_arrival_stop_id,
-        is_same_journey,
     )
-    .and_then(|(new_sections, new_visited_stops)| {
-        if route.has_visited_any_stops(&new_visited_stops) {
+    .and_then(|(new_section, new_visited_stops)| {
+        if route.has_visited_any_stops(&new_visited_stops)
+            && new_section.arrival_stop_id() != journey.first_stop_id()
+        {
             return None;
         }
 
         let new_route = clone_update_route(route, |cloned_sections, cloned_visited_stops| {
             if is_same_journey {
                 let last_section = cloned_sections.last_mut().unwrap();
-                last_section.set_arrival_stop_id(new_sections.arrival_stop_id());
-                last_section.set_arrival_at(new_sections.arrival_at());
+                last_section.set_arrival_stop_id(new_section.arrival_stop_id());
+                last_section.set_arrival_at(new_section.arrival_at());
             } else {
-                cloned_sections.push(new_sections);
+                cloned_sections.push(new_section);
             }
 
             cloned_visited_stops.extend(new_visited_stops);
@@ -194,19 +187,13 @@ pub fn create_route_from_another_route(
     })
 }
 
-pub fn get_next_route_section(
+fn get_next_route_section(
     data_storage: &DataStorage,
     journey: &Journey,
     departure_stop_id: i32,
     departure_at: NaiveDateTime,
-    target_arrival_stop_id: i32,
-    skip_first_route_entry: bool,
 ) -> Option<(RouteSection, HashSet<i32>)> {
     let mut route_iter = journey.route().iter();
-
-    if skip_first_route_entry {
-        route_iter.next();
-    }
 
     while let Some(route_entry) = route_iter.next() {
         if route_entry.stop_id() == departure_stop_id {
@@ -220,7 +207,7 @@ pub fn get_next_route_section(
         let stop = data_storage.stops().find(route_entry.stop_id());
         visited_stops.insert(stop.id());
 
-        if stop.transfer_flag() != 0 || stop.id() == target_arrival_stop_id {
+        if stop.can_be_used_as_exchange_point() || journey.is_last_stop(stop.id(), false) {
             let arrival_time = journey.arrival_time_of(stop.id());
 
             let arrival_at = if arrival_time >= departure_at.time() {
@@ -243,34 +230,4 @@ pub fn get_next_route_section(
     }
 
     None
-}
-
-pub fn get_connections_from_explorable_nearby_stops(
-    data_storage: &DataStorage,
-    route: &Route,
-) -> Vec<Route> {
-    let stop_connections = match get_stop_connections(data_storage, route.arrival_stop_id()) {
-        Some(stop_connections) => stop_connections,
-        None => return Vec::new(),
-    };
-
-    stop_connections
-        .into_iter()
-        .filter(|stop_connection| !route.visited_stops().contains(&stop_connection.stop_id_2()))
-        .map(|stop_connection| {
-            clone_update_route(route, |cloned_sections, cloned_visited_stops| {
-                cloned_sections.push(RouteSection::new(
-                    None,
-                    stop_connection.stop_id_1(),
-                    stop_connection.stop_id_2(),
-                    route
-                        .arrival_at()
-                        .checked_add_signed(Duration::minutes(stop_connection.duration().into()))
-                        .unwrap(),
-                    Some(stop_connection.duration()),
-                ));
-                cloned_visited_stops.insert(stop_connection.stop_id_2());
-            })
-        })
-        .collect()
 }

@@ -67,7 +67,7 @@ impl RouteSection {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Route {
     sections: Vec<RouteSection>,
     visited_stops: HashSet<i32>,
@@ -80,6 +80,8 @@ impl Route {
             visited_stops,
         }
     }
+
+    // Getters/Setters
 
     pub fn sections(&self) -> &Vec<RouteSection> {
         &self.sections
@@ -94,6 +96,11 @@ impl Route {
     pub fn last_section(&self) -> &RouteSection {
         // A route always contains at least one section.
         self.sections().last().unwrap()
+    }
+
+    pub fn last_section_mut(&mut self) -> &mut RouteSection {
+        // A route always contains at least one section.
+        self.sections.last_mut().unwrap()
     }
 
     pub fn arrival_stop_id(&self) -> i32 {
@@ -117,5 +124,45 @@ impl Route {
 
     pub fn count_connections(&self) -> usize {
         self.sections_having_journey().len()
+    }
+}
+
+#[derive(Copy, Clone, Eq, PartialEq)]
+pub enum RoutingAlgorithmMode {
+    SolveFromDepartureStopToArrivalStop,
+    // SolveFromDepartureStopToReachableArrivalStops,
+}
+
+pub struct RoutingAlgorithmArgs {
+    mode: RoutingAlgorithmMode,
+    arrival_stop_id: Option<i32>,
+}
+
+impl RoutingAlgorithmArgs {
+    pub fn new(mode: RoutingAlgorithmMode, arrival_stop_id: Option<i32>) -> Self {
+        Self {
+            mode,
+            arrival_stop_id,
+        }
+    }
+
+    pub fn solve_from_departure_stop_to_arrival_stop(arrival_stop_id: i32) -> Self {
+        Self::new(
+            RoutingAlgorithmMode::SolveFromDepartureStopToArrivalStop,
+            Some(arrival_stop_id),
+        )
+    }
+
+    // pub fn create_solve_one_to_many() {}
+
+    // Getters/Setters
+
+    pub fn mode(&self) -> RoutingAlgorithmMode {
+        self.mode
+    }
+
+    /// Do not call this function if you are not sure that arrival_stop_id is not None.
+    pub fn arrival_stop_id(&self) -> i32 {
+        self.arrival_stop_id.unwrap()
     }
 }

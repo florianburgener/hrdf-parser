@@ -348,8 +348,20 @@ impl Journey {
             .map(|bit_field_id| data_storage.bit_fields().find(bit_field_id))
     }
 
-    pub fn is_last_stop(&self, stop_id: i32) -> bool {
-        stop_id == self.route().last().unwrap().stop_id()
+    pub fn first_stop_id(&self) -> i32 {
+        self.route.first().unwrap().stop_id()
+    }
+
+    pub fn last_stop_id(&self) -> i32 {
+        self.route.last().unwrap().stop_id()
+    }
+
+    pub fn is_last_stop(&self, stop_id: i32, ignore_loop: bool) -> bool {
+        if ignore_loop && self.first_stop_id() == self.last_stop_id() {
+            false
+        } else {
+            stop_id == self.last_stop_id()
+        }
     }
 
     pub fn count_stops(&self, departure_stop_id: i32, arrival_stop_id: i32) -> i32 {
@@ -776,6 +788,10 @@ impl Stop {
 
     pub fn add_boarding_area(&mut self, value: String) {
         self.boarding_areas.push(value);
+    }
+
+    pub fn can_be_used_as_exchange_point(&self) -> bool {
+        self.transfer_flag() != 0
     }
 }
 
