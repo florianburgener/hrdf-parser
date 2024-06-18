@@ -4,7 +4,9 @@
 // ---
 // Files not used by the parser:
 // BHFART
-use std::{collections::HashMap, error::Error};
+use std::error::Error;
+
+use rustc_hash::FxHashMap;
 
 use crate::{
     models::{Coordinate, CoordinateType, Model, Stop},
@@ -53,7 +55,7 @@ pub fn parse() -> Result<SimpleResourceStorage<Stop>, Box<dyn Error>> {
 
 fn load_coordinates(
     coordinate_type: CoordinateType,
-    data: &mut HashMap<i32, Stop>,
+    data: &mut FxHashMap<i32, Stop>,
 ) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -79,7 +81,7 @@ fn load_coordinates(
     Ok(())
 }
 
-fn load_transfer_priorities(data: &mut HashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
+fn load_transfer_priorities(data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row contains the changing priority.
@@ -98,7 +100,7 @@ fn load_transfer_priorities(data: &mut HashMap<i32, Stop>) -> Result<(), Box<dyn
     Ok(())
 }
 
-fn load_transfer_flags(data: &mut HashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
+fn load_transfer_flags(data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row contains the changing flag.
@@ -116,7 +118,7 @@ fn load_transfer_flags(data: &mut HashMap<i32, Stop>) -> Result<(), Box<dyn Erro
     Ok(())
 }
 
-fn load_transfer_times(data: &mut HashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
+fn load_transfer_times(data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row contains the changing time.
@@ -135,7 +137,7 @@ fn load_transfer_times(data: &mut HashMap<i32, Stop>) -> Result<(), Box<dyn Erro
     Ok(())
 }
 
-fn load_connections(data: &mut HashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
+fn load_connections(data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
     const ROW_C: i32 = 3;
@@ -163,7 +165,7 @@ fn load_connections(data: &mut HashMap<i32, Stop>) -> Result<(), Box<dyn Error>>
     Ok(())
 }
 
-fn load_descriptions(data: &mut HashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
+fn load_descriptions(data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
     const ROW_C: i32 = 3;
@@ -218,7 +220,7 @@ fn create_instance(mut values: Vec<ParsedValue>) -> Stop {
 fn set_coordinate(
     mut values: Vec<ParsedValue>,
     coordinate_type: CoordinateType,
-    data: &mut HashMap<i32, Stop>,
+    data: &mut FxHashMap<i32, Stop>,
 ) {
     let stop_id: i32 = values.remove(0).into();
     let mut xy1: f64 = values.remove(0).into();
@@ -239,7 +241,7 @@ fn set_coordinate(
     }
 }
 
-fn set_transfer_priority(mut values: Vec<ParsedValue>, data: &mut HashMap<i32, Stop>) {
+fn set_transfer_priority(mut values: Vec<ParsedValue>, data: &mut FxHashMap<i32, Stop>) {
     let stop_id: i32 = values.remove(0).into();
     let transfer_priority: i16 = values.remove(0).into();
 
@@ -247,7 +249,7 @@ fn set_transfer_priority(mut values: Vec<ParsedValue>, data: &mut HashMap<i32, S
     stop.set_transfer_priority(transfer_priority);
 }
 
-fn set_transfer_flag(mut values: Vec<ParsedValue>, data: &mut HashMap<i32, Stop>) {
+fn set_transfer_flag(mut values: Vec<ParsedValue>, data: &mut FxHashMap<i32, Stop>) {
     let stop_id: i32 = values.remove(0).into();
     let transfer_flag: i16 = values.remove(0).into();
 
@@ -255,7 +257,7 @@ fn set_transfer_flag(mut values: Vec<ParsedValue>, data: &mut HashMap<i32, Stop>
     stop.set_transfer_flag(transfer_flag);
 }
 
-fn set_transfer_time(mut values: Vec<ParsedValue>, data: &mut HashMap<i32, Stop>) {
+fn set_transfer_time(mut values: Vec<ParsedValue>, data: &mut FxHashMap<i32, Stop>) {
     let stop_id: i32 = values.remove(0).into();
     let transfer_time_inter_city: i16 = values.remove(0).into();
     let transfer_time_other: i16 = values.remove(0).into();
@@ -273,7 +275,7 @@ fn set_transfer_time(mut values: Vec<ParsedValue>, data: &mut HashMap<i32, Stop>
     }
 }
 
-fn set_connections(mut values: Vec<ParsedValue>, data: &mut HashMap<i32, Stop>) {
+fn set_connections(mut values: Vec<ParsedValue>, data: &mut FxHashMap<i32, Stop>) {
     let stop_id: i32 = values.remove(0).into();
     let connections: String = values.remove(0).into();
 
@@ -283,7 +285,7 @@ fn set_connections(mut values: Vec<ParsedValue>, data: &mut HashMap<i32, Stop>) 
     stop.set_connections(connections);
 }
 
-fn set_restrictions(mut values: Vec<ParsedValue>, data: &mut HashMap<i32, Stop>) {
+fn set_restrictions(mut values: Vec<ParsedValue>, data: &mut FxHashMap<i32, Stop>) {
     let stop_id: i32 = values.remove(0).into();
     let restrictions: i16 = values.remove(0).into();
 
@@ -291,7 +293,7 @@ fn set_restrictions(mut values: Vec<ParsedValue>, data: &mut HashMap<i32, Stop>)
     stop.set_restrictions(restrictions);
 }
 
-fn set_sloid(mut values: Vec<ParsedValue>, data: &mut HashMap<i32, Stop>) {
+fn set_sloid(mut values: Vec<ParsedValue>, data: &mut FxHashMap<i32, Stop>) {
     let stop_id: i32 = values.remove(0).into();
     let sloid: String = values.remove(0).into();
 
@@ -299,7 +301,7 @@ fn set_sloid(mut values: Vec<ParsedValue>, data: &mut HashMap<i32, Stop>) {
     stop.set_sloid(sloid);
 }
 
-fn add_boarding_area(mut values: Vec<ParsedValue>, data: &mut HashMap<i32, Stop>) {
+fn add_boarding_area(mut values: Vec<ParsedValue>, data: &mut FxHashMap<i32, Stop>) {
     let stop_id: i32 = values.remove(0).into();
     let sloid: String = values.remove(0).into();
 
@@ -314,7 +316,7 @@ fn add_boarding_area(mut values: Vec<ParsedValue>, data: &mut HashMap<i32, Stop>
 fn parse_designations(
     designations: String,
 ) -> (String, Option<String>, Option<String>, Option<Vec<String>>) {
-    let designations: HashMap<i32, Vec<String>> = designations
+    let designations: FxHashMap<i32, Vec<String>> = designations
         .split('>')
         .filter(|&s| !s.is_empty())
         .map(|s| {
@@ -326,7 +328,7 @@ fn parse_designations(
 
             (k, v)
         })
-        .fold(HashMap::new(), |mut acc, (k, v)| {
+        .fold(FxHashMap::default(), |mut acc, (k, v)| {
             acc.entry(k).or_insert(Vec::new()).push(v);
             acc
         });

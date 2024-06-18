@@ -1,6 +1,5 @@
-use std::collections::HashSet;
-
 use chrono::NaiveDateTime;
+use rustc_hash::FxHashSet;
 
 use crate::{models::Journey, storage::DataStorage};
 
@@ -70,11 +69,11 @@ impl RouteSection {
 #[derive(Debug, Clone)]
 pub struct Route {
     sections: Vec<RouteSection>,
-    visited_stops: HashSet<i32>,
+    visited_stops: FxHashSet<i32>,
 }
 
 impl Route {
-    pub fn new(sections: Vec<RouteSection>, visited_stops: HashSet<i32>) -> Self {
+    pub fn new(sections: Vec<RouteSection>, visited_stops: FxHashSet<i32>) -> Self {
         Self {
             sections,
             visited_stops,
@@ -87,7 +86,7 @@ impl Route {
         &self.sections
     }
 
-    pub fn visited_stops(&self) -> &HashSet<i32> {
+    pub fn visited_stops(&self) -> &FxHashSet<i32> {
         &self.visited_stops
     }
 
@@ -111,7 +110,7 @@ impl Route {
         self.last_section().arrival_at()
     }
 
-    pub fn has_visited_any_stops(&self, stops: &HashSet<i32>) -> bool {
+    pub fn has_visited_any_stops(&self, stops: &FxHashSet<i32>) -> bool {
         !self.visited_stops().is_disjoint(stops)
     }
 

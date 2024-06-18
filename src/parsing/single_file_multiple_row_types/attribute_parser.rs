@@ -4,7 +4,9 @@
 // ---
 // Files not used by the parser:
 // ATTRIBUT_DE, ATTRIBUT_EN, ATTRIBUT_FR, ATTRIBUT_IT
-use std::{collections::HashMap, error::Error, str::FromStr};
+use std::{error::Error, str::FromStr};
+
+use rustc_hash::FxHashMap;
 
 use crate::{
     models::{Attribute, Language, Model},
@@ -16,7 +18,8 @@ use crate::{
     utils::AutoIncrement,
 };
 
-pub fn parse() -> Result<(SimpleResourceStorage<Attribute>, HashMap<String, i32>), Box<dyn Error>> {
+pub fn parse() -> Result<(SimpleResourceStorage<Attribute>, FxHashMap<String, i32>), Box<dyn Error>>
+{
     println!("Parsing ATTRIBUT...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -50,8 +53,8 @@ pub fn parse() -> Result<(SimpleResourceStorage<Attribute>, HashMap<String, i32>
     let parser = FileParser::new("data/ATTRIBUT", row_parser)?;
 
     let auto_increment = AutoIncrement::new();
-    let mut data = HashMap::new();
-    let mut pk_type_converter = HashMap::new();
+    let mut data = FxHashMap::default();
+    let mut pk_type_converter = FxHashMap::default();
 
     let mut current_language = Language::default();
 
@@ -78,7 +81,7 @@ pub fn parse() -> Result<(SimpleResourceStorage<Attribute>, HashMap<String, i32>
 fn create_instance(
     mut values: Vec<ParsedValue>,
     auto_increment: &AutoIncrement,
-    pk_type_converter: &mut HashMap<String, i32>,
+    pk_type_converter: &mut FxHashMap<String, i32>,
 ) -> Attribute {
     let designation: String = values.remove(0).into();
     let stop_scope: i16 = values.remove(0).into();
@@ -99,8 +102,8 @@ fn create_instance(
 
 fn set_description(
     mut values: Vec<ParsedValue>,
-    pk_type_converter: &HashMap<String, i32>,
-    data: &mut HashMap<i32, Attribute>,
+    pk_type_converter: &FxHashMap<String, i32>,
+    data: &mut FxHashMap<i32, Attribute>,
     language: Language,
 ) {
     let legacy_id: String = values.remove(0).into();

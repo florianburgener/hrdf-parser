@@ -1,7 +1,9 @@
 // 4 file(s).
 // File(s) read by the parser:
 // INFOTEXT_DE, INFOTEXT_EN, INFOTEXT_FR, INFOTEXT_IT
-use std::{collections::HashMap, error::Error};
+use std::error::Error;
+
+use rustc_hash::FxHashMap;
 
 use crate::{
     models::{InformationText, Language, Model},
@@ -39,7 +41,7 @@ pub fn parse() -> Result<SimpleResourceStorage<InformationText>, Box<dyn Error>>
 }
 
 fn load_content(
-    data: &mut HashMap<i32, InformationText>,
+    data: &mut FxHashMap<i32, InformationText>,
     language: Language,
 ) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
@@ -78,11 +80,13 @@ fn create_instance(mut values: Vec<ParsedValue>) -> InformationText {
 
 fn set_content(
     mut values: Vec<ParsedValue>,
-    data: &mut HashMap<i32, InformationText>,
+    data: &mut FxHashMap<i32, InformationText>,
     language: Language,
 ) {
     let id: i32 = values.remove(0).into();
     let description: String = values.remove(0).into();
 
-    data.get_mut(&id).unwrap().set_content(language, &description);
+    data.get_mut(&id)
+        .unwrap()
+        .set_content(language, &description);
 }

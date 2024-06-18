@@ -3,7 +3,9 @@
 // GLEIS, GLEIS_LV95, GLEIS_WGS
 // ---
 // Note: this parser collects both the Platform and JourneyPlatform resources.
-use std::{collections::HashMap, error::Error};
+use std::error::Error;
+
+use rustc_hash::FxHashMap;
 
 use crate::{
     models::{Coordinate, CoordinateType, JourneyPlatform, Model, Platform},
@@ -16,7 +18,7 @@ use crate::{
 };
 
 pub fn parse(
-    journeys_pk_type_converter: &HashMap<(i32, String), i32>,
+    journeys_pk_type_converter: &FxHashMap<(i32, String), i32>,
 ) -> Result<
     (
         SimpleResourceStorage<JourneyPlatform>,
@@ -50,7 +52,7 @@ pub fn parse(
 
     let auto_increment = AutoIncrement::new();
     let mut platforms = Vec::new();
-    let mut platforms_pk_type_converter = HashMap::new();
+    let mut platforms_pk_type_converter = FxHashMap::default();
 
     let mut bytes_offset = 0;
     let mut journey_platform = Vec::new();
@@ -102,8 +104,8 @@ pub fn parse(
 fn load_coordinates_for_platforms(
     coordinate_type: CoordinateType,
     bytes_offset: u64,
-    pk_type_converter: &HashMap<(i32, i32), i32>,
-    data: &mut HashMap<i32, Platform>,
+    pk_type_converter: &FxHashMap<(i32, i32), i32>,
+    data: &mut FxHashMap<i32, Platform>,
 ) -> Result<(), Box<dyn Error>> {
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -150,8 +152,8 @@ fn load_coordinates_for_platforms(
 
 fn create_journey_platform(
     mut values: Vec<ParsedValue>,
-    journeys_pk_type_converter: &HashMap<(i32, String), i32>,
-    platforms_pk_type_converter: &HashMap<(i32, i32), i32>,
+    journeys_pk_type_converter: &FxHashMap<(i32, String), i32>,
+    platforms_pk_type_converter: &FxHashMap<(i32, i32), i32>,
 ) -> JourneyPlatform {
     let stop_id: i32 = values.remove(0).into();
     let journey_id: i32 = values.remove(0).into();
@@ -174,7 +176,7 @@ fn create_journey_platform(
 fn create_platform(
     mut values: Vec<ParsedValue>,
     auto_increment: &AutoIncrement,
-    platforms_pk_type_converter: &mut HashMap<(i32, i32), i32>,
+    platforms_pk_type_converter: &mut FxHashMap<(i32, i32), i32>,
 ) -> Platform {
     let stop_id: i32 = values.remove(0).into();
     let index: i32 = values.remove(0).into();
@@ -190,8 +192,8 @@ fn create_platform(
 fn platform_set_sloid(
     mut values: Vec<ParsedValue>,
     coordinate_type: CoordinateType,
-    pk_type_converter: &HashMap<(i32, i32), i32>,
-    data: &mut HashMap<i32, Platform>,
+    pk_type_converter: &FxHashMap<(i32, i32), i32>,
+    data: &mut FxHashMap<i32, Platform>,
 ) {
     // The SLOID is processed only when loading LV95 coordinates.
     if coordinate_type == CoordinateType::LV95 {
@@ -208,8 +210,8 @@ fn platform_set_sloid(
 fn platform_set_coordinate(
     mut values: Vec<ParsedValue>,
     coordinate_type: CoordinateType,
-    pk_type_converter: &HashMap<(i32, i32), i32>,
-    data: &mut HashMap<i32, Platform>,
+    pk_type_converter: &FxHashMap<(i32, i32), i32>,
+    data: &mut FxHashMap<i32, Platform>,
 ) {
     let stop_id: i32 = values.remove(0).into();
     let index: i32 = values.remove(0).into();
@@ -241,7 +243,7 @@ fn platform_set_coordinate(
 fn parse_platform_data(mut platform_data: String) -> (String, Option<String>) {
     platform_data = format!("{} ", platform_data);
     let data = platform_data.split("' ").filter(|&s| !s.is_empty()).fold(
-        HashMap::new(),
+        FxHashMap::default(),
         |mut acc, item| {
             let parts: Vec<&str> = item.split(" '").collect();
             acc.insert(parts[0], parts[1]);

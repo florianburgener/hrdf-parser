@@ -1,9 +1,10 @@
 // 1 file(s).
 // File(s) read by the parser:
 // FEIERTAG
-use std::{collections::HashMap, error::Error, str::FromStr};
+use std::{error::Error, str::FromStr};
 
 use chrono::NaiveDate;
+use rustc_hash::FxHashMap;
 
 use crate::{
     models::{Holiday, Language, Model},
@@ -53,7 +54,7 @@ fn create_instance(mut values: Vec<ParsedValue>, auto_increment: &AutoIncrement)
 // --- Helper Functions
 // ------------------------------------------------------------------------------------------------
 
-fn parse_name_translations(name_translations: String) -> HashMap<Language, String> {
+fn parse_name_translations(name_translations: String) -> FxHashMap<Language, String> {
     name_translations
         .split('>')
         .filter(|&s| !s.is_empty())
@@ -65,7 +66,7 @@ fn parse_name_translations(name_translations: String) -> HashMap<Language, Strin
 
             (k, v)
         })
-        .fold(HashMap::new(), |mut acc, (k, v)| {
+        .fold(FxHashMap::default(), |mut acc, (k, v)| {
             acc.insert(Language::from_str(&k).unwrap(), v);
             acc
         })

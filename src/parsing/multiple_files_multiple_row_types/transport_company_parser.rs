@@ -1,9 +1,10 @@
 // 4 file(s).
 // File(s) read by the parser:
 // BETRIEB_DE, BETRIEB_EN, BETRIEB_FR, BETRIEB_IT
-use std::{collections::HashMap, error::Error};
+use std::error::Error;
 
 use regex::Regex;
+use rustc_hash::FxHashMap;
 
 use crate::{
     models::{Language, Model, TransportCompany},
@@ -56,7 +57,7 @@ pub fn parse() -> Result<SimpleResourceStorage<TransportCompany>, Box<dyn Error>
 }
 
 fn load_designations(
-    data: &mut HashMap<i32, TransportCompany>,
+    data: &mut FxHashMap<i32, TransportCompany>,
     language: Language,
 ) -> Result<(), Box<dyn Error>> {
     const ROW_A: i32 = 1;
@@ -104,7 +105,7 @@ fn create_instance(mut values: Vec<ParsedValue>) -> TransportCompany {
 
 fn set_designations(
     mut values: Vec<ParsedValue>,
-    data: &mut HashMap<i32, TransportCompany>,
+    data: &mut FxHashMap<i32, TransportCompany>,
     language: Language,
 ) {
     let id: i32 = values.remove(0).into();

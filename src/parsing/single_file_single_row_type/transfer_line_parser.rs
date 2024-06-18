@@ -1,7 +1,9 @@
 // 1 file(s).
 // File(s) read by the parser:
 // UMSTEIGL
-use std::{collections::HashMap, error::Error, str::FromStr};
+use std::{error::Error, str::FromStr};
+
+use rustc_hash::FxHashMap;
 
 use crate::{
     models::{DirectionType, Model, TransferTimeLine},
@@ -11,7 +13,7 @@ use crate::{
 };
 
 pub fn parse(
-    transport_types_pk_type_converter: &HashMap<String, i32>,
+    transport_types_pk_type_converter: &FxHashMap<String, i32>,
 ) -> Result<SimpleResourceStorage<TransferTimeLine>, Box<dyn Error>> {
     println!("Parsing UMSTEIGL...");
     #[rustfmt::skip]
@@ -53,7 +55,7 @@ pub fn parse(
 fn create_instance(
     mut values: Vec<ParsedValue>,
     auto_increment: &AutoIncrement,
-    transport_types_pk_type_converter: &HashMap<String, i32>,
+    transport_types_pk_type_converter: &FxHashMap<String, i32>,
 ) -> TransferTimeLine {
     let stop_id: i32 = values.remove(0).into();
     let administration_1: String = values.remove(0).into();

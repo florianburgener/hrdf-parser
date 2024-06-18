@@ -1,9 +1,10 @@
 use std::{
-    collections::{BTreeSet, HashMap},
+    collections::BTreeSet,
     hash::{DefaultHasher, Hash, Hasher},
 };
 
 use chrono::{NaiveDate, NaiveTime};
+use rustc_hash::FxHashMap;
 use serde::{Deserialize, Serialize};
 use strum_macros::{self, Display, EnumString};
 
@@ -19,8 +20,8 @@ pub trait Model<M: Model<M>> {
 
     fn id(&self) -> M::K;
 
-    fn vec_to_map(data: Vec<M>) -> HashMap<M::K, M> {
-        data.into_iter().fold(HashMap::new(), |mut acc, item| {
+    fn vec_to_map(data: Vec<M>) -> FxHashMap<M::K, M> {
+        data.into_iter().fold(FxHashMap::default(), |mut acc, item| {
             acc.insert(item.id(), item);
             acc
         })
@@ -50,7 +51,7 @@ pub struct Attribute {
     stop_scope: i16,
     main_sorting_priority: i16,
     secondary_sorting_priority: i16,
-    description: HashMap<Language, String>,
+    description: FxHashMap<Language, String>,
 }
 
 impl_Model!(Attribute);
@@ -69,7 +70,7 @@ impl Attribute {
             stop_scope,
             main_sorting_priority,
             secondary_sorting_priority,
-            description: HashMap::new(),
+            description: FxHashMap::default(),
         }
     }
 
@@ -252,13 +253,13 @@ pub enum DirectionType {
 pub struct Holiday {
     id: i32,
     date: NaiveDate,
-    name: HashMap<Language, String>,
+    name: FxHashMap<Language, String>,
 }
 
 impl_Model!(Holiday);
 
 impl Holiday {
-    pub fn new(id: i32, date: NaiveDate, name: HashMap<Language, String>) -> Self {
+    pub fn new(id: i32, date: NaiveDate, name: FxHashMap<Language, String>) -> Self {
         Self { id, date, name }
     }
 
@@ -274,7 +275,7 @@ impl Holiday {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct InformationText {
     id: i32,
-    content: HashMap<Language, String>,
+    content: FxHashMap<Language, String>,
 }
 
 impl_Model!(InformationText);
@@ -283,7 +284,7 @@ impl InformationText {
     pub fn new(id: i32) -> Self {
         Self {
             id,
-            content: HashMap::new(),
+            content: FxHashMap::default(),
         }
     }
 
@@ -304,7 +305,7 @@ impl InformationText {
 pub struct Journey {
     id: i32,
     administration: String,
-    metadata: HashMap<JourneyMetadataType, Vec<JourneyMetadataEntry>>,
+    metadata: FxHashMap<JourneyMetadataType, Vec<JourneyMetadataEntry>>,
     route: Vec<JourneyRouteEntry>,
 }
 
@@ -315,14 +316,14 @@ impl Journey {
         Self {
             id,
             administration,
-            metadata: HashMap::new(),
+            metadata: FxHashMap::default(),
             route: Vec::new(),
         }
     }
 
     // Getters/Setters
 
-    fn metadata(&self) -> &HashMap<JourneyMetadataType, Vec<JourneyMetadataEntry>> {
+    fn metadata(&self) -> &FxHashMap<JourneyMetadataType, Vec<JourneyMetadataEntry>> {
         &self.metadata
     }
 
@@ -340,11 +341,13 @@ impl Journey {
         self.route.push(entry);
     }
 
-    pub fn bit_field<'a>(&'a self, data_storage: &'a DataStorage) -> Option<&BitField> {
+    pub fn bit_field_id(&self) -> Option<i32> {
         let entry = &self.metadata().get(&JourneyMetadataType::BitField).unwrap()[0];
+        entry.bit_field_id
+    }
 
-        entry
-            .bit_field_id
+    pub fn bit_field<'a>(&'a self, data_storage: &'a DataStorage) -> Option<&BitField> {
+        self.bit_field_id()
             .map(|bit_field_id| data_storage.bit_fields().find(bit_field_id))
     }
 
@@ -1090,9 +1093,9 @@ impl TransferTimeLine {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TransportCompany {
     id: i32,
-    short_name: HashMap<Language, String>,
-    long_name: HashMap<Language, String>,
-    full_name: HashMap<Language, String>,
+    short_name: FxHashMap<Language, String>,
+    long_name: FxHashMap<Language, String>,
+    full_name: FxHashMap<Language, String>,
     administrations: Vec<String>,
 }
 
@@ -1102,9 +1105,9 @@ impl TransportCompany {
     pub fn new(id: i32, administrations: Vec<String>) -> Self {
         Self {
             id,
-            short_name: HashMap::new(),
-            long_name: HashMap::new(),
-            full_name: HashMap::new(),
+            short_name: FxHashMap::default(),
+            long_name: FxHashMap::default(),
+            full_name: FxHashMap::default(),
             administrations,
         }
     }
@@ -1140,8 +1143,8 @@ pub struct TransportType {
     short_name: String,
     surchage: i16,
     flag: String,
-    product_class_name: HashMap<Language, String>,
-    category_name: HashMap<Language, String>,
+    product_class_name: FxHashMap<Language, String>,
+    category_name: FxHashMap<Language, String>,
 }
 
 impl_Model!(TransportType);
@@ -1166,8 +1169,8 @@ impl TransportType {
             short_name,
             surchage,
             flag,
-            product_class_name: HashMap::new(),
-            category_name: HashMap::new(),
+            product_class_name: FxHashMap::default(),
+            category_name: FxHashMap::default(),
         }
     }
 

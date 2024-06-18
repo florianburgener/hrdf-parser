@@ -1,6 +1,5 @@
-use std::collections::{HashMap, HashSet};
-
 use chrono::NaiveDateTime;
+use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::{storage::DataStorage, utils::sub_1_day};
 
@@ -17,11 +16,11 @@ pub fn compute_routing(
     departure_at: NaiveDateTime,
     verbose: bool,
     args: RoutingAlgorithmArgs,
-) -> HashMap<i32, Route> {
+) -> FxHashMap<i32, Route> {
     let mut routes = create_initial_routes(data_storage, departure_stop_id, departure_at);
-    let mut journeys_to_ignore = HashSet::new();
-    let mut earliest_arrival_by_stop_id = HashMap::new();
-    let mut solutions = HashMap::new();
+    let mut journeys_to_ignore = FxHashSet::default();
+    let mut earliest_arrival_by_stop_id = FxHashMap::default();
+    let mut solutions = FxHashMap::default();
 
     for _ in 0..MAXIMUM_NUMBER_OF_EXPLORABLE_CONNECTIONS {
         if verbose {
@@ -77,7 +76,7 @@ pub fn compute_routing(
 fn can_continue_exploration_one_to_one(
     data_storage: &DataStorage,
     route: &Route,
-    solutions: &mut HashMap<i32, Route>,
+    solutions: &mut FxHashMap<i32, Route>,
     arrival_stop_id: i32,
 ) -> bool {
     let solution = solutions.get(&arrival_stop_id);
@@ -102,13 +101,13 @@ fn can_continue_exploration_one_to_one(
 fn can_continue_exploration_one_to_many(
     data_storage: &DataStorage,
     route: &Route,
-    solutions: &mut HashMap<i32, Route>,
+    solutions: &mut FxHashMap<i32, Route>,
     time_limit: NaiveDateTime,
 ) -> bool {
     fn evaluate_candidate(
         data_storage: &DataStorage,
         candidate: Route,
-        solutions: &mut HashMap<i32, Route>,
+        solutions: &mut FxHashMap<i32, Route>,
         time_limit: NaiveDateTime,
     ) {
         if candidate.arrival_at() > time_limit {

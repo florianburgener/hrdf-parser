@@ -1,6 +1,5 @@
-use std::collections::HashSet;
-
 use chrono::NaiveDate;
+use rustc_hash::FxHashSet;
 
 use crate::{
     models::{Journey, StopConnection},
@@ -11,7 +10,7 @@ use super::models::{Route, RouteSection};
 
 pub fn clone_update_route<F>(route: &Route, f: F) -> Route
 where
-    F: FnOnce(&mut Vec<RouteSection>, &mut HashSet<i32>),
+    F: FnOnce(&mut Vec<RouteSection>, &mut FxHashSet<i32>),
 {
     let mut cloned_sections = route.sections().clone();
     let mut cloned_visited_stops = route.visited_stops().clone();
@@ -47,12 +46,13 @@ pub fn get_operating_journeys(
         })
 }
 
-pub fn get_routes_to_ignore(data_storage: &DataStorage, route: &Route) -> HashSet<u64> {
+pub fn get_routes_to_ignore(data_storage: &DataStorage, route: &Route) -> FxHashSet<u64> {
     route
         .sections()
         .iter()
         .filter_map(|section| {
-            section.journey(data_storage)
+            section
+                .journey(data_storage)
                 .and_then(|journey| journey.hash_route(route.arrival_stop_id()))
         })
         .collect()

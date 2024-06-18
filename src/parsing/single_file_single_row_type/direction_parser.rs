@@ -1,7 +1,9 @@
 // 1 file(s).
 // File(s) read by the parser:
 // RICHTUNG
-use std::{collections::HashMap, error::Error};
+use std::error::Error;
+
+use rustc_hash::FxHashMap;
 
 use crate::{
     models::{Direction, Model},
@@ -9,7 +11,8 @@ use crate::{
     storage::SimpleResourceStorage,
 };
 
-pub fn parse() -> Result<(SimpleResourceStorage<Direction>, HashMap<String, i32>), Box<dyn Error>> {
+pub fn parse() -> Result<(SimpleResourceStorage<Direction>, FxHashMap<String, i32>), Box<dyn Error>>
+{
     println!("Parsing RICHTUNG...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -21,7 +24,7 @@ pub fn parse() -> Result<(SimpleResourceStorage<Direction>, HashMap<String, i32>
     ]);
     let parser = FileParser::new("data/RICHTUNG", row_parser)?;
 
-    let mut pk_type_converter = HashMap::new();
+    let mut pk_type_converter = FxHashMap::default();
 
     let data = parser
         .parse()
@@ -38,7 +41,7 @@ pub fn parse() -> Result<(SimpleResourceStorage<Direction>, HashMap<String, i32>
 
 fn create_instance(
     mut values: Vec<ParsedValue>,
-    pk_type_converter: &mut HashMap<String, i32>,
+    pk_type_converter: &mut FxHashMap<String, i32>,
 ) -> Direction {
     let legacy_id: String = values.remove(0).into();
     let name: String = values.remove(0).into();

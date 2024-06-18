@@ -47,7 +47,6 @@ Inutile : ATTRIBUT_DE, ATTRIBUT_EN, ATTRIBUT_FR, ATTRIBUT_IT, BHFART, GREENZHLT,
 
 TODO :
 * Lib :
-  * Algorithme pour trouver tous les arrêts dans un temps max
   * Essayer d'améliorer les perfomances (intersection)
   * Changer comment les déplacements à pied sont stocker
   * Temps de correspondance

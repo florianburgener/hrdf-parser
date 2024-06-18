@@ -1,7 +1,9 @@
 // 0.5 file(s).
 // File(s) read by the parser:
 // METABHF
-use std::{collections::HashMap, error::Error};
+use std::error::Error;
+
+use rustc_hash::FxHashMap;
 
 use crate::{
     models::{Model, StopConnection},
@@ -14,7 +16,7 @@ use crate::{
 };
 
 pub fn parse(
-    attributes_pk_type_converter: &HashMap<String, i32>,
+    attributes_pk_type_converter: &FxHashMap<String, i32>,
 ) -> Result<StopConnectionStorage, Box<dyn Error>> {
     println!("Parsing METABHF 2/2...");
     const ROW_A: i32 = 1;
@@ -76,7 +78,7 @@ fn create_instance(mut values: Vec<ParsedValue>, auto_increment: &AutoIncrement)
 fn set_attribute(
     mut values: Vec<ParsedValue>,
     current_instance: &mut StopConnection,
-    attributes_pk_type_converter: &HashMap<String, i32>,
+    attributes_pk_type_converter: &FxHashMap<String, i32>,
 ) {
     let attribute_designation: String = values.remove(0).into();
     let attribute_id = *attributes_pk_type_converter

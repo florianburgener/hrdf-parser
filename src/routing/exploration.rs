@@ -1,6 +1,5 @@
-use std::collections::{HashMap, HashSet};
-
 use chrono::NaiveDateTime;
+use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::{storage::DataStorage, utils::add_minutes_to_date_time};
 
@@ -13,8 +12,8 @@ use super::{
 pub fn explore_routes<F>(
     data_storage: &DataStorage,
     mut routes: Vec<Route>,
-    journeys_to_ignore: &mut HashSet<i32>,
-    earliest_arrival_by_stop_id: &mut HashMap<i32, NaiveDateTime>,
+    journeys_to_ignore: &mut FxHashSet<i32>,
+    earliest_arrival_by_stop_id: &mut FxHashMap<i32, NaiveDateTime>,
     mut can_continue_exploration: F,
 ) -> Vec<Route>
 where
@@ -53,7 +52,7 @@ where
 fn explore_next_section(
     data_storage: &DataStorage,
     route: &Route,
-    journeys_to_ignore: &mut HashSet<i32>,
+    journeys_to_ignore: &mut FxHashSet<i32>,
     routes: &mut Vec<Route>,
 ) {
     if route.last_section().journey_id().is_none() {
@@ -80,7 +79,7 @@ fn explore_next_section(
 fn can_explore_connections(
     data_storage: &DataStorage,
     route: &Route,
-    earliest_arrival_by_stop_id: &mut HashMap<i32, NaiveDateTime>,
+    earliest_arrival_by_stop_id: &mut FxHashMap<i32, NaiveDateTime>,
 ) -> bool {
     let stop_id = route.arrival_stop_id();
     let stop = data_storage.stops().find(stop_id);
@@ -143,7 +142,7 @@ fn explore_nearby_stops(data_storage: &DataStorage, route: &Route, routes: &mut 
     .for_each(|new_route| sorted_insert(routes, new_route));
 }
 
-fn filter_new_routes(new_routes: Vec<Route>, journeys_to_ignore: &HashSet<i32>) -> Vec<Route> {
+fn filter_new_routes(new_routes: Vec<Route>, journeys_to_ignore: &FxHashSet<i32>) -> Vec<Route> {
     new_routes
         .into_iter()
         .filter(|route| !journeys_to_ignore.contains(&route.last_section().journey_id().unwrap()))

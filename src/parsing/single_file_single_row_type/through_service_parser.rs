@@ -1,7 +1,9 @@
 // 1 file(s).
 // File(s) read by the parser:
 // DURCHBI
-use std::{collections::HashMap, error::Error};
+use std::error::Error;
+
+use rustc_hash::FxHashMap;
 
 use crate::{
     models::{Model, ThroughService},
@@ -11,7 +13,7 @@ use crate::{
 };
 
 pub fn parse(
-    journeys_pk_type_converter: &HashMap<(i32, String), i32>,
+    journeys_pk_type_converter: &FxHashMap<(i32, String), i32>,
 ) -> Result<SimpleResourceStorage<ThroughService>, Box<dyn Error>> {
     println!("Parsing DURCHBI...");
     #[rustfmt::skip]
@@ -47,7 +49,7 @@ pub fn parse(
 fn create_instance(
     mut values: Vec<ParsedValue>,
     auto_increment: &AutoIncrement,
-    journeys_pk_type_converter: &HashMap<(i32, String), i32>,
+    journeys_pk_type_converter: &FxHashMap<(i32, String), i32>,
 ) -> ThroughService {
     let journey_1_id: i32 = values.remove(0).into();
     let journey_1_administration: String = values.remove(0).into();

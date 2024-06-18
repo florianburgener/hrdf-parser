@@ -7,10 +7,10 @@ mod models;
 mod utils;
 
 use core::compute_routing;
-use std::collections::HashMap;
 
 use chrono::{Duration, NaiveDateTime};
 use models::{Route, RoutingAlgorithmArgs};
+use rustc_hash::FxHashMap;
 
 use crate::hrdf::Hrdf;
 
@@ -40,7 +40,7 @@ impl Hrdf {
         departure_at: NaiveDateTime,
         time_limit: Duration,
         verbose: bool,
-    ) -> HashMap<i32, Route> {
+    ) -> FxHashMap<i32, Route> {
         compute_routing(
             self.data_storage(),
             departure_stop_id,

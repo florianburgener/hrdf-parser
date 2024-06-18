@@ -1,7 +1,9 @@
 // 1 file(s).
 // File(s) read by the parser:
 // ZUGART
-use std::{collections::HashMap, error::Error};
+use std::error::Error;
+
+use rustc_hash::FxHashMap;
 
 use crate::{
     models::{Language, Model, TransportType},
@@ -14,7 +16,7 @@ use crate::{
 };
 
 pub fn parse(
-) -> Result<(SimpleResourceStorage<TransportType>, HashMap<String, i32>), Box<dyn Error>> {
+) -> Result<(SimpleResourceStorage<TransportType>, FxHashMap<String, i32>), Box<dyn Error>> {
     println!("Parsing ZUGART...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -61,7 +63,7 @@ pub fn parse(
 
     let auto_increment = AutoIncrement::new();
     let mut data = Vec::new();
-    let mut pk_type_converter = HashMap::new();
+    let mut pk_type_converter = FxHashMap::default();
 
     let mut current_language = Language::default();
 
@@ -100,7 +102,7 @@ pub fn parse(
 fn create_instance(
     mut values: Vec<ParsedValue>,
     auto_increment: &AutoIncrement,
-    pk_type_converter: &mut HashMap<String, i32>,
+    pk_type_converter: &mut FxHashMap<String, i32>,
 ) -> TransportType {
     let designation: String = values.remove(0).into();
     let product_class_id: i16 = values.remove(0).into();

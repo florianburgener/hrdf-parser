@@ -1,7 +1,9 @@
 // 1 file(s).
 // File(s) read by the parser:
 // UMSTEIGZ
-use std::{collections::HashMap, error::Error};
+use std::error::Error;
+
+use rustc_hash::FxHashMap;
 
 use crate::{
     models::{Model, TransferTimeJourney},
@@ -11,7 +13,7 @@ use crate::{
 };
 
 pub fn parse(
-    journeys_pk_type_converter: &HashMap<(i32, String), i32>,
+    journeys_pk_type_converter: &FxHashMap<(i32, String), i32>,
 ) -> Result<SimpleResourceStorage<TransferTimeJourney>, Box<dyn Error>> {
     println!("Parsing UMSTEIGZ...");
     #[rustfmt::skip]
@@ -48,7 +50,7 @@ pub fn parse(
 fn create_instance(
     mut values: Vec<ParsedValue>,
     auto_increment: &AutoIncrement,
-    journeys_pk_type_converter: &HashMap<(i32, String), i32>,
+    journeys_pk_type_converter: &FxHashMap<(i32, String), i32>,
 ) -> TransferTimeJourney {
     let stop_id: i32 = values.remove(0).into();
     let journey_id_1: i32 = values.remove(0).into();

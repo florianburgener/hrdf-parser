@@ -1,6 +1,5 @@
-use std::collections::HashSet;
-
 use chrono::{Duration, NaiveDateTime};
+use rustc_hash::FxHashSet;
 
 use crate::{
     models::{Journey, Model},
@@ -41,7 +40,7 @@ pub fn create_initial_routes(
 
     if let Some(stop_connections) = get_stop_connections(data_storage, departure_stop_id) {
         routes.extend(stop_connections.iter().map(|stop_connection| {
-            let mut visited_stops = HashSet::new();
+            let mut visited_stops = FxHashSet::default();
             visited_stops.insert(stop_connection.stop_id_1());
             visited_stops.insert(stop_connection.stop_id_2());
 
@@ -79,7 +78,7 @@ pub fn next_departures<'a>(
     data_storage: &'a DataStorage,
     departure_stop_id: i32,
     departure_at: NaiveDateTime,
-    routes_to_ignore: Option<HashSet<u64>>,
+    routes_to_ignore: Option<FxHashSet<u64>>,
 ) -> Vec<(&'a Journey, NaiveDateTime)> {
     let departure_date_1 = departure_at.date();
     let departure_date_2 = add_1_day(departure_at.date());
@@ -125,7 +124,7 @@ pub fn next_departures<'a>(
 
     journeys.sort_by_key(|(_, journey_departure_at)| *journey_departure_at);
 
-    let mut routes_to_ignore = routes_to_ignore.unwrap_or_else(HashSet::new);
+    let mut routes_to_ignore = routes_to_ignore.unwrap_or_else(FxHashSet::default);
 
     journeys
         .into_iter()
@@ -192,7 +191,7 @@ fn get_next_route_section(
     journey: &Journey,
     departure_stop_id: i32,
     departure_at: NaiveDateTime,
-) -> Option<(RouteSection, HashSet<i32>)> {
+) -> Option<(RouteSection, FxHashSet<i32>)> {
     let mut route_iter = journey.route().iter();
 
     while let Some(route_entry) = route_iter.next() {
@@ -201,7 +200,7 @@ fn get_next_route_section(
         }
     }
 
-    let mut visited_stops = HashSet::new();
+    let mut visited_stops = FxHashSet::default();
 
     while let Some(route_entry) = route_iter.next() {
         let stop = data_storage.stops().find(route_entry.stop_id());

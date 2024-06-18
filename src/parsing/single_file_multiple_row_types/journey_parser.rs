@@ -1,9 +1,10 @@
 // 1 file(s).
 // File(s) read by the parser:
 // FPLAN
-use std::{collections::HashMap, error::Error};
+use std::error::Error;
 
 use chrono::NaiveTime;
+use rustc_hash::FxHashMap;
 
 use crate::{
     models::{Journey, JourneyMetadataEntry, JourneyMetadataType, JourneyRouteEntry, Model},
@@ -16,10 +17,10 @@ use crate::{
 };
 
 pub fn parse(
-    transport_types_pk_type_converter: &HashMap<String, i32>,
-    attributes_pk_type_converter: &HashMap<String, i32>,
-    directions_pk_type_converter: &HashMap<String, i32>,
-) -> Result<(JourneyStorage, HashMap<(i32, String), i32>), Box<dyn Error>> {
+    transport_types_pk_type_converter: &FxHashMap<String, i32>,
+    attributes_pk_type_converter: &FxHashMap<String, i32>,
+    directions_pk_type_converter: &FxHashMap<String, i32>,
+) -> Result<(JourneyStorage, FxHashMap<(i32, String), i32>), Box<dyn Error>> {
     println!("Parsing FPLAN...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -101,7 +102,7 @@ pub fn parse(
 
     let auto_increment = AutoIncrement::new();
     let mut data = Vec::new();
-    let mut pk_type_converter = HashMap::new();
+    let mut pk_type_converter = FxHashMap::default();
 
     for (id, _, values) in parser.parse() {
         match id {
@@ -142,7 +143,7 @@ pub fn parse(
 fn create_instance(
     mut values: Vec<ParsedValue>,
     auto_increment: &AutoIncrement,
-    pk_type_converter: &mut HashMap<(i32, String), i32>,
+    pk_type_converter: &mut FxHashMap<(i32, String), i32>,
 ) -> Journey {
     let legacy_id: i32 = values.remove(0).into();
     let administration: String = values.remove(0).into();
@@ -156,7 +157,7 @@ fn create_instance(
 fn set_transport_type(
     mut values: Vec<ParsedValue>,
     journey: &mut Journey,
-    transport_types_pk_type_converter: &HashMap<String, i32>,
+    transport_types_pk_type_converter: &FxHashMap<String, i32>,
 ) {
     let designation: String = values.remove(0).into();
     let from_stop_id: Option<i32> = values.remove(0).into();
@@ -202,7 +203,7 @@ fn set_bit_field(mut values: Vec<ParsedValue>, journey: &mut Journey) {
 fn add_attribute(
     mut values: Vec<ParsedValue>,
     journey: &mut Journey,
-    attributes_pk_type_converter: &HashMap<String, i32>,
+    attributes_pk_type_converter: &FxHashMap<String, i32>,
 ) {
     let designation: String = values.remove(0).into();
     let from_stop_id: Option<i32> = values.remove(0).into();
@@ -286,7 +287,7 @@ fn set_line(mut values: Vec<ParsedValue>, journey: &mut Journey) {
 fn set_direction(
     mut values: Vec<ParsedValue>,
     journey: &mut Journey,
-    directions_pk_type_converter: &HashMap<String, i32>,
+    directions_pk_type_converter: &FxHashMap<String, i32>,
 ) {
     let direction_type: String = values.remove(0).into();
     let direction_id: String = values.remove(0).into();
