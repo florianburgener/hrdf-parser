@@ -7,6 +7,7 @@ mod utils;
 
 use std::{error::Error, path::Path, time::Instant};
 
+use chrono::Duration;
 use utils::create_date_time;
 
 use crate::hrdf::Hrdf;
@@ -43,15 +44,22 @@ pub fn run() -> Result<(), Box<dyn Error>> {
 
     println!("");
 
-    const N: u32 = 10;
-    let before = Instant::now();
+    if false {
+        const N: u32 = 10;
+        let before = Instant::now();
 
-    for i in 0..N {
-        test_plan_journey(&hrdf, i == 0);
+        for i in 0..N {
+            test_plan_journey(&hrdf, i == 0);
+        }
+
+        let elapsed = before.elapsed();
+        println!("\n{:.2?}", elapsed / N);
+    } else {
+        let before = Instant::now();
+        test_find_reachable_stops_within_time_limit(&hrdf);
+        let elapsed = before.elapsed();
+        println!("\n{:.2?}", elapsed);
     }
-
-    let elapsed = before.elapsed();
-    println!("\n{:.2?}", elapsed / N);
 
     Ok(())
 }
@@ -99,8 +107,8 @@ fn test_plan_journey(hrdf: &Hrdf, verbose: bool) {
     // hrdf.plan_journey(8592688, 8501008, create_date_time(2023, 2, 3, 14, 31), verbose);
 
     // Chancy, Les Bouveries => Lausanne
-    // hrdf.plan_journey(8592688, 8501120, create_date_time(2023, 2, 3, 14, 31), verbose);
-    hrdf.plan_journey(8592688, 8501120, create_date_time(2023, 2, 3, 23, 31), verbose);
+    hrdf.plan_journey(8592688, 8501120, create_date_time(2023, 2, 3, 14, 31), verbose);
+    // hrdf.plan_journey(8592688, 8501120, create_date_time(2023, 2, 3, 23, 31), verbose);
 
     // Chancy, Les Bouveries => Sevelen, Post
     // hrdf.plan_journey(8592688, 8588197, create_date_time(2023, 2, 1, 6, 31), verbose);
@@ -123,4 +131,15 @@ fn test_plan_journey(hrdf: &Hrdf, verbose: bool) {
 
     // Genève, gare Cornavin => Paris Gare de Lyon
     // hrdf.plan_journey(8587057, 8768600, create_date_time(2023, 2, 3, 13, 25), verbose);
+}
+
+fn test_find_reachable_stops_within_time_limit(hrdf: &Hrdf) {
+    let routes = hrdf.find_reachable_stops_within_time_limit(
+        8501008,
+        create_date_time(2023, 2, 3, 13, 25),
+        Duration::hours(2),
+        true,
+    );
+    println!("\n{}\n", routes.len());
+    routes.get(&8592690).unwrap().print(hrdf.data_storage());
 }

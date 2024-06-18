@@ -27,6 +27,10 @@ pub fn add_1_day(date: NaiveDate) -> NaiveDate {
     date.checked_add_days(Days::new(1)).unwrap()
 }
 
+pub fn sub_1_day(date: NaiveDate) -> NaiveDate {
+    date.checked_sub_days(Days::new(1)).unwrap()
+}
+
 pub fn add_minutes_to_date_time(date_time: NaiveDateTime, minutes: i64) -> NaiveDateTime {
     date_time
         .checked_add_signed(Duration::minutes(minutes))

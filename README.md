@@ -46,12 +46,15 @@ Incertain : BFPRIOS, BHFART_60
 Inutile : ATTRIBUT_DE, ATTRIBUT_EN, ATTRIBUT_FR, ATTRIBUT_IT, BHFART, GREENZHLT, ZEITVS
 
 TODO :
-* Ajouter thiserror
-* Temps de correspondance
-* Algorithme pour trouver tous les arrêts dans un temps max
-* Automatiquement télécharger les dernières données
-* Pouvoir parse la dernière version HRDF
-* Logging
+* Lib :
+  * Algorithme pour trouver tous les arrêts dans un temps max
+  * Essayer d'améliorer les perfomances (intersection)
+  * Changer comment les déplacements à pied sont stocker
+  * Temps de correspondance
+  * Ajouter thiserror
+  * Automatiquement télécharger les dernières données
+  * Pouvoir parse la dernière version HRDF
+  * Logging
 * Créer un projet API qui utilise la lib
 * Créer l'application web
 
@@ -92,11 +95,6 @@ Algorithme de calcul du trajet le plus court (Optionnel) :
 * Ajouter un warning quand arrêt n'existe pas dans FPLAN mais dans BAHNHOF
 
 Forcer l'utilisation de train quand l'arrêt d'arrivée est loin
-
-
-* Essayer d'améliorer les perfomances (intersection)
-* Changer comment les déplacements à pied sont stocker
-* Coder l'algorithme multiple
 
 hrdf.plan_journey(8592688, 8501120, create_date_time(2023, 2, 3, 14, 31), verbose);
 99.10ms ; 100.31ms

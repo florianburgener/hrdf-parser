@@ -130,19 +130,25 @@ impl Route {
 #[derive(Copy, Clone, Eq, PartialEq)]
 pub enum RoutingAlgorithmMode {
     SolveFromDepartureStopToArrivalStop,
-    // SolveFromDepartureStopToReachableArrivalStops,
+    SolveFromDepartureStopToReachableArrivalStops,
 }
 
 pub struct RoutingAlgorithmArgs {
     mode: RoutingAlgorithmMode,
     arrival_stop_id: Option<i32>,
+    time_limit: Option<NaiveDateTime>,
 }
 
 impl RoutingAlgorithmArgs {
-    pub fn new(mode: RoutingAlgorithmMode, arrival_stop_id: Option<i32>) -> Self {
+    pub fn new(
+        mode: RoutingAlgorithmMode,
+        arrival_stop_id: Option<i32>,
+        time_limit: Option<NaiveDateTime>,
+    ) -> Self {
         Self {
             mode,
             arrival_stop_id,
+            time_limit,
         }
     }
 
@@ -150,10 +156,17 @@ impl RoutingAlgorithmArgs {
         Self::new(
             RoutingAlgorithmMode::SolveFromDepartureStopToArrivalStop,
             Some(arrival_stop_id),
+            None,
         )
     }
 
-    // pub fn create_solve_one_to_many() {}
+    pub fn create_solve_one_to_many(time_limit: NaiveDateTime) -> Self {
+        Self::new(
+            RoutingAlgorithmMode::SolveFromDepartureStopToReachableArrivalStops,
+            None,
+            Some(time_limit),
+        )
+    }
 
     // Getters/Setters
 
@@ -164,5 +177,10 @@ impl RoutingAlgorithmArgs {
     /// Do not call this function if you are not sure that arrival_stop_id is not None.
     pub fn arrival_stop_id(&self) -> i32 {
         self.arrival_stop_id.unwrap()
+    }
+
+    /// Do not call this function if you are not sure that time_limit is not None.
+    pub fn time_limit(&self) -> NaiveDateTime {
+        self.time_limit.unwrap()
     }
 }

@@ -426,6 +426,33 @@ impl Journey {
             .arrival_time()
             .unwrap()
     }
+
+    /// Excluding departure stop.
+    pub fn route_section(
+        &self,
+        departure_stop_id: i32,
+        arrival_stop_id: i32,
+    ) -> Vec<&JourneyRouteEntry> {
+        let mut route_iter = self.route().iter();
+
+        while let Some(route_entry) = route_iter.next() {
+            if route_entry.stop_id() == departure_stop_id {
+                break;
+            }
+        }
+
+        let mut result = Vec::new();
+
+        while let Some(route_entry) = route_iter.next() {
+            result.push(route_entry);
+
+            if route_entry.stop_id() == arrival_stop_id {
+                break;
+            }
+        }
+
+        result
+    }
 }
 
 // ------------------------------------------------------------------------------------------------
