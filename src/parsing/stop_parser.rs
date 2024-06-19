@@ -40,11 +40,11 @@ pub fn parse() -> Result<SimpleResourceStorage<Stop>, Box<dyn Error>> {
     println!("Parsing BFKOORD_WGS...");
     load_coordinates(CoordinateType::WGS84, &mut data)?;
     println!("Parsing BFPRIOS...");
-    load_transfer_priorities(&mut data)?;
+    load_exchange_priorities(&mut data)?;
     println!("Parsing KMINFO...");
-    load_transfer_flags(&mut data)?;
+    load_exchange_flags(&mut data)?;
     println!("Parsing UMSTEIGB...");
-    load_transfer_times(&mut data)?;
+    load_exchange_times(&mut data)?;
     println!("Parsing METABHF 1/2...");
     load_connections(&mut data)?;
     println!("Parsing BHFART_60...");
@@ -81,7 +81,7 @@ fn load_coordinates(
     Ok(())
 }
 
-fn load_transfer_priorities(data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
+fn load_exchange_priorities(data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row contains the changing priority.
@@ -95,12 +95,12 @@ fn load_transfer_priorities(data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<d
 
     parser
         .parse()
-        .for_each(|(_, _, values)| set_transfer_priority(values, data));
+        .for_each(|(_, _, values)| set_exchange_priority(values, data));
 
     Ok(())
 }
 
-fn load_transfer_flags(data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
+fn load_exchange_flags(data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row contains the changing flag.
@@ -113,12 +113,12 @@ fn load_transfer_flags(data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Er
 
     parser
         .parse()
-        .for_each(|(_, _, values)| set_transfer_flag(values, data));
+        .for_each(|(_, _, values)| set_exchange_flag(values, data));
 
     Ok(())
 }
 
-fn load_transfer_times(data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
+fn load_exchange_times(data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row contains the changing time.
@@ -132,7 +132,7 @@ fn load_transfer_times(data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Er
 
     parser
         .parse()
-        .for_each(|(_, _, values)| set_transfer_time(values, data));
+        .for_each(|(_, _, values)| set_exchange_time(values, data));
 
     Ok(())
 }
@@ -241,37 +241,37 @@ fn set_coordinate(
     }
 }
 
-fn set_transfer_priority(mut values: Vec<ParsedValue>, data: &mut FxHashMap<i32, Stop>) {
+fn set_exchange_priority(mut values: Vec<ParsedValue>, data: &mut FxHashMap<i32, Stop>) {
     let stop_id: i32 = values.remove(0).into();
-    let transfer_priority: i16 = values.remove(0).into();
+    let exchange_priority: i16 = values.remove(0).into();
 
     let stop = data.get_mut(&stop_id).unwrap();
-    stop.set_transfer_priority(transfer_priority);
+    stop.set_exchange_priority(exchange_priority);
 }
 
-fn set_transfer_flag(mut values: Vec<ParsedValue>, data: &mut FxHashMap<i32, Stop>) {
+fn set_exchange_flag(mut values: Vec<ParsedValue>, data: &mut FxHashMap<i32, Stop>) {
     let stop_id: i32 = values.remove(0).into();
-    let transfer_flag: i16 = values.remove(0).into();
+    let exchange_flag: i16 = values.remove(0).into();
 
     let stop = data.get_mut(&stop_id).unwrap();
-    stop.set_transfer_flag(transfer_flag);
+    stop.set_exchange_flag(exchange_flag);
 }
 
-fn set_transfer_time(mut values: Vec<ParsedValue>, data: &mut FxHashMap<i32, Stop>) {
+fn set_exchange_time(mut values: Vec<ParsedValue>, data: &mut FxHashMap<i32, Stop>) {
     let stop_id: i32 = values.remove(0).into();
-    let transfer_time_inter_city: i16 = values.remove(0).into();
-    let transfer_time_other: i16 = values.remove(0).into();
+    let exchange_time_inter_city: i16 = values.remove(0).into();
+    let exchange_time_other: i16 = values.remove(0).into();
 
     if stop_id == 9999999 {
         // The first row of the file has the stop ID number 9999999. It contains the default values for all stops.
         for stop in data.values_mut() {
-            stop.set_transfer_time_inter_city(transfer_time_inter_city);
-            stop.set_transfer_time_other(transfer_time_other);
+            stop.set_exchange_time_inter_city(exchange_time_inter_city);
+            stop.set_exchange_time_other(exchange_time_other);
         }
     } else {
         let stop = data.get_mut(&stop_id).unwrap();
-        stop.set_transfer_time_inter_city(transfer_time_inter_city);
-        stop.set_transfer_time_other(transfer_time_other);
+        stop.set_exchange_time_inter_city(exchange_time_inter_city);
+        stop.set_exchange_time_other(exchange_time_other);
     }
 }
 

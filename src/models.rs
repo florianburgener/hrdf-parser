@@ -459,8 +459,8 @@ pub enum JourneyMetadataType {
     Direction,
     InformationText,
     Line,
-    TransferTimeBoarding,
-    TransferTimeDisembarking,
+    ExchangeTimeBoarding,
+    ExchangeTimeDisembarking,
     TransportType,
 }
 
@@ -718,10 +718,10 @@ pub struct Stop {
     synonyms: Option<Vec<String>>,
     lv95_coordinate: Option<Coordinate>,
     wgs84_coordinate: Option<Coordinate>,
-    transfer_priority: i16,
-    transfer_flag: i16,
-    transfer_time_inter_city: i16,
-    transfer_time_other: i16,
+    exchange_priority: i16,
+    exchange_flag: i16,
+    exchange_time_inter_city: i16,
+    exchange_time_other: i16,
     connections: Vec<i32>, // Vec of Stop.id
     restrictions: i16,
     sloid: String,
@@ -746,10 +746,10 @@ impl Stop {
             synonyms,
             lv95_coordinate: None,
             wgs84_coordinate: None,
-            transfer_priority: 8, // 8 is the default priority.
-            transfer_flag: 0,
-            transfer_time_inter_city: 0,
-            transfer_time_other: 0,
+            exchange_priority: 8, // 8 is the default priority.
+            exchange_flag: 0,
+            exchange_time_inter_city: 0,
+            exchange_time_other: 0,
             connections: Vec::default(),
             restrictions: 0,
             sloid: String::default(),
@@ -771,24 +771,24 @@ impl Stop {
         self.wgs84_coordinate = Some(value);
     }
 
-    pub fn set_transfer_priority(&mut self, value: i16) {
-        self.transfer_priority = value;
+    pub fn set_exchange_priority(&mut self, value: i16) {
+        self.exchange_priority = value;
     }
 
-    pub fn transfer_flag(&self) -> i16 {
-        self.transfer_flag
+    pub fn exchange_flag(&self) -> i16 {
+        self.exchange_flag
     }
 
-    pub fn set_transfer_flag(&mut self, value: i16) {
-        self.transfer_flag = value;
+    pub fn set_exchange_flag(&mut self, value: i16) {
+        self.exchange_flag = value;
     }
 
-    pub fn set_transfer_time_inter_city(&mut self, value: i16) {
-        self.transfer_time_inter_city = value;
+    pub fn set_exchange_time_inter_city(&mut self, value: i16) {
+        self.exchange_time_inter_city = value;
     }
 
-    pub fn set_transfer_time_other(&mut self, value: i16) {
-        self.transfer_time_other = value;
+    pub fn set_exchange_time_other(&mut self, value: i16) {
+        self.exchange_time_other = value;
     }
 
     pub fn set_connections(&mut self, value: Vec<i32>) {
@@ -810,7 +810,7 @@ impl Stop {
     }
 
     pub fn can_be_used_as_exchange_point(&self) -> bool {
-        self.transfer_flag() != 0
+        self.exchange_flag() != 0
     }
 }
 
@@ -823,7 +823,7 @@ pub struct StopConnection {
     id: i32,
     stop_id_1: i32,
     stop_id_2: i32,
-    duration: i16, // Transfer time from stop 1 to stop 2 is in minutes.
+    duration: i16, // Exchange time from stop 1 to stop 2 is in minutes.
     attribute: i32,
 }
 
@@ -938,21 +938,21 @@ impl TimetableMetadataEntry {
 }
 
 // ------------------------------------------------------------------------------------------------
-// --- TransferTimeAdministration
+// --- ExchangeTimeAdministration
 // ------------------------------------------------------------------------------------------------
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct TransferTimeAdministration {
+pub struct ExchangeTimeAdministration {
     id: i32,
-    stop_id: Option<i32>, // A None value means that the transfer time applies to all stops if there is no specific entry for the stop and the 2 administrations.
+    stop_id: Option<i32>, // A None value means that the exchange time applies to all stops if there is no specific entry for the stop and the 2 administrations.
     administration_1: String,
     administration_2: String,
-    duration: i16, // Transfer time from administration 1 to administration 2 is in minutes.
+    duration: i16, // Exchange time from administration 1 to administration 2 is in minutes.
 }
 
-impl_Model!(TransferTimeAdministration);
+impl_Model!(ExchangeTimeAdministration);
 
-impl TransferTimeAdministration {
+impl ExchangeTimeAdministration {
     pub fn new(
         id: i32,
         stop_id: Option<i32>,
@@ -975,23 +975,23 @@ impl TransferTimeAdministration {
 }
 
 // ------------------------------------------------------------------------------------------------
-// --- TransferTimeJourney
+// --- ExchangeTimeJourney
 // ------------------------------------------------------------------------------------------------
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct TransferTimeJourney {
+pub struct ExchangeTimeJourney {
     id: i32,
     stop_id: i32,
     journey_id_1: i32,
     journey_id_2: i32,
-    duration: i16, // Transfer time from journey 1 to journey 2 is in minutes.
+    duration: i16, // Exchange time from journey 1 to journey 2 is in minutes.
     is_guaranteed: bool,
     bit_field_id: Option<i32>,
 }
 
-impl_Model!(TransferTimeJourney);
+impl_Model!(ExchangeTimeJourney);
 
-impl TransferTimeJourney {
+impl ExchangeTimeJourney {
     pub fn new(
         id: i32,
         stop_id: i32,
@@ -1018,28 +1018,28 @@ impl TransferTimeJourney {
 }
 
 // ------------------------------------------------------------------------------------------------
-// --- TransferTimeLine
+// --- ExchangeTimeLine
 // ------------------------------------------------------------------------------------------------
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct TransferTimeLine {
+pub struct ExchangeTimeLine {
     id: i32,
     stop_id: i32,
     administration_1: String,
     transport_type_id_1: i32,
-    line_id_1: Option<String>, // If the value is None, then the transfer time applies to all lines in administration_1.
+    line_id_1: Option<String>, // If the value is None, then the exchange time applies to all lines in administration_1.
     direction_1: Option<DirectionType>, // If the value is None, then the match time applies in both directions.
     administration_2: String,
     transport_type_id_2: i32,
-    line_id_2: Option<String>, // If the value is None, then the transfer time applies to all lines in administration_2.
+    line_id_2: Option<String>, // If the value is None, then the exchange time applies to all lines in administration_2.
     direction_2: Option<DirectionType>, // If the value is None, then the match time applies in both directions.
-    duration: i16,                      // Transfer time from line 1 to line 2 is in minutes.
+    duration: i16,                      // Exchange time from line 1 to line 2 is in minutes.
     is_guaranteed: bool,
 }
 
-impl_Model!(TransferTimeLine);
+impl_Model!(ExchangeTimeLine);
 
-impl TransferTimeLine {
+impl ExchangeTimeLine {
     pub fn new(
         id: i32,
         stop_id: i32,

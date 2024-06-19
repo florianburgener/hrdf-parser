@@ -43,26 +43,26 @@ mod single_file_single_row_type {
     mod direction_parser;
     mod holiday_parser;
     mod through_service_parser;
-    mod transfer_administration_parser;
-    mod transfer_journey_parser;
-    mod transfer_line_parser;
+    mod exchange_administration_parser;
+    mod exchange_journey_parser;
+    mod exchange_line_parser;
 
     pub use bit_field_parser::parse as load_bit_fields;
     pub use direction_parser::parse as load_directions;
     pub use holiday_parser::parse as load_holidays;
     pub use through_service_parser::parse as load_through_service;
-    pub use transfer_administration_parser::parse as load_transfer_times_administration;
-    pub use transfer_journey_parser::parse as load_transfer_times_journey;
-    pub use transfer_line_parser::parse as load_transfer_times_line;
+    pub use exchange_administration_parser::parse as load_exchange_times_administration;
+    pub use exchange_journey_parser::parse as load_exchange_times_journey;
+    pub use exchange_line_parser::parse as load_exchange_times_line;
 }
 
 pub use single_file_single_row_type::load_bit_fields;
 pub use single_file_single_row_type::load_directions;
 pub use single_file_single_row_type::load_holidays;
 pub use single_file_single_row_type::load_through_service;
-pub use single_file_single_row_type::load_transfer_times_administration;
-pub use single_file_single_row_type::load_transfer_times_journey;
-pub use single_file_single_row_type::load_transfer_times_line;
+pub use single_file_single_row_type::load_exchange_times_administration;
+pub use single_file_single_row_type::load_exchange_times_journey;
+pub use single_file_single_row_type::load_exchange_times_line;
 
 mod stop_parser;
 mod timetable_metadata_parser;

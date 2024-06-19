@@ -123,7 +123,7 @@ pub fn parse(
                     ROW_E => add_information_text(values, journey),
                     ROW_F => set_line(values, journey),
                     ROW_G => set_direction(values, journey, directions_pk_type_converter),
-                    ROW_H => set_boarding_or_disembarking_transfer_time(values, journey),
+                    ROW_H => set_boarding_or_disembarking_exchange_time(values, journey),
                     ROW_I => add_route_entry(values, journey),
                     _ => unreachable!(),
                 }
@@ -320,16 +320,16 @@ fn set_direction(
     );
 }
 
-fn set_boarding_or_disembarking_transfer_time(mut values: Vec<ParsedValue>, journey: &mut Journey) {
+fn set_boarding_or_disembarking_exchange_time(mut values: Vec<ParsedValue>, journey: &mut Journey) {
     let ci_co: String = values.remove(0).into();
-    let transfer_time: i32 = values.remove(0).into();
+    let exchange_time: i32 = values.remove(0).into();
     let from_stop_id: Option<i32> = values.remove(0).into();
     let until_stop_id: Option<i32> = values.remove(0).into();
 
     let metadata_type = if ci_co == "*CI" {
-        JourneyMetadataType::TransferTimeBoarding
+        JourneyMetadataType::ExchangeTimeBoarding
     } else {
-        JourneyMetadataType::TransferTimeDisembarking
+        JourneyMetadataType::ExchangeTimeDisembarking
     };
 
     journey.add_metadata_entry(
@@ -342,7 +342,7 @@ fn set_boarding_or_disembarking_transfer_time(mut values: Vec<ParsedValue>, jour
             None,
             None,
             None,
-            Some(transfer_time),
+            Some(exchange_time),
         ),
     );
 }

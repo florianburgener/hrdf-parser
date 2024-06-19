@@ -67,7 +67,7 @@ impl Route {
                     stop.name(),
                     arrival_time,
                     departure_time,
-                    stop.transfer_flag(),
+                    stop.exchange_flag(),
                 );
             }
 

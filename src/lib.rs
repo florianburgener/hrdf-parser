@@ -16,7 +16,7 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     const CACHED_PATH: &str = "data.cache";
 
     let now = Instant::now();
-    let hrdf = if Path::new(CACHED_PATH).exists() && true {
+    let hrdf = if Path::new(CACHED_PATH).exists() && false {
         println!("Reading from cache...");
         Hrdf::load_from_cache()?
     } else {
@@ -100,7 +100,7 @@ fn test_plan_journey(hrdf: &Hrdf, verbose: bool) {
 
     // Chancy, Les Bouveries => Genève, gare Cornavin
     // hrdf.plan_journey(8592688, 8587057, create_date_time(2023, 2, 3, 12, 55), verbose);
-    hrdf.plan_journey(8592688, 8587057, create_date_time(2023, 2, 3, 14, 31), verbose);
+    // hrdf.plan_journey(8592688, 8587057, create_date_time(2023, 2, 3, 14, 31), verbose);
     // hrdf.plan_journey(8592688, 8587057, create_date_time(2023, 2, 3, 20, 40), verbose);
     // hrdf.plan_journey(8592688, 8587057, create_date_time(2023, 2, 3, 21, 40), verbose);
 
@@ -108,7 +108,7 @@ fn test_plan_journey(hrdf: &Hrdf, verbose: bool) {
     // hrdf.plan_journey(8592688, 8501008, create_date_time(2023, 2, 3, 14, 31), verbose);
 
     // Chancy, Les Bouveries => Lausanne
-    // hrdf.plan_journey(8592688, 8501120, create_date_time(2023, 2, 3, 14, 31), verbose);
+    hrdf.plan_journey(8592688, 8501120, create_date_time(2023, 2, 3, 14, 31), verbose);
     // hrdf.plan_journey(8592688, 8501120, create_date_time(2023, 2, 3, 23, 31), verbose);
 
     // Chancy, Les Bouveries => Sevelen, Post

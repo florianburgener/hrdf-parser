@@ -6,7 +6,7 @@ use std::error::Error;
 use rustc_hash::FxHashMap;
 
 use crate::{
-    models::{Model, TransferTimeJourney},
+    models::{Model, ExchangeTimeJourney},
     parsing::{ColumnDefinition, ExpectedType, FileParser, ParsedValue, RowDefinition, RowParser},
     storage::SimpleResourceStorage,
     utils::AutoIncrement,
@@ -14,11 +14,11 @@ use crate::{
 
 pub fn parse(
     journeys_pk_type_converter: &FxHashMap<(i32, String), i32>,
-) -> Result<SimpleResourceStorage<TransferTimeJourney>, Box<dyn Error>> {
+) -> Result<SimpleResourceStorage<ExchangeTimeJourney>, Box<dyn Error>> {
     println!("Parsing UMSTEIGZ...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
-        // This row is used to create a JourneyTransferTime instance.
+        // This row is used to create a JourneyExchangeTime instance.
         RowDefinition::from(vec![
             ColumnDefinition::new(1, 7, ExpectedType::Integer32),
             ColumnDefinition::new(9, 14, ExpectedType::Integer32),
@@ -38,7 +38,7 @@ pub fn parse(
         .parse()
         .map(|(_, _, values)| create_instance(values, &auto_increment, journeys_pk_type_converter))
         .collect();
-    let data = TransferTimeJourney::vec_to_map(data);
+    let data = ExchangeTimeJourney::vec_to_map(data);
 
     Ok(SimpleResourceStorage::new(data))
 }
@@ -51,7 +51,7 @@ fn create_instance(
     mut values: Vec<ParsedValue>,
     auto_increment: &AutoIncrement,
     journeys_pk_type_converter: &FxHashMap<(i32, String), i32>,
-) -> TransferTimeJourney {
+) -> ExchangeTimeJourney {
     let stop_id: i32 = values.remove(0).into();
     let journey_id_1: i32 = values.remove(0).into();
     let administration_1: String = values.remove(0).into();
@@ -71,7 +71,7 @@ fn create_instance(
 
     let is_guaranteed = is_guaranteed == "!";
 
-    TransferTimeJourney::new(
+    ExchangeTimeJourney::new(
         auto_increment.next(),
         stop_id,
         journey_id_1,

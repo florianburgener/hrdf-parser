@@ -8,7 +8,7 @@ use crate::{
     models::{
         Attribute, BitField, Direction, Holiday, InformationText, Journey, JourneyPlatform, Line,
         Model, Platform, Stop, StopConnection, ThroughService, TimetableMetadataEntry,
-        TransferTimeAdministration, TransferTimeJourney, TransferTimeLine, TransportCompany,
+        ExchangeTimeAdministration, ExchangeTimeJourney, ExchangeTimeLine, TransportCompany,
         TransportType,
     },
     parsing,
@@ -19,7 +19,6 @@ use crate::{
 // --- DataStorage
 // ------------------------------------------------------------------------------------------------
 
-#[allow(unused)]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DataStorage {
     // Time-relevant data.
@@ -45,10 +44,10 @@ pub struct DataStorage {
     platforms: SimpleResourceStorage<Platform>,
     through_service: SimpleResourceStorage<ThroughService>,
 
-    // Transfer times.
-    transfer_times_administration: SimpleResourceStorage<TransferTimeAdministration>,
-    transfer_times_journey: SimpleResourceStorage<TransferTimeJourney>,
-    transfer_times_line: SimpleResourceStorage<TransferTimeLine>,
+    // Exchange times.
+    exchange_times_administration: SimpleResourceStorage<ExchangeTimeAdministration>,
+    exchange_times_journey: SimpleResourceStorage<ExchangeTimeJourney>,
+    exchange_times_line: SimpleResourceStorage<ExchangeTimeLine>,
 }
 
 #[allow(unused)]
@@ -80,12 +79,12 @@ impl DataStorage {
         let (journey_platform, platforms) = parsing::load_platforms(&journeys_pk_type_converter)?;
         let through_service = parsing::load_through_service(&journeys_pk_type_converter)?;
 
-        // Transfer times.
-        let transfer_times_administration = parsing::load_transfer_times_administration()?;
-        let transfer_times_journey =
-            parsing::load_transfer_times_journey(&journeys_pk_type_converter)?;
-        let transfer_times_line =
-            parsing::load_transfer_times_line(&transport_types_pk_type_converter)?;
+        // Exchange times.
+        let exchange_times_administration = parsing::load_exchange_times_administration()?;
+        let exchange_times_journey =
+            parsing::load_exchange_times_journey(&journeys_pk_type_converter)?;
+        let exchange_times_line =
+            parsing::load_exchange_times_line(&transport_types_pk_type_converter)?;
 
         let mut data_storage = Self {
             // Time-relevant data.
@@ -107,10 +106,10 @@ impl DataStorage {
             journey_platform,
             platforms,
             through_service,
-            // Transfer times.
-            transfer_times_administration,
-            transfer_times_journey,
-            transfer_times_line,
+            // Exchange times.
+            exchange_times_administration,
+            exchange_times_journey,
+            exchange_times_line,
         };
 
         data_storage.build_indexes();
@@ -172,7 +171,6 @@ pub struct SimpleResourceStorage<M: Model<M>> {
     data: FxHashMap<M::K, M>,
 }
 
-#[allow(unused)]
 impl<M: Model<M>> SimpleResourceStorage<M> {
     pub fn new(data: FxHashMap<M::K, M>) -> Self {
         Self { data }
@@ -188,12 +186,12 @@ impl<M: Model<M>> SimpleResourceStorage<M> {
 }
 
 // ------------------------------------------------------------------------------------------------
-// --- ???
+// --- impl_Storage
 // ------------------------------------------------------------------------------------------------
 
 macro_rules! impl_Storage {
     ($s:ty, $m:ty) => {
-        #[allow(dead_code)]
+        #[allow(unused)]
         impl $s {
             // Getters/Setters
 
@@ -266,7 +264,7 @@ impl BitFieldStorage {
 
 type BitFieldIndexes = (BitFieldIndex1, BitFieldIndex2);
 
-// Manages the creation of indexes.
+// Indexes:
 impl BitFieldStorage {
     pub fn create_indexes(&self, data_storage: &DataStorage) -> BitFieldIndexes {
         (
@@ -355,7 +353,6 @@ pub struct JourneyStorage {
 
 impl_Storage!(JourneyStorage, Journey);
 
-#[allow(unused)]
 impl JourneyStorage {
     pub fn new(data: FxHashMap<i32, Journey>) -> Self {
         Self {
@@ -381,7 +378,7 @@ impl JourneyStorage {
 
 type JourneyIndexes = (JourneyIndex1,);
 
-// Manages the creation of indexes.
+// Indexes:
 impl JourneyStorage {
     pub fn create_indexes(&self, data_storage: &DataStorage) -> JourneyIndexes {
         (self.create_journeys_by_stop_id_and_bit_field_id(data_storage),)
@@ -436,7 +433,7 @@ impl StopConnectionStorage {
     }
 }
 
-// Manages the creation of indexes.
+// Indexes:
 impl StopConnectionStorage {
     fn create_stop_connections_by_stop_id(
         data: &FxHashMap<i32, StopConnection>,
@@ -463,7 +460,6 @@ pub struct TimetableMetadataStorage {
 
 impl_Storage!(TimetableMetadataStorage, TimetableMetadataEntry);
 
-#[allow(unused)]
 impl TimetableMetadataStorage {
     pub fn new(data: FxHashMap<i32, TimetableMetadataEntry>) -> Self {
         let timetable_metadata_entry_by_key = Self::create_timetable_metadata_entry_by_key(&data);
@@ -489,7 +485,7 @@ impl TimetableMetadataStorage {
     }
 }
 
-// Manages the creation of indexes.
+// Indexes:
 impl TimetableMetadataStorage {
     fn create_timetable_metadata_entry_by_key(
         data: &FxHashMap<i32, TimetableMetadataEntry>,

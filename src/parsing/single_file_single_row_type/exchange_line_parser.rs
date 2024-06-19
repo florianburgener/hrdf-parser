@@ -6,7 +6,7 @@ use std::{error::Error, str::FromStr};
 use rustc_hash::FxHashMap;
 
 use crate::{
-    models::{DirectionType, Model, TransferTimeLine},
+    models::{DirectionType, Model, ExchangeTimeLine},
     parsing::{ColumnDefinition, ExpectedType, FileParser, ParsedValue, RowDefinition, RowParser},
     storage::SimpleResourceStorage,
     utils::AutoIncrement,
@@ -14,11 +14,11 @@ use crate::{
 
 pub fn parse(
     transport_types_pk_type_converter: &FxHashMap<String, i32>,
-) -> Result<SimpleResourceStorage<TransferTimeLine>, Box<dyn Error>> {
+) -> Result<SimpleResourceStorage<ExchangeTimeLine>, Box<dyn Error>> {
     println!("Parsing UMSTEIGL...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
-        // This row is used to create a LineTransferTime instance.
+        // This row is used to create a LineExchangeTime instance.
         RowDefinition::from(vec![
             ColumnDefinition::new(1, 7, ExpectedType::Integer32),
             ColumnDefinition::new(9, 14, ExpectedType::String),
@@ -43,7 +43,7 @@ pub fn parse(
             create_instance(values, &auto_increment, transport_types_pk_type_converter)
         })
         .collect();
-    let data = TransferTimeLine::vec_to_map(data);
+    let data = ExchangeTimeLine::vec_to_map(data);
 
     Ok(SimpleResourceStorage::new(data))
 }
@@ -56,7 +56,7 @@ fn create_instance(
     mut values: Vec<ParsedValue>,
     auto_increment: &AutoIncrement,
     transport_types_pk_type_converter: &FxHashMap<String, i32>,
-) -> TransferTimeLine {
+) -> ExchangeTimeLine {
     let stop_id: i32 = values.remove(0).into();
     let administration_1: String = values.remove(0).into();
     let transport_type_id_1: String = values.remove(0).into();
@@ -103,7 +103,7 @@ fn create_instance(
 
     let is_guaranteed = is_guaranteed == "!";
 
-    TransferTimeLine::new(
+    ExchangeTimeLine::new(
         auto_increment.next(),
         stop_id,
         administration_1,

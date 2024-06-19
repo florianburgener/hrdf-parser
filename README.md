@@ -47,12 +47,7 @@ Inutile : ATTRIBUT_DE, ATTRIBUT_EN, ATTRIBUT_FR, ATTRIBUT_IT, BHFART, GREENZHLT,
 
 TODO :
 * Lib :
-  * Essayer d'améliorer les perfomances (intersection)
-    * bit_fields_by_day
-    * bit_fields_by_stop_id
-    * bit_fields_by_day intersection bit_fields_by_stop_id
-    * (bit_field, stop_id) => journeys
-  * Changer comment les déplacements à pied sont stocker
+    * Changer comment les déplacements à pied sont stocker
   * Temps de correspondance
   * Ajouter thiserror
   * Automatiquement télécharger les dernières données
@@ -80,10 +75,6 @@ Algorithme de calcul du trajet le plus court (Résumé) :
 * Si une journey a déjà été emprunté avec moins de connexions alors il n'est pas possible de l'emprunter lors de l'exploration des connexions
     * L'emprenter avec plus de connexions ne peut pas améliorer la solution
 
-Algorithme de calcul du trajet le plus court (TODO) :
-* Considérer les temps de transferts lors d'une correspondance
-* Depuis un arrêt d'origine, pouvoir calculer toutes les routes vers tous les arrêts atteignables dans un temps de donner (ex. en 2 heures)
-
 Algorithme de calcul du trajet le plus court (Problèmes) :
 * Lent quand la solution requiert beaucoup de connexions
 * Lent quand le temps d'arrivée de la solution est tard  (à partir de 3-4 heures plus tard que l'heure de départ)
@@ -97,7 +88,12 @@ Algorithme de calcul du trajet le plus court (Optionnel) :
 * Renvoyer les résultats via une structure
 * Ajouter un warning quand arrêt n'existe pas dans FPLAN mais dans BAHNHOF
 
-Forcer l'utilisation de train quand l'arrêt d'arrivée est loin
+Algorithme de calcul du trajet le plus court (Idées) :
+* Forcer l'utilisation des trains quand l'arrêt d'arrivée est loin
 
-hrdf.plan_journey(8592688, 8501120, create_date_time(2023, 2, 3, 14, 31), verbose);
-99.10ms ; 100.31ms
+
+Catégorisation parser :
+
+auto_increment :
+map + collect :
+vec_to_map before Storage::new :
