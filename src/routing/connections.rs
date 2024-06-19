@@ -67,9 +67,9 @@ pub fn get_connections(data_storage: &DataStorage, route: &Route) -> Vec<Route> 
         route.arrival_at(),
         Some(get_routes_to_ignore(data_storage, &route)),
     )
-    .iter()
+    .into_iter()
     .filter_map(|(journey, journey_departure_at)| {
-        create_route_from_another_route(data_storage, &route, journey.id(), *journey_departure_at)
+        create_route_from_another_route(data_storage, &route, journey.id(), journey_departure_at)
     })
     .collect()
 }
@@ -117,8 +117,8 @@ pub fn next_departures<'a>(
     let mut journeys: Vec<(&Journey, NaiveDateTime)> = [journeys_1, journeys_2]
         .concat()
         .into_iter()
-        .filter(|(_, journey_departure_at)| {
-            *journey_departure_at >= departure_at && *journey_departure_at <= max_departure_at
+        .filter(|&(_, journey_departure_at)| {
+            journey_departure_at >= departure_at && journey_departure_at <= max_departure_at
         })
         .collect();
 
@@ -130,13 +130,13 @@ pub fn next_departures<'a>(
         .into_iter()
         .filter(|(journey, _)| {
             let hash = journey.hash_route(departure_stop_id).unwrap();
-            let contains = routes_to_ignore.contains(&hash);
 
-            if !contains {
+            if !routes_to_ignore.contains(&hash) {
                 routes_to_ignore.insert(hash);
+                true
+            } else {
+                false
             }
-
-            !contains
         })
         .collect()
 }

@@ -35,21 +35,31 @@ pub fn get_operating_journeys(
     date: NaiveDate,
     stop_id: i32,
 ) -> Vec<&Journey> {
-    let journeys_1 = data_storage.journeys().find_by_day(date);
+    let bit_fields_1 = data_storage.bit_fields().find_by_day(date);
 
     data_storage
-        .journeys()
+        .bit_fields()
         .find_by_stop_id(stop_id)
-        .map_or(Vec::new(), |journeys_2| {
-            let ids = journeys_1.intersection(&journeys_2).cloned().collect();
-            data_storage.journeys().resolve_ids(&ids)
+        .map_or(Vec::new(), |bit_fields_2| {
+            let bit_fields: Vec<_> = bit_fields_1.intersection(&bit_fields_2).collect();
+
+            bit_fields
+                .into_iter()
+                .map(|&bit_field_id| {
+                    data_storage
+                        .journeys()
+                        .find_by_stop_id_and_bit_field_id(stop_id, bit_field_id)
+                })
+                .flatten()
+                .map(|&journey_id| data_storage.journeys().find(journey_id))
+                .collect()
         })
 }
 
 pub fn get_routes_to_ignore(data_storage: &DataStorage, route: &Route) -> FxHashSet<u64> {
     route
         .sections()
-        .iter()
+        .into_iter()
         .filter_map(|section| {
             section
                 .journey(data_storage)
@@ -64,7 +74,7 @@ pub fn sort_routes(routes: &mut Vec<Route>) {
 
 pub fn sorted_insert(routes: &mut Vec<Route>, route_to_insert: Route) {
     let index = routes
-        .iter()
+        .into_iter()
         .position(|route| route_to_insert.arrival_at() < route.arrival_at())
         .unwrap_or_else(|| routes.len());
     routes.insert(index, route_to_insert);

@@ -37,28 +37,29 @@ pub fn run() -> Result<(), Box<dyn Error>> {
         hrdf.data_storage().journeys().entries().len()
     );
 
-    #[rustfmt::skip]
-    println!("{}", hrdf.data_storage().journeys().journeys_by_day().values().map(|v| v.len()).sum::<usize>());
-    #[rustfmt::skip]
-    println!("{}", hrdf.data_storage().journeys().journeys_by_stop_id().values().map(|v| v.len()).sum::<usize>());
-
     println!("");
 
-    if false {
-        const N: u32 = 10;
-        let before = Instant::now();
+    const ALGORITHM: u32 = 2;
 
-        for i in 0..N {
-            test_plan_journey(&hrdf, i == 0);
+    match ALGORITHM {
+        1 => {
+            const N: u32 = 10;
+            let before = Instant::now();
+
+            for i in 0..N {
+                test_plan_journey(&hrdf, i == 0);
+            }
+
+            let elapsed = before.elapsed();
+            println!("\n{:.2?}", elapsed / N);
         }
-
-        let elapsed = before.elapsed();
-        println!("\n{:.2?}", elapsed / N);
-    } else {
-        let before = Instant::now();
-        test_find_reachable_stops_within_time_limit(&hrdf);
-        let elapsed = before.elapsed();
-        println!("\n{:.2?}", elapsed);
+        2 => {
+            let before = Instant::now();
+            test_find_reachable_stops_within_time_limit(&hrdf);
+            let elapsed = before.elapsed();
+            println!("\n{:.2?}", elapsed);
+        }
+        _ => panic!(),
     }
 
     Ok(())
@@ -99,7 +100,7 @@ fn test_plan_journey(hrdf: &Hrdf, verbose: bool) {
 
     // Chancy, Les Bouveries => Genève, gare Cornavin
     // hrdf.plan_journey(8592688, 8587057, create_date_time(2023, 2, 3, 12, 55), verbose);
-    // hrdf.plan_journey(8592688, 8587057, create_date_time(2023, 2, 3, 14, 31), verbose);
+    hrdf.plan_journey(8592688, 8587057, create_date_time(2023, 2, 3, 14, 31), verbose);
     // hrdf.plan_journey(8592688, 8587057, create_date_time(2023, 2, 3, 20, 40), verbose);
     // hrdf.plan_journey(8592688, 8587057, create_date_time(2023, 2, 3, 21, 40), verbose);
 
@@ -107,7 +108,7 @@ fn test_plan_journey(hrdf: &Hrdf, verbose: bool) {
     // hrdf.plan_journey(8592688, 8501008, create_date_time(2023, 2, 3, 14, 31), verbose);
 
     // Chancy, Les Bouveries => Lausanne
-    hrdf.plan_journey(8592688, 8501120, create_date_time(2023, 2, 3, 14, 31), verbose);
+    // hrdf.plan_journey(8592688, 8501120, create_date_time(2023, 2, 3, 14, 31), verbose);
     // hrdf.plan_journey(8592688, 8501120, create_date_time(2023, 2, 3, 23, 31), verbose);
 
     // Chancy, Les Bouveries => Sevelen, Post

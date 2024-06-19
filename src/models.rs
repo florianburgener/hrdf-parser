@@ -21,10 +21,11 @@ pub trait Model<M: Model<M>> {
     fn id(&self) -> M::K;
 
     fn vec_to_map(data: Vec<M>) -> FxHashMap<M::K, M> {
-        data.into_iter().fold(FxHashMap::default(), |mut acc, item| {
-            acc.insert(item.id(), item);
-            acc
-        })
+        data.into_iter()
+            .fold(FxHashMap::default(), |mut acc, item| {
+                acc.insert(item.id(), item);
+                acc
+            })
     }
 }
 
@@ -346,10 +347,10 @@ impl Journey {
         entry.bit_field_id
     }
 
-    pub fn bit_field<'a>(&'a self, data_storage: &'a DataStorage) -> Option<&BitField> {
-        self.bit_field_id()
-            .map(|bit_field_id| data_storage.bit_fields().find(bit_field_id))
-    }
+    // pub fn bit_field<'a>(&'a self, data_storage: &'a DataStorage) -> Option<&BitField> {
+    //     self.bit_field_id()
+    //         .map(|bit_field_id| data_storage.bit_fields().find(bit_field_id))
+    // }
 
     pub fn first_stop_id(&self) -> i32 {
         self.route.first().unwrap().stop_id()
@@ -367,25 +368,13 @@ impl Journey {
         }
     }
 
-    pub fn count_stops(&self, departure_stop_id: i32, arrival_stop_id: i32) -> i32 {
-        let mut route_iter = self.route().iter().peekable();
-
-        while route_iter.peek().unwrap().stop_id() != departure_stop_id {
-            route_iter.next();
-        }
-
-        let mut count = 0;
-
-        loop {
-            count += 1;
-            let stop_id = route_iter.next().unwrap().stop_id();
-
-            if stop_id == arrival_stop_id {
-                break;
-            }
-        }
-
-        count
+    pub fn count_stops(&self, departure_stop_id: i32, arrival_stop_id: i32) -> usize {
+        self.route()
+            .into_iter()
+            .skip_while(|stop| stop.stop_id() != departure_stop_id)
+            .take_while(|stop| stop.stop_id() != arrival_stop_id)
+            .skip(1)
+            .count()
     }
 
     pub fn hash_route(&self, departure_stop_id: i32) -> Option<u64> {

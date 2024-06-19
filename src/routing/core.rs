@@ -177,7 +177,7 @@ fn is_improving_solution(
     candidate: &Route,
     solution: &Option<&Route>,
 ) -> bool {
-    fn count_stops(data_storage: &DataStorage, section: &RouteSection) -> i32 {
+    fn count_stops(data_storage: &DataStorage, section: &RouteSection) -> usize {
         section
             .journey(data_storage)
             .unwrap()
