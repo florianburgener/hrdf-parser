@@ -48,6 +48,10 @@ Inutile : ATTRIBUT_DE, ATTRIBUT_EN, ATTRIBUT_FR, ATTRIBUT_IT, BHFART, GREENZHLT,
 TODO :
 * Lib :
   * Essayer d'améliorer les perfomances (intersection)
+    * bit_fields_by_day
+    * bit_fields_by_stop_id
+    * bit_fields_by_day intersection bit_fields_by_stop_id
+    * (bit_field, stop_id) => journeys
   * Changer comment les déplacements à pied sont stocker
   * Temps de correspondance
   * Ajouter thiserror
