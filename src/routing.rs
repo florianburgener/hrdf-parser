@@ -4,6 +4,7 @@ mod core;
 mod display;
 mod exploration;
 mod models;
+mod route;
 mod utils;
 
 use core::compute_routing;

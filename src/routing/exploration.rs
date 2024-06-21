@@ -4,7 +4,7 @@ use rustc_hash::{FxHashMap, FxHashSet};
 use crate::{storage::DataStorage, utils::add_minutes_to_date_time};
 
 use super::{
-    connections::{create_route_from_another_route, get_connections},
+    connections::get_connections,
     models::{Route, RouteSection},
     utils::{clone_update_route, get_stop_connections, sort_routes, sorted_insert},
 };
@@ -24,6 +24,10 @@ where
     while !routes.is_empty() {
         let route = routes.remove(0);
 
+        // if let Some(journey_id) = route.last_section().journey_id() {
+        //     journeys_to_ignore.insert(journey_id);
+        // }
+
         if !can_continue_exploration(&route) {
             continue;
         }
@@ -34,46 +38,40 @@ where
             continue;
         }
 
-        explore_next_section(data_storage, &route, journeys_to_ignore, &mut routes);
+        explore_last_route_section_more_if_possible(data_storage, &route, &mut routes);
 
         if !can_explore_connections(data_storage, &route, earliest_arrival_by_stop_id) {
             continue;
         }
 
         explore_nearby_stops(data_storage, &route, &mut routes);
-        explore_connections(data_storage, &route, &mut new_routes);
+        explore_connections(data_storage, &route, &journeys_to_ignore, &mut new_routes);
     }
 
-    new_routes = filter_new_routes(new_routes, journeys_to_ignore);
+    new_routes.iter().for_each(|route| {
+        if let Some(journey_id) = route.last_section().journey_id() {
+            journeys_to_ignore.insert(journey_id);
+        }
+    });
+
     sort_routes(&mut new_routes);
     new_routes
 }
 
-fn explore_next_section(
+fn explore_last_route_section_more_if_possible(
     data_storage: &DataStorage,
     route: &Route,
-    journeys_to_ignore: &mut FxHashSet<i32>,
     routes: &mut Vec<Route>,
 ) {
-    if route.last_section().journey_id().is_none() {
+    let Some(journey_id) = route.last_section().journey_id() else {
         return;
+    };
+
+    let new_route = route.extend(data_storage, journey_id, route.last_section().arrival_at());
+
+    if let Some(rou) = new_route {
+        sorted_insert(routes, rou);
     }
-
-    let journey_id = route.last_section().journey_id().unwrap();
-    journeys_to_ignore.insert(journey_id);
-
-    let new_route = create_route_from_another_route(
-        data_storage,
-        &route,
-        journey_id,
-        route.last_section().arrival_at(),
-    );
-
-    if new_route.is_none() {
-        return;
-    }
-
-    sorted_insert(routes, new_route.unwrap());
 }
 
 fn can_explore_connections(
@@ -92,7 +90,6 @@ fn can_explore_connections(
     let arrival_at = route.arrival_at();
 
     if let Some(&earliest_arrival) = earliest_arrival_by_stop_id.get(&stop_id) {
-        // WARNING: Consider putting the "<=" back.
         if arrival_at < earliest_arrival {
             earliest_arrival_by_stop_id.insert(stop_id, arrival_at);
             true
@@ -105,8 +102,13 @@ fn can_explore_connections(
     }
 }
 
-fn explore_connections(data_storage: &DataStorage, route: &Route, new_routes: &mut Vec<Route>) {
-    new_routes.extend(get_connections(data_storage, &route));
+fn explore_connections(
+    data_storage: &DataStorage,
+    route: &Route,
+    journeys_to_ignore: &FxHashSet<i32>,
+    new_routes: &mut Vec<Route>,
+) {
+    new_routes.extend(get_connections(data_storage, &route, journeys_to_ignore));
 }
 
 fn explore_nearby_stops(data_storage: &DataStorage, route: &Route, routes: &mut Vec<Route>) {
@@ -140,11 +142,4 @@ fn explore_nearby_stops(data_storage: &DataStorage, route: &Route, routes: &mut 
         })
     })
     .for_each(|new_route| sorted_insert(routes, new_route));
-}
-
-fn filter_new_routes(new_routes: Vec<Route>, journeys_to_ignore: &FxHashSet<i32>) -> Vec<Route> {
-    new_routes
-        .into_iter()
-        .filter(|route| !journeys_to_ignore.contains(&route.last_section().journey_id().unwrap()))
-        .collect()
 }

@@ -62,7 +62,7 @@ impl RouteSection {
     // Functions
 
     pub fn journey<'a>(&'a self, data_storage: &'a DataStorage) -> Option<&Journey> {
-        self.journey_id().map(|id| data_storage.journeys().find(id))
+        self.journey_id.map(|id| data_storage.journeys().find(id))
     }
 }
 
@@ -94,7 +94,7 @@ impl Route {
 
     pub fn last_section(&self) -> &RouteSection {
         // A route always contains at least one section.
-        self.sections().last().unwrap()
+        self.sections.last().unwrap()
     }
 
     pub fn last_section_mut(&mut self) -> &mut RouteSection {
@@ -111,12 +111,12 @@ impl Route {
     }
 
     pub fn has_visited_any_stops(&self, stops: &FxHashSet<i32>) -> bool {
-        !self.visited_stops().is_disjoint(stops)
+        !self.visited_stops.is_disjoint(stops)
     }
 
     pub fn sections_having_journey(&self) -> Vec<&RouteSection> {
-        self.sections()
-            .into_iter()
+        self.sections
+            .iter()
             .filter(|section| section.journey_id().is_some())
             .collect()
     }

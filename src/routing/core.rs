@@ -4,10 +4,11 @@ use rustc_hash::{FxHashMap, FxHashSet};
 use crate::{storage::DataStorage, utils::sub_1_day};
 
 use super::{
-    connections::create_initial_routes,
+    connections::next_departures,
     constants::MAXIMUM_NUMBER_OF_EXPLORABLE_CONNECTIONS,
     exploration::explore_routes,
     models::{Route, RouteSection, RoutingAlgorithmArgs, RoutingAlgorithmMode},
+    utils::{get_stop_connections, sort_routes},
 };
 
 pub fn compute_routing(
@@ -21,6 +22,12 @@ pub fn compute_routing(
     let mut journeys_to_ignore = FxHashSet::default();
     let mut earliest_arrival_by_stop_id = FxHashMap::default();
     let mut solutions = FxHashMap::default();
+
+    routes.iter().for_each(|route| {
+        if let Some(journey_id) = route.last_section().journey_id() {
+            journeys_to_ignore.insert(journey_id);
+        }
+    });
 
     for _ in 0..MAXIMUM_NUMBER_OF_EXPLORABLE_CONNECTIONS {
         if verbose {
@@ -71,6 +78,50 @@ pub fn compute_routing(
     }
 
     solutions
+}
+
+pub fn create_initial_routes(
+    data_storage: &DataStorage,
+    departure_stop_id: i32,
+    departure_at: NaiveDateTime,
+) -> Vec<Route> {
+    let mut routes: Vec<Route> =
+        next_departures(data_storage, departure_stop_id, departure_at, None)
+            .into_iter()
+            .filter_map(|(journey, journey_departure_at)| {
+                RouteSection::find_next(
+                    data_storage,
+                    journey,
+                    departure_stop_id,
+                    journey_departure_at,
+                )
+                .map(|(section, mut visited_stops)| {
+                    visited_stops.insert(departure_stop_id);
+                    Route::new(vec![section], visited_stops)
+                })
+            })
+            .collect();
+
+    if let Some(stop_connections) = get_stop_connections(data_storage, departure_stop_id) {
+        routes.extend(stop_connections.iter().map(|stop_connection| {
+            let mut visited_stops = FxHashSet::default();
+            visited_stops.insert(stop_connection.stop_id_1());
+            visited_stops.insert(stop_connection.stop_id_2());
+
+            let section = RouteSection::new(
+                None,
+                stop_connection.stop_id_1(),
+                stop_connection.stop_id_2(),
+                departure_at,
+                Some(stop_connection.duration()),
+            );
+
+            Route::new(vec![section], visited_stops)
+        }));
+    }
+
+    sort_routes(&mut routes);
+    routes
 }
 
 fn can_continue_exploration_one_to_one(

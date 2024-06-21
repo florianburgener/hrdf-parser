@@ -373,27 +373,20 @@ impl Journey {
             .into_iter()
             .skip_while(|stop| stop.stop_id() != departure_stop_id)
             .take_while(|stop| stop.stop_id() != arrival_stop_id)
-            .skip(1)
             .count()
+            + 1
     }
 
     pub fn hash_route(&self, departure_stop_id: i32) -> Option<u64> {
-        let mut route_iter = self.route().iter().peekable();
-
-        loop {
-            if let Some(route_entry) = route_iter.peek() {
-                if route_entry.stop_id() == departure_stop_id {
-                    break;
-                }
-            } else {
-                return None;
-            }
-
-            route_iter.next();
-        }
+        let index = self
+            .route
+            .iter()
+            .position(|route_entry| route_entry.stop_id() == departure_stop_id)?;
 
         let mut hasher = DefaultHasher::new();
-        route_iter
+        self.route
+            .iter()
+            .skip(index)
             .map(|route_entry| route_entry.stop_id())
             .collect::<BTreeSet<_>>()
             .hash(&mut hasher);

@@ -16,7 +16,7 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     const CACHED_PATH: &str = "data.cache";
 
     let now = Instant::now();
-    let hrdf = if Path::new(CACHED_PATH).exists() && false {
+    let hrdf = if Path::new(CACHED_PATH).exists() && true {
         println!("Reading from cache...");
         Hrdf::load_from_cache()?
     } else {

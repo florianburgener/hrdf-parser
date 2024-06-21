@@ -47,7 +47,6 @@ Inutile : ATTRIBUT_DE, ATTRIBUT_EN, ATTRIBUT_FR, ATTRIBUT_IT, BHFART, GREENZHLT,
 
 TODO :
 * Lib :
-    * Changer comment les déplacements à pied sont stocker
   * Temps de correspondance
   * Ajouter thiserror
   * Automatiquement télécharger les dernières données
@@ -81,6 +80,8 @@ Algorithme de calcul du trajet le plus court (Problèmes) :
 * Ne maximise pas le temps de départ
 
 Algorithme de calcul du trajet le plus court (Optionnel) :
+* Changer comment les déplacements à pied sont stocker
+  * Le premier et dernier déplacement ne doivent pas compter dans la comparaison de solution.
 * Pouvoir paginer les résultats
     * Récupérer N résults plus tôt
     * Récupérer N résults plus tard
@@ -91,6 +92,8 @@ Algorithme de calcul du trajet le plus court (Optionnel) :
 Algorithme de calcul du trajet le plus court (Idées) :
 * Forcer l'utilisation des trains quand l'arrêt d'arrivée est loin
 
+* iter vs into_inter ?
+* Supprimer les getters inutile
 
 Catégorisation parser :
 

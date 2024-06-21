@@ -1,4 +1,4 @@
-use chrono::{Duration, NaiveDateTime};
+use chrono::{Duration, NaiveDate, NaiveDateTime};
 use rustc_hash::FxHashSet;
 
 use crate::{
@@ -8,59 +8,15 @@ use crate::{
 };
 
 use super::{
-    constants::MAXIMUM_NUMBER_OF_HOURS_TO_CHECK_FOR_NEXT_DEPARTURES,
-    models::{Route, RouteSection},
-    utils::{
-        clone_update_route, get_operating_journeys, get_routes_to_ignore, get_stop_connections,
-        sort_routes,
-    },
+    constants::MAXIMUM_NUMBER_OF_HOURS_TO_CHECK_FOR_NEXT_DEPARTURES, models::Route,
+    utils::get_routes_to_ignore,
 };
 
-pub fn create_initial_routes(
+pub fn get_connections(
     data_storage: &DataStorage,
-    departure_stop_id: i32,
-    departure_at: NaiveDateTime,
+    route: &Route,
+    journeys_to_ignore: &FxHashSet<i32>,
 ) -> Vec<Route> {
-    let mut routes: Vec<Route> =
-        next_departures(data_storage, departure_stop_id, departure_at, None)
-            .into_iter()
-            .filter_map(|(journey, journey_departure_at)| {
-                get_next_route_section(
-                    data_storage,
-                    journey,
-                    departure_stop_id,
-                    journey_departure_at,
-                )
-                .map(|(section, mut visited_stops)| {
-                    visited_stops.insert(departure_stop_id);
-                    Route::new(vec![section], visited_stops)
-                })
-            })
-            .collect();
-
-    if let Some(stop_connections) = get_stop_connections(data_storage, departure_stop_id) {
-        routes.extend(stop_connections.iter().map(|stop_connection| {
-            let mut visited_stops = FxHashSet::default();
-            visited_stops.insert(stop_connection.stop_id_1());
-            visited_stops.insert(stop_connection.stop_id_2());
-
-            let section = RouteSection::new(
-                None,
-                stop_connection.stop_id_1(),
-                stop_connection.stop_id_2(),
-                departure_at,
-                Some(stop_connection.duration()),
-            );
-
-            Route::new(vec![section], visited_stops)
-        }));
-    }
-
-    sort_routes(&mut routes);
-    routes
-}
-
-pub fn get_connections(data_storage: &DataStorage, route: &Route) -> Vec<Route> {
     next_departures(
         data_storage,
         route.arrival_stop_id(),
@@ -68,8 +24,9 @@ pub fn get_connections(data_storage: &DataStorage, route: &Route) -> Vec<Route> 
         Some(get_routes_to_ignore(data_storage, &route)),
     )
     .into_iter()
+    .filter(|(journey, _)| !journeys_to_ignore.contains(&journey.id()))
     .filter_map(|(journey, journey_departure_at)| {
-        create_route_from_another_route(data_storage, &route, journey.id(), journey_departure_at)
+        route.extend(data_storage, journey.id(), journey_departure_at)
     })
     .collect()
 }
@@ -141,92 +98,28 @@ pub fn next_departures<'a>(
         .collect()
 }
 
-pub fn create_route_from_another_route(
+pub fn get_operating_journeys(
     data_storage: &DataStorage,
-    route: &Route,
-    journey_id: i32,
-    departure_at: NaiveDateTime,
-) -> Option<Route> {
-    let journey = data_storage.journeys().find(journey_id);
+    date: NaiveDate,
+    stop_id: i32,
+) -> Vec<&Journey> {
+    let bit_fields_1 = data_storage.bit_fields().find_by_day(date);
 
-    if journey.is_last_stop(route.last_section().arrival_stop_id(), false) {
-        return None;
-    }
+    data_storage
+        .bit_fields()
+        .find_by_stop_id(stop_id)
+        .map_or(Vec::new(), |bit_fields_2| {
+            let bit_fields: Vec<_> = bit_fields_1.intersection(&bit_fields_2).collect();
 
-    let is_same_journey = route
-        .last_section()
-        .journey_id()
-        .map_or(false, |id| id == journey_id);
-
-    get_next_route_section(
-        data_storage,
-        journey,
-        route.last_section().arrival_stop_id(),
-        departure_at,
-    )
-    .and_then(|(new_section, new_visited_stops)| {
-        if route.has_visited_any_stops(&new_visited_stops)
-            && new_section.arrival_stop_id() != journey.first_stop_id()
-        {
-            return None;
-        }
-
-        let new_route = clone_update_route(route, |cloned_sections, cloned_visited_stops| {
-            if is_same_journey {
-                let last_section = cloned_sections.last_mut().unwrap();
-                last_section.set_arrival_stop_id(new_section.arrival_stop_id());
-                last_section.set_arrival_at(new_section.arrival_at());
-            } else {
-                cloned_sections.push(new_section);
-            }
-
-            cloned_visited_stops.extend(new_visited_stops);
-        });
-        Some(new_route)
-    })
-}
-
-fn get_next_route_section(
-    data_storage: &DataStorage,
-    journey: &Journey,
-    departure_stop_id: i32,
-    departure_at: NaiveDateTime,
-) -> Option<(RouteSection, FxHashSet<i32>)> {
-    let mut route_iter = journey.route().iter();
-
-    while let Some(route_entry) = route_iter.next() {
-        if route_entry.stop_id() == departure_stop_id {
-            break;
-        }
-    }
-
-    let mut visited_stops = FxHashSet::default();
-
-    while let Some(route_entry) = route_iter.next() {
-        let stop = data_storage.stops().find(route_entry.stop_id());
-        visited_stops.insert(stop.id());
-
-        if stop.can_be_used_as_exchange_point() || journey.is_last_stop(stop.id(), false) {
-            let arrival_time = journey.arrival_time_of(stop.id());
-
-            let arrival_at = if arrival_time >= departure_at.time() {
-                NaiveDateTime::new(departure_at.date(), arrival_time)
-            } else {
-                NaiveDateTime::new(add_1_day(departure_at.date()), arrival_time)
-            };
-
-            return Some((
-                RouteSection::new(
-                    Some(journey.id()),
-                    departure_stop_id,
-                    stop.id(),
-                    arrival_at,
-                    None,
-                ),
-                visited_stops,
-            ));
-        }
-    }
-
-    None
+            bit_fields
+                .into_iter()
+                .map(|&bit_field_id| {
+                    data_storage
+                        .journeys()
+                        .find_by_stop_id_and_bit_field_id(stop_id, bit_field_id)
+                })
+                .flatten()
+                .map(|&journey_id| data_storage.journeys().find(journey_id))
+                .collect()
+        })
 }
