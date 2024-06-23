@@ -94,9 +94,17 @@ Algorithme de calcul du trajet le plus court (Idées) :
 
 * iter vs into_inter ?
 * Supprimer les getters inutile
+* Demander des précisions sur les temps d'échanges et version HRDF
 
 Catégorisation parser :
 
 auto_increment :
 map + collect :
 vec_to_map before Storage::new :
+
+
+4
+65
+546
+123
+14

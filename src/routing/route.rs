@@ -4,7 +4,6 @@ use rustc_hash::FxHashSet;
 use crate::{
     models::{Journey, Model},
     storage::DataStorage,
-    utils::add_1_day,
 };
 
 use super::{
@@ -30,32 +29,28 @@ impl Route {
             .journey_id()
             .map_or(false, |id| id == journey_id);
 
-        RouteSection::find_next(
-            data_storage,
-            journey,
-            self.last_section().arrival_stop_id(),
-            departure_at,
-        )
-        .and_then(|(new_section, new_visited_stops)| {
-            if self.has_visited_any_stops(&new_visited_stops)
-                && new_section.arrival_stop_id() != journey.first_stop_id()
-            {
-                return None;
-            }
-
-            let new_route = clone_update_route(self, |cloned_sections, cloned_visited_stops| {
-                if is_same_journey {
-                    let last_section = cloned_sections.last_mut().unwrap();
-                    last_section.set_arrival_stop_id(new_section.arrival_stop_id());
-                    last_section.set_arrival_at(new_section.arrival_at());
-                } else {
-                    cloned_sections.push(new_section);
+        RouteSection::find_next(data_storage, journey, self.arrival_stop_id(), departure_at)
+            .and_then(|(new_section, new_visited_stops)| {
+                if self.has_visited_any_stops(&new_visited_stops)
+                    && new_section.arrival_stop_id() != journey.first_stop_id()
+                {
+                    return None;
                 }
 
-                cloned_visited_stops.extend(new_visited_stops);
-            });
-            Some(new_route)
-        })
+                let new_route =
+                    clone_update_route(self, |cloned_sections, cloned_visited_stops| {
+                        if is_same_journey {
+                            let last_section = cloned_sections.last_mut().unwrap();
+                            last_section.set_arrival_stop_id(new_section.arrival_stop_id());
+                            last_section.set_arrival_at(new_section.arrival_at());
+                        } else {
+                            cloned_sections.push(new_section);
+                        }
+
+                        cloned_visited_stops.extend(new_visited_stops);
+                    });
+                Some(new_route)
+            })
     }
 }
 
@@ -81,13 +76,12 @@ impl RouteSection {
             visited_stops.insert(stop.id());
 
             if stop.can_be_used_as_exchange_point() || journey.is_last_stop(stop.id(), false) {
-                let arrival_time = journey.arrival_time_of(stop.id());
-
-                let arrival_at = if arrival_time >= departure_at.time() {
-                    NaiveDateTime::new(departure_at.date(), arrival_time)
-                } else {
-                    NaiveDateTime::new(add_1_day(departure_at.date()), arrival_time)
-                };
+                let arrival_at = journey.arrival_at_of_with_origin(
+                    stop.id(),
+                    departure_at.date(),
+                    true,
+                    departure_stop_id,
+                );
 
                 return Some((
                     RouteSection::new(

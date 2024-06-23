@@ -1,7 +1,7 @@
 use chrono::NaiveDateTime;
 use rustc_hash::{FxHashMap, FxHashSet};
 
-use crate::{storage::DataStorage, utils::sub_1_day};
+use crate::storage::DataStorage;
 
 use super::{
     connections::next_departures,
@@ -86,7 +86,7 @@ pub fn create_initial_routes(
     departure_at: NaiveDateTime,
 ) -> Vec<Route> {
     let mut routes: Vec<Route> =
-        next_departures(data_storage, departure_stop_id, departure_at, None)
+        next_departures(data_storage, departure_stop_id, departure_at, None, None)
             .into_iter()
             .filter_map(|(journey, journey_departure_at)| {
                 RouteSection::find_next(
@@ -165,7 +165,7 @@ fn can_continue_exploration_one_to_many(
             return;
         }
 
-        let arrival_stop_id = candidate.last_section().arrival_stop_id();
+        let arrival_stop_id = candidate.arrival_stop_id();
         let solution = solutions.get(&arrival_stop_id);
 
         if is_improving_solution(data_storage, &candidate, &solution) {
@@ -188,7 +188,7 @@ fn can_continue_exploration_one_to_many(
         }
     }
 
-    route.last_section().arrival_at() < time_limit
+    route.arrival_at() < time_limit
 }
 
 /// Do not call this function if route.last_section().journey_id() is None.
@@ -197,22 +197,19 @@ fn update_arrival_stop(
     mut route: Route,
     arrival_stop_id: i32,
 ) -> Route {
-    let journey = route.last_section().journey(data_storage).unwrap();
-    let new_arrival_time = journey.arrival_time_of(arrival_stop_id);
+    let last_section = route.last_section();
+
+    let journey = last_section.journey(data_storage).unwrap();
+    let arrival_at = journey.arrival_at_of_with_origin(
+        arrival_stop_id,
+        last_section.arrival_at().date(),
+        false,
+        last_section.arrival_stop_id(),
+    );
 
     let last_section = route.last_section_mut();
-
-    let arrival_at = last_section.arrival_at();
-    let arrival_date = arrival_at.date();
-
-    let new_arrival_at = if new_arrival_time <= arrival_at.time() {
-        NaiveDateTime::new(arrival_date, new_arrival_time)
-    } else {
-        NaiveDateTime::new(sub_1_day(arrival_date), new_arrival_time)
-    };
-
     last_section.set_arrival_stop_id(arrival_stop_id);
-    last_section.set_arrival_at(new_arrival_at);
+    last_section.set_arrival_at(arrival_at);
 
     route
 }

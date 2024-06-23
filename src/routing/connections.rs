@@ -4,7 +4,7 @@ use rustc_hash::FxHashSet;
 use crate::{
     models::{Journey, Model},
     storage::DataStorage,
-    utils::add_1_day,
+    utils::{add_1_day, add_minutes_to_date_time},
 };
 
 use super::{
@@ -22,6 +22,7 @@ pub fn get_connections(
         route.arrival_stop_id(),
         route.arrival_at(),
         Some(get_routes_to_ignore(data_storage, &route)),
+        route.last_section().journey_id(),
     )
     .into_iter()
     .filter(|(journey, _)| !journeys_to_ignore.contains(&journey.id()))
@@ -36,35 +37,31 @@ pub fn next_departures<'a>(
     departure_stop_id: i32,
     departure_at: NaiveDateTime,
     routes_to_ignore: Option<FxHashSet<u64>>,
+    previous_journey_id: Option<i32>,
 ) -> Vec<(&'a Journey, NaiveDateTime)> {
-    let departure_date_1 = departure_at.date();
-    let departure_date_2 = add_1_day(departure_at.date());
+    fn get_journeys(
+        data_storage: &DataStorage,
+        date: NaiveDate,
+        stop_id: i32,
+    ) -> Vec<(&Journey, NaiveDateTime)> {
+        get_operating_journeys(data_storage, date, stop_id)
+            .into_iter()
+            .filter(|journey| !journey.is_last_stop(stop_id, true))
+            .map(|journey| {
+                let journey_departure_at = journey.departure_at_of(stop_id, date);
+                (journey, journey_departure_at)
+            })
+            .collect()
+    }
 
     let journeys_1: Vec<(&Journey, NaiveDateTime)> =
-        get_operating_journeys(data_storage, departure_date_1, departure_stop_id)
-            .into_iter()
-            .filter(|journey| !journey.is_last_stop(departure_stop_id, true))
-            .map(|journey| {
-                let journey_departure_time = journey.departure_time_of(departure_stop_id);
-                let journey_departure_at =
-                    NaiveDateTime::new(departure_date_1, journey_departure_time);
+        get_journeys(data_storage, departure_at.date(), departure_stop_id);
 
-                (journey, journey_departure_at)
-            })
-            .collect();
-
-    let journeys_2: Vec<(&Journey, NaiveDateTime)> =
-        get_operating_journeys(data_storage, departure_date_2, departure_stop_id)
-            .into_iter()
-            .filter(|journey| !journey.is_last_stop(departure_stop_id, true))
-            .map(|journey| {
-                let journey_departure_time = journey.departure_time_of(departure_stop_id);
-                let journey_departure_at =
-                    NaiveDateTime::new(departure_date_2, journey_departure_time);
-
-                (journey, journey_departure_at)
-            })
-            .collect();
+    let journeys_2: Vec<(&Journey, NaiveDateTime)> = get_journeys(
+        data_storage,
+        add_1_day(departure_at.date()),
+        departure_stop_id,
+    );
 
     let max_departure_at = departure_at
         .checked_add_signed(Duration::hours(
@@ -95,6 +92,14 @@ pub fn next_departures<'a>(
                 false
             }
         })
+        // .filter(|&(journey, journey_departure_at)| {
+        //     previous_journey_id.map_or(true, |id| {
+        //         add_minutes_to_date_time(
+        //             departure_at,
+        //             exchange_time(data_storage, departure_stop_id, id, journey.id()) as i64,
+        //         ) <= journey_departure_at
+        //     })
+        // })
         .collect()
 }
 
@@ -122,4 +127,13 @@ pub fn get_operating_journeys(
                 .map(|&journey_id| data_storage.journeys().find(journey_id))
                 .collect()
         })
+}
+
+pub fn exchange_time(
+    data_storage: &DataStorage,
+    stop_id: i32,
+    journey_id_1: i32,
+    journey_id_2: i32,
+) -> i16 {
+    2
 }

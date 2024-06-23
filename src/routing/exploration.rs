@@ -24,10 +24,6 @@ where
     while !routes.is_empty() {
         let route = routes.remove(0);
 
-        // if let Some(journey_id) = route.last_section().journey_id() {
-        //     journeys_to_ignore.insert(journey_id);
-        // }
-
         if !can_continue_exploration(&route) {
             continue;
         }
@@ -67,7 +63,7 @@ fn explore_last_route_section_more_if_possible(
         return;
     };
 
-    let new_route = route.extend(data_storage, journey_id, route.last_section().arrival_at());
+    let new_route = route.extend(data_storage, journey_id, route.arrival_at());
 
     if let Some(rou) = new_route {
         sorted_insert(routes, rou);

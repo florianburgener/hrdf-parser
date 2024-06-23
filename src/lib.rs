@@ -39,7 +39,7 @@ pub fn run() -> Result<(), Box<dyn Error>> {
 
     println!("");
 
-    const ALGORITHM: u32 = 2;
+    const ALGORITHM: u32 = 1;
 
     match ALGORITHM {
         1 => {

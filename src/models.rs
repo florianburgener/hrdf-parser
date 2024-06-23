@@ -3,12 +3,15 @@ use std::{
     hash::{DefaultHasher, Hash, Hasher},
 };
 
-use chrono::{NaiveDate, NaiveTime};
+use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use rustc_hash::FxHashMap;
 use serde::{Deserialize, Serialize};
 use strum_macros::{self, Display, EnumString};
 
-use crate::storage::DataStorage;
+use crate::{
+    storage::DataStorage,
+    utils::{add_1_day, sub_1_day},
+};
 
 // ------------------------------------------------------------------------------------------------
 // --- Model
@@ -393,23 +396,68 @@ impl Journey {
         Some(hasher.finish())
     }
 
-    pub fn departure_time_of(&self, stop_id: i32) -> NaiveTime {
-        self.route()
+    pub fn departure_time_of(&self, stop_id: i32) -> (NaiveTime, bool) {
+        let route = self.route();
+        let index = route
             .iter()
-            .find(|route_entry| route_entry.stop_id() == stop_id)
-            .unwrap()
-            .departure_time()
-            .unwrap()
+            .position(|route_entry| route_entry.stop_id() == stop_id)
+            .unwrap();
+        let departure_time = route[index].departure_time().unwrap();
+
+        (
+            departure_time,
+            // The departure time is on the next day if this evaluates to true.
+            departure_time < route.first().unwrap().departure_time().unwrap(),
+        )
     }
 
-    pub fn arrival_time_of(&self, stop_id: i32) -> NaiveTime {
-        self.route()
+    /// The date must correspond to the route's first entry.
+    pub fn departure_at_of(&self, stop_id: i32, date: NaiveDate) -> NaiveDateTime {
+        match self.departure_time_of(stop_id) {
+            (departure_time, false) => NaiveDateTime::new(date, departure_time),
+            (departure_time, true) => NaiveDateTime::new(add_1_day(date), departure_time),
+        }
+    }
+
+    pub fn arrival_time_of(&self, stop_id: i32) -> (NaiveTime, bool) {
+        let route = self.route();
+        let index = route
             .iter()
+            // The first route entry has no arrival time.
             .skip(1)
-            .find(|route_entry| route_entry.stop_id() == stop_id)
-            .unwrap()
-            .arrival_time()
-            .unwrap()
+            .position(|route_entry| route_entry.stop_id() == stop_id)
+            .map(|i| i + 1)
+            .unwrap();
+        let arrival_time = route[index].arrival_time().unwrap();
+
+        (
+            arrival_time,
+            // The arrival time is on the next day if this evaluates to true.
+            arrival_time < route.first().unwrap().departure_time().unwrap(),
+        )
+    }
+
+    /// The date must be associated with the origin_stop_id.
+    pub fn arrival_at_of_with_origin(
+        &self,
+        stop_id: i32,
+        date: NaiveDate,
+        // If it's not a departure date, it's an arrival date.
+        is_departure_date: bool,
+        origin_stop_id: i32,
+    ) -> NaiveDateTime {
+        let (arrival_time, is_next_day) = self.arrival_time_of(stop_id);
+        let (_, origin_is_next_day) = if is_departure_date {
+            self.departure_time_of(origin_stop_id)
+        } else {
+            self.arrival_time_of(origin_stop_id)
+        };
+
+        match (is_next_day, origin_is_next_day) {
+            (true, false) => NaiveDateTime::new(add_1_day(date), arrival_time),
+            (false, true) => NaiveDateTime::new(sub_1_day(date), arrival_time),
+            _ => NaiveDateTime::new(date, arrival_time),
+        }
     }
 
     /// Excluding departure stop.
