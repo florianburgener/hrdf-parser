@@ -4,13 +4,10 @@ use rustc_hash::FxHashSet;
 use crate::{
     models::{Journey, Model},
     storage::DataStorage,
-    utils::{add_1_day, add_minutes_to_date_time},
+    utils::{add_1_day, create_time},
 };
 
-use super::{
-    constants::MAXIMUM_NUMBER_OF_HOURS_TO_CHECK_FOR_NEXT_DEPARTURES, models::Route,
-    utils::get_routes_to_ignore,
-};
+use super::{models::Route, utils::get_routes_to_ignore};
 
 pub fn get_connections(
     data_storage: &DataStorage,
@@ -37,7 +34,7 @@ pub fn next_departures<'a>(
     departure_stop_id: i32,
     departure_at: NaiveDateTime,
     routes_to_ignore: Option<FxHashSet<u64>>,
-    previous_journey_id: Option<i32>,
+    _previous_journey_id: Option<i32>,
 ) -> Vec<(&'a Journey, NaiveDateTime)> {
     fn get_journeys(
         data_storage: &DataStorage,
@@ -57,17 +54,28 @@ pub fn next_departures<'a>(
     let journeys_1: Vec<(&Journey, NaiveDateTime)> =
         get_journeys(data_storage, departure_at.date(), departure_stop_id);
 
-    let journeys_2: Vec<(&Journey, NaiveDateTime)> = get_journeys(
-        data_storage,
-        add_1_day(departure_at.date()),
-        departure_stop_id,
-    );
+    let (journeys_2, max_departure_at) = if departure_at.time() >= create_time(18, 0) {
+        // The journeys of the next day are also loaded.
+        // The maximum departure time is 08:00 the next day.
+        let departure_date = add_1_day(departure_at.date());
+        let journeys: Vec<(&Journey, NaiveDateTime)> =
+            get_journeys(data_storage, departure_date, departure_stop_id);
+        let max_departure_at = NaiveDateTime::new(departure_date, create_time(8, 0));
 
-    let max_departure_at = departure_at
-        .checked_add_signed(Duration::hours(
-            MAXIMUM_NUMBER_OF_HOURS_TO_CHECK_FOR_NEXT_DEPARTURES,
-        ))
-        .unwrap();
+        (journeys, max_departure_at)
+    } else {
+        // The next day's journeys are not loaded.
+        let max_departure_at = if departure_at.time() < create_time(8, 0) {
+            // The maximum departure time is 08:00.
+            NaiveDateTime::new(departure_at.date(), create_time(8, 0))
+        } else {
+            // The maximum departure time is 4 hours later.
+            departure_at.checked_add_signed(Duration::hours(4)).unwrap()
+        };
+
+        (Vec::new(), max_departure_at)
+    };
+
     let mut journeys: Vec<(&Journey, NaiveDateTime)> = [journeys_1, journeys_2]
         .concat()
         .into_iter()
@@ -129,11 +137,11 @@ pub fn get_operating_journeys(
         })
 }
 
-pub fn exchange_time(
-    data_storage: &DataStorage,
-    stop_id: i32,
-    journey_id_1: i32,
-    journey_id_2: i32,
-) -> i16 {
-    2
-}
+// pub fn exchange_time(
+//     data_storage: &DataStorage,
+//     stop_id: i32,
+//     journey_id_1: i32,
+//     journey_id_2: i32,
+// ) -> i16 {
+//     2
+// }
