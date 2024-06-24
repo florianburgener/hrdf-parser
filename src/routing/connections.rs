@@ -24,7 +24,12 @@ pub fn get_connections(
     .into_iter()
     .filter(|(journey, _)| !journeys_to_ignore.contains(&journey.id()))
     .filter_map(|(journey, journey_departure_at)| {
-        route.extend(data_storage, journey.id(), journey_departure_at)
+        route.extend(
+            data_storage,
+            journey.id(),
+            journey_departure_at.date(),
+            true,
+        )
     })
     .collect()
 }
@@ -46,6 +51,10 @@ pub fn next_departures<'a>(
             .filter(|journey| !journey.is_last_stop(stop_id, true))
             .map(|journey| {
                 let journey_departure_at = journey.departure_at_of(stop_id, date);
+                // if journey.id() == 105975 && stop_id == 8503227 && journey_departure_at.date() == create_date(2023, month, day) {
+                //     println!("{} {} \n\n{:?}", date, journey_departure_at, journey.route());
+                //     panic!();
+                // }
                 (journey, journey_departure_at)
             })
             .collect()

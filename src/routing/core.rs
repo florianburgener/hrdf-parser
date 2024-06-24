@@ -93,7 +93,8 @@ pub fn create_initial_routes(
                     data_storage,
                     journey,
                     departure_stop_id,
-                    journey_departure_at,
+                    journey_departure_at.date(),
+                    true,
                 )
                 .map(|(section, mut visited_stops)| {
                     visited_stops.insert(departure_stop_id);

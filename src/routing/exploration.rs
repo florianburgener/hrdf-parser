@@ -63,7 +63,7 @@ fn explore_last_route_section_more_if_possible(
         return;
     };
 
-    let new_route = route.extend(data_storage, journey_id, route.arrival_at());
+    let new_route = route.extend(data_storage, journey_id, route.arrival_at().date(), false);
 
     if let Some(rou) = new_route {
         sorted_insert(routes, rou);

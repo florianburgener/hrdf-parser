@@ -108,12 +108,13 @@ fn test_plan_journey(hrdf: &Hrdf, verbose: bool) {
     // hrdf.plan_journey(8592688, 8501008, create_date_time(2023, 2, 3, 14, 31), verbose);
 
     // Chancy, Les Bouveries => Lausanne
-    // hrdf.plan_journey(8592688, 8501120, create_date_time(2023, 2, 3, 14, 31), verbose);
+    hrdf.plan_journey(8592688, 8501120, create_date_time(2023, 2, 3, 14, 31), verbose);
     // hrdf.plan_journey(8592688, 8501120, create_date_time(2023, 2, 3, 23, 31), verbose);
 
     // Chancy, Les Bouveries => Sevelen, Post
     // hrdf.plan_journey(8592688, 8588197, create_date_time(2023, 2, 1, 6, 31), verbose);
-    hrdf.plan_journey(8592688, 8588197, create_date_time(2023, 2, 1, 13, 37), verbose); // Worst case I found.
+    // hrdf.plan_journey(8592688, 8588197, create_date_time(2023, 2, 1, 13, 36), verbose);
+    // hrdf.plan_journey(8592688, 8588197, create_date_time(2023, 2, 1, 13, 37), verbose); // Worst case I found.
     // hrdf.plan_journey(8592688, 8588197, create_date_time(2023, 2, 1, 14, 31), verbose);
     // hrdf.plan_journey(8592688, 8588197, create_date_time(2023, 2, 1, 18, 31), verbose);
 

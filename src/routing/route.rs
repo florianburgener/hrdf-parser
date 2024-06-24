@@ -1,4 +1,4 @@
-use chrono::NaiveDateTime;
+use chrono::NaiveDate;
 use rustc_hash::FxHashSet;
 
 use crate::{
@@ -16,7 +16,8 @@ impl Route {
         &self,
         data_storage: &DataStorage,
         journey_id: i32,
-        departure_at: NaiveDateTime,
+        date: NaiveDate,
+        is_departure_date: bool,
     ) -> Option<Route> {
         let journey = data_storage.journeys().find(journey_id);
 
@@ -29,28 +30,33 @@ impl Route {
             .journey_id()
             .map_or(false, |id| id == journey_id);
 
-        RouteSection::find_next(data_storage, journey, self.arrival_stop_id(), departure_at)
-            .and_then(|(new_section, new_visited_stops)| {
-                if self.has_visited_any_stops(&new_visited_stops)
-                    && new_section.arrival_stop_id() != journey.first_stop_id()
-                {
-                    return None;
+        RouteSection::find_next(
+            data_storage,
+            journey,
+            self.arrival_stop_id(),
+            date,
+            is_departure_date,
+        )
+        .and_then(|(new_section, new_visited_stops)| {
+            if self.has_visited_any_stops(&new_visited_stops)
+                && new_section.arrival_stop_id() != journey.first_stop_id()
+            {
+                return None;
+            }
+
+            let new_route = clone_update_route(self, |cloned_sections, cloned_visited_stops| {
+                if is_same_journey {
+                    let last_section = cloned_sections.last_mut().unwrap();
+                    last_section.set_arrival_stop_id(new_section.arrival_stop_id());
+                    last_section.set_arrival_at(new_section.arrival_at());
+                } else {
+                    cloned_sections.push(new_section);
                 }
 
-                let new_route =
-                    clone_update_route(self, |cloned_sections, cloned_visited_stops| {
-                        if is_same_journey {
-                            let last_section = cloned_sections.last_mut().unwrap();
-                            last_section.set_arrival_stop_id(new_section.arrival_stop_id());
-                            last_section.set_arrival_at(new_section.arrival_at());
-                        } else {
-                            cloned_sections.push(new_section);
-                        }
-
-                        cloned_visited_stops.extend(new_visited_stops);
-                    });
-                Some(new_route)
-            })
+                cloned_visited_stops.extend(new_visited_stops);
+            });
+            Some(new_route)
+        })
     }
 }
 
@@ -59,7 +65,8 @@ impl RouteSection {
         data_storage: &DataStorage,
         journey: &Journey,
         departure_stop_id: i32,
-        departure_at: NaiveDateTime,
+        date: NaiveDate,
+        is_departure_date: bool,
     ) -> Option<(RouteSection, FxHashSet<i32>)> {
         let mut route_iter = journey.route().iter();
 
@@ -78,8 +85,8 @@ impl RouteSection {
             if stop.can_be_used_as_exchange_point() || journey.is_last_stop(stop.id(), false) {
                 let arrival_at = journey.arrival_at_of_with_origin(
                     stop.id(),
-                    departure_at.date(),
-                    true,
+                    date,
+                    is_departure_date,
                     departure_stop_id,
                 );
 
