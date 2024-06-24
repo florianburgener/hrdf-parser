@@ -45,35 +45,35 @@ pub fn next_departures<'a>(
         data_storage: &DataStorage,
         date: NaiveDate,
         stop_id: i32,
-    ) -> Vec<(&Journey, NaiveDateTime)> {
-        get_operating_journeys(data_storage, date, stop_id)
+    ) -> (Vec<(&Journey, NaiveDateTime)>, NaiveDateTime) {
+        let mut max_departure_at = NaiveDateTime::new(date, create_time(0, 0));
+
+        let journeys = get_operating_journeys(data_storage, date, stop_id)
             .into_iter()
             .filter(|journey| !journey.is_last_stop(stop_id, true))
             .map(|journey| {
                 let journey_departure_at = journey.departure_at_of(stop_id, date);
-                // if journey.id() == 105975 && stop_id == 8503227 && journey_departure_at.date() == create_date(2023, month, day) {
-                //     println!("{} {} \n\n{:?}", date, journey_departure_at, journey.route());
-                //     panic!();
-                // }
+                if journey_departure_at > max_departure_at {
+                    max_departure_at = journey_departure_at;
+                }
                 (journey, journey_departure_at)
             })
-            .collect()
+            .collect();
+        (journeys, max_departure_at)
     }
 
-    let journeys_1: Vec<(&Journey, NaiveDateTime)> =
-        get_journeys(data_storage, departure_at.date(), departure_stop_id);
+    let (journeys_1, mut findaname) = get_journeys(data_storage, departure_at.date(), departure_stop_id);
+    findaname = findaname.checked_add_signed(Duration::hours(-4)).unwrap();
 
-    let (journeys_2, max_departure_at) = if departure_at.time() >= create_time(18, 0) {
+    let (journeys_2, max_departure_at) = if departure_at > findaname {
         // The journeys of the next day are also loaded.
         // The maximum departure time is 08:00 the next day.
         let departure_date = add_1_day(departure_at.date());
-        let journeys: Vec<(&Journey, NaiveDateTime)> =
-            get_journeys(data_storage, departure_date, departure_stop_id);
+        let (journeys, _) = get_journeys(data_storage, departure_date, departure_stop_id);
         let max_departure_at = NaiveDateTime::new(departure_date, create_time(8, 0));
 
         (journeys, max_departure_at)
     } else {
-        // The next day's journeys are not loaded.
         let max_departure_at = if departure_at.time() < create_time(8, 0) {
             // The maximum departure time is 08:00.
             NaiveDateTime::new(departure_at.date(), create_time(8, 0))

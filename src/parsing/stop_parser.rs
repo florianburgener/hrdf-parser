@@ -9,7 +9,7 @@ use std::error::Error;
 use rustc_hash::FxHashMap;
 
 use crate::{
-    models::{Coordinate, CoordinateType, Model, Stop},
+    models::{Coordinates, CoordinateSystem, Model, Stop},
     parsing::{
         AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser,
         ParsedValue, RowDefinition, RowParser,
@@ -36,9 +36,9 @@ pub fn parse() -> Result<SimpleResourceStorage<Stop>, Box<dyn Error>> {
     let mut data = Stop::vec_to_map(data);
 
     println!("Parsing BFKOORD_LV95...");
-    load_coordinates(CoordinateType::LV95, &mut data)?;
+    load_coordinates(CoordinateSystem::LV95, &mut data)?;
     println!("Parsing BFKOORD_WGS...");
-    load_coordinates(CoordinateType::WGS84, &mut data)?;
+    load_coordinates(CoordinateSystem::WGS84, &mut data)?;
     println!("Parsing BFPRIOS...");
     load_exchange_priorities(&mut data)?;
     println!("Parsing KMINFO...");
@@ -54,7 +54,7 @@ pub fn parse() -> Result<SimpleResourceStorage<Stop>, Box<dyn Error>> {
 }
 
 fn load_coordinates(
-    coordinate_type: CoordinateType,
+    coordinate_system: CoordinateSystem,
     data: &mut FxHashMap<i32, Stop>,
 ) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
@@ -67,16 +67,16 @@ fn load_coordinates(
             ColumnDefinition::new(31, 36, ExpectedType::Integer16),
         ]),
     ]);
-    let filename = match coordinate_type {
-        CoordinateType::LV95 => "BFKOORD_LV95",
-        CoordinateType::WGS84 => "BFKOORD_WGS",
+    let filename = match coordinate_system {
+        CoordinateSystem::LV95 => "BFKOORD_LV95",
+        CoordinateSystem::WGS84 => "BFKOORD_WGS",
     };
     let path = format!("data/{}", filename);
     let parser = FileParser::new(&path, row_parser)?;
 
     parser
         .parse()
-        .for_each(|(_, _, values)| set_coordinate(values, coordinate_type, data));
+        .for_each(|(_, _, values)| set_coordinates(values, coordinate_system, data));
 
     Ok(())
 }
@@ -217,9 +217,9 @@ fn create_instance(mut values: Vec<ParsedValue>) -> Stop {
     Stop::new(id, name, long_name, abbreviation, synonyms)
 }
 
-fn set_coordinate(
+fn set_coordinates(
     mut values: Vec<ParsedValue>,
-    coordinate_type: CoordinateType,
+    coordinate_system: CoordinateSystem,
     data: &mut FxHashMap<i32, Stop>,
 ) {
     let stop_id: i32 = values.remove(0).into();
@@ -227,17 +227,17 @@ fn set_coordinate(
     let mut xy2: f64 = values.remove(0).into();
     let altitude: i16 = values.remove(0).into();
 
-    if coordinate_type == CoordinateType::WGS84 {
+    if coordinate_system == CoordinateSystem::WGS84 {
         // WGS84 coordinates are stored in reverse order for some unknown reason.
         (xy1, xy2) = (xy2, xy1);
     }
 
     let stop = data.get_mut(&stop_id).unwrap();
-    let coordinate = Coordinate::new(coordinate_type, xy1, xy2, altitude);
+    let coordinate = Coordinates::new(coordinate_system, xy1, xy2, altitude);
 
-    match coordinate_type {
-        CoordinateType::LV95 => stop.set_lv95_coordinate(coordinate),
-        CoordinateType::WGS84 => stop.set_wgs84_coordinate(coordinate),
+    match coordinate_system {
+        CoordinateSystem::LV95 => stop.set_lv95_coordinates(coordinate),
+        CoordinateSystem::WGS84 => stop.set_wgs84_coordinates(coordinate),
     }
 }
 

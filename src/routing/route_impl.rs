@@ -7,7 +7,7 @@ use crate::{
 };
 
 use super::{
-    models::{Route, RouteSection},
+    models::{Route, RouteResult, RouteSection, RouteSectionResult},
     utils::clone_update_route,
 };
 
@@ -58,6 +58,30 @@ impl Route {
             Some(new_route)
         })
     }
+
+    pub fn to_route_result(&self, data_storage: &DataStorage) -> RouteResult {
+        let sections: Vec<_> = self
+            .sections()
+            .iter()
+            .map(|section| section.to_route_section_result(data_storage))
+            .collect();
+
+        let departure_at = if sections.first().unwrap().is_walking_trip() {
+            // This section is guaranteed not to be a walking trip.
+            sections[1].departure_at().unwrap()
+        } else {
+            sections.first().unwrap().departure_at().unwrap()
+        };
+
+        let arrival_at = if sections.last().unwrap().is_walking_trip() {
+            // This section is guaranteed not to be a walking trip.
+            sections[sections.len() - 2].departure_at().unwrap()
+        } else {
+            sections.last().unwrap().arrival_at().unwrap()
+        };
+
+        RouteResult::new(departure_at, arrival_at, sections)
+    }
 }
 
 impl RouteSection {
@@ -104,5 +128,36 @@ impl RouteSection {
         }
 
         None
+    }
+
+    pub fn to_route_section_result(&self, data_storage: &DataStorage) -> RouteSectionResult {
+        let departure_stop = data_storage.stops().find(self.departure_stop_id());
+        let arrival_stop = data_storage.stops().find(self.arrival_stop_id());
+
+        let (departure_at, arrival_at) = if self.journey_id().is_some() {
+            let departure_at = self
+                .journey(data_storage)
+                .unwrap()
+                .departure_at_of_with_origin(
+                    departure_stop.id(),
+                    self.arrival_at().date(),
+                    false,
+                    arrival_stop.id(),
+                );
+            (Some(departure_at), Some(self.arrival_at()))
+        } else {
+            (None, None)
+        };
+
+        RouteSectionResult::new(
+            self.journey_id(),
+            departure_stop.id(),
+            departure_stop.wgs84_coordinates(),
+            arrival_stop.id(),
+            arrival_stop.wgs84_coordinates(),
+            departure_at,
+            arrival_at,
+            self.duration(),
+        )
     }
 }

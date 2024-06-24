@@ -1,7 +1,10 @@
 use chrono::NaiveDateTime;
 use rustc_hash::FxHashSet;
 
-use crate::{models::Journey, storage::DataStorage};
+use crate::{
+    models::{Coordinates, Journey},
+    storage::DataStorage,
+};
 
 #[derive(Debug, Clone)]
 pub struct RouteSection {
@@ -159,7 +162,7 @@ impl RoutingAlgorithmArgs {
         )
     }
 
-    pub fn create_solve_one_to_many(time_limit: NaiveDateTime) -> Self {
+    pub fn solve_from_departure_stop_to_reachable_arrival_stops(time_limit: NaiveDateTime) -> Self {
         Self::new(
             RoutingAlgorithmMode::SolveFromDepartureStopToReachableArrivalStops,
             None,
@@ -181,5 +184,100 @@ impl RoutingAlgorithmArgs {
     /// Do not call this function if you are not sure that time_limit is not None.
     pub fn time_limit(&self) -> NaiveDateTime {
         self.time_limit.unwrap()
+    }
+}
+
+#[derive(Debug)]
+pub struct RouteResult {
+    departure_at: NaiveDateTime,
+    arrival_at: NaiveDateTime,
+    sections: Vec<RouteSectionResult>,
+}
+
+impl RouteResult {
+    pub fn new(
+        departure_at: NaiveDateTime,
+        arrival_at: NaiveDateTime,
+        sections: Vec<RouteSectionResult>,
+    ) -> Self {
+        Self {
+            departure_at,
+            arrival_at,
+            sections,
+        }
+    }
+
+    // Getters/Setters
+
+    pub fn sections(&self) -> &Vec<RouteSectionResult> {
+        &self.sections
+    }
+}
+
+#[derive(Debug)]
+pub struct RouteSectionResult {
+    journey_id: Option<i32>,
+    departure_stop_id: i32,
+    departure_stop_wgs84_coordinates: Option<Coordinates>,
+    arrival_stop_id: i32,
+    arrival_stop_wgs84_coordinates: Option<Coordinates>,
+    departure_at: Option<NaiveDateTime>,
+    arrival_at: Option<NaiveDateTime>,
+    duration: Option<i16>,
+}
+
+impl RouteSectionResult {
+    pub fn new(
+        journey_id: Option<i32>,
+        departure_stop_id: i32,
+        departure_stop_wgs84_coordinates: Option<Coordinates>,
+        arrival_stop_id: i32,
+        arrival_stop_wgs84_coordinates: Option<Coordinates>,
+        departure_at: Option<NaiveDateTime>,
+        arrival_at: Option<NaiveDateTime>,
+        duration: Option<i16>,
+    ) -> Self {
+        Self {
+            journey_id,
+            departure_stop_id,
+            departure_stop_wgs84_coordinates,
+            arrival_stop_id,
+            arrival_stop_wgs84_coordinates,
+            departure_at,
+            arrival_at,
+            duration,
+        }
+    }
+
+    // Getters/Setters
+
+    pub fn departure_stop_id(&self) -> i32 {
+        self.departure_stop_id
+    }
+
+    pub fn departure_at(&self) -> Option<NaiveDateTime> {
+        self.departure_at
+    }
+
+    pub fn arrival_stop_id(&self) -> i32 {
+        self.arrival_stop_id
+    }
+
+    pub fn arrival_at(&self) -> Option<NaiveDateTime> {
+        self.arrival_at
+    }
+
+    pub fn duration(&self) -> Option<i16> {
+        self.duration
+    }
+
+    // Functions
+
+    pub fn journey<'a>(&'a self, data_storage: &'a DataStorage) -> Option<&Journey> {
+        self.journey_id.map(|id| data_storage.journeys().find(id))
+    }
+
+    pub fn is_walking_trip(&self) -> bool {
+        self.journey_id.is_none()
     }
 }

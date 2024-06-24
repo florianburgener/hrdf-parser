@@ -148,33 +148,33 @@ impl Color {
 }
 
 // ------------------------------------------------------------------------------------------------
-// --- CoordinateType
+// --- CoordinateSystem
 // ------------------------------------------------------------------------------------------------
 
 #[derive(Clone, Copy, Debug, Default, Display, Eq, Hash, PartialEq, Serialize, Deserialize)]
-pub enum CoordinateType {
+pub enum CoordinateSystem {
     #[default]
     LV95,
     WGS84,
 }
 
 // ------------------------------------------------------------------------------------------------
-// --- Coordinate
+// --- Coordinates
 // ------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Default, Serialize, Deserialize)]
-pub struct Coordinate {
-    coordinate_type: CoordinateType,
+#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize)]
+pub struct Coordinates {
+    coordinate_system: CoordinateSystem,
     x: f64,
     y: f64,
     z: i16,
 }
 
 #[allow(unused)]
-impl Coordinate {
-    pub fn new(coordinate_type: CoordinateType, x: f64, y: f64, z: i16) -> Self {
+impl Coordinates {
+    pub fn new(coordinate_system: CoordinateSystem, x: f64, y: f64, z: i16) -> Self {
         Self {
-            coordinate_type,
+            coordinate_system,
             x,
             y,
             z,
@@ -184,22 +184,22 @@ impl Coordinate {
     // Getters/Setters
 
     pub fn easting(&self) -> f64 {
-        assert!(self.coordinate_type == CoordinateType::LV95);
+        assert!(self.coordinate_system == CoordinateSystem::LV95);
         self.x
     }
 
     pub fn northing(&self) -> f64 {
-        assert!(self.coordinate_type == CoordinateType::LV95);
+        assert!(self.coordinate_system == CoordinateSystem::LV95);
         self.y
     }
 
     pub fn latitude(&self) -> f64 {
-        assert!(self.coordinate_type == CoordinateType::WGS84);
+        assert!(self.coordinate_system == CoordinateSystem::WGS84);
         self.x
     }
 
     pub fn longitude(&self) -> f64 {
-        assert!(self.coordinate_type == CoordinateType::WGS84);
+        assert!(self.coordinate_system == CoordinateSystem::WGS84);
         self.y
     }
 
@@ -265,6 +265,144 @@ impl_Model!(Holiday);
 impl Holiday {
     pub fn new(id: i32, date: NaiveDate, name: FxHashMap<Language, String>) -> Self {
         Self { id, date, name }
+    }
+
+    // Getters/Setters
+
+    // Functions
+}
+
+// ------------------------------------------------------------------------------------------------
+// --- ExchangeTimeAdministration
+// ------------------------------------------------------------------------------------------------
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ExchangeTimeAdministration {
+    id: i32,
+    stop_id: Option<i32>, // A None value means that the exchange time applies to all stops if there is no specific entry for the stop and the 2 administrations.
+    administration_1: String,
+    administration_2: String,
+    duration: i16, // Exchange time from administration 1 to administration 2 is in minutes.
+}
+
+impl_Model!(ExchangeTimeAdministration);
+
+impl ExchangeTimeAdministration {
+    pub fn new(
+        id: i32,
+        stop_id: Option<i32>,
+        administration_1: String,
+        administration_2: String,
+        duration: i16,
+    ) -> Self {
+        Self {
+            id,
+            stop_id,
+            administration_1,
+            administration_2,
+            duration,
+        }
+    }
+
+    // Getters/Setters
+
+    // Functions
+}
+
+// ------------------------------------------------------------------------------------------------
+// --- ExchangeTimeJourney
+// ------------------------------------------------------------------------------------------------
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ExchangeTimeJourney {
+    id: i32,
+    stop_id: i32,
+    journey_id_1: i32,
+    journey_id_2: i32,
+    duration: i16, // Exchange time from journey 1 to journey 2 is in minutes.
+    is_guaranteed: bool,
+    bit_field_id: Option<i32>,
+}
+
+impl_Model!(ExchangeTimeJourney);
+
+impl ExchangeTimeJourney {
+    pub fn new(
+        id: i32,
+        stop_id: i32,
+        journey_id_1: i32,
+        journey_id_2: i32,
+        duration: i16,
+        is_guaranteed: bool,
+        bit_field_id: Option<i32>,
+    ) -> Self {
+        Self {
+            id,
+            stop_id,
+            journey_id_1,
+            journey_id_2,
+            duration,
+            is_guaranteed,
+            bit_field_id,
+        }
+    }
+
+    // Getters/Setters
+
+    // Functions
+}
+
+// ------------------------------------------------------------------------------------------------
+// --- ExchangeTimeLine
+// ------------------------------------------------------------------------------------------------
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ExchangeTimeLine {
+    id: i32,
+    stop_id: i32,
+    administration_1: String,
+    transport_type_id_1: i32,
+    line_id_1: Option<String>, // If the value is None, then the exchange time applies to all lines in administration_1.
+    direction_1: Option<DirectionType>, // If the value is None, then the match time applies in both directions.
+    administration_2: String,
+    transport_type_id_2: i32,
+    line_id_2: Option<String>, // If the value is None, then the exchange time applies to all lines in administration_2.
+    direction_2: Option<DirectionType>, // If the value is None, then the match time applies in both directions.
+    duration: i16,                      // Exchange time from line 1 to line 2 is in minutes.
+    is_guaranteed: bool,
+}
+
+impl_Model!(ExchangeTimeLine);
+
+impl ExchangeTimeLine {
+    pub fn new(
+        id: i32,
+        stop_id: i32,
+        administration_1: String,
+        transport_type_id_1: i32,
+        line_id_1: Option<String>,
+        direction_1: Option<DirectionType>,
+        administration_2: String,
+        transport_type_id_2: i32,
+        line_id_2: Option<String>,
+        direction_2: Option<DirectionType>,
+        duration: i16,
+        is_guaranteed: bool,
+    ) -> Self {
+        Self {
+            id,
+            stop_id,
+            administration_1,
+            transport_type_id_1,
+            line_id_1,
+            direction_1,
+            administration_2,
+            transport_type_id_2,
+            line_id_2,
+            direction_2,
+            duration,
+            is_guaranteed,
+        }
     }
 
     // Getters/Setters
@@ -416,6 +554,29 @@ impl Journey {
         match self.departure_time_of(stop_id) {
             (departure_time, false) => NaiveDateTime::new(date, departure_time),
             (departure_time, true) => NaiveDateTime::new(add_1_day(date), departure_time),
+        }
+    }
+
+    /// The date must be associated with the origin_stop_id.
+    pub fn departure_at_of_with_origin(
+        &self,
+        stop_id: i32,
+        date: NaiveDate,
+        // If it's not a departure date, it's an arrival date.
+        is_departure_date: bool,
+        origin_stop_id: i32,
+    ) -> NaiveDateTime {
+        let (departure_time, is_next_day) = self.departure_time_of(stop_id);
+        let (_, origin_is_next_day) = if is_departure_date {
+            self.departure_time_of(origin_stop_id)
+        } else {
+            self.arrival_time_of(origin_stop_id)
+        };
+
+        match (is_next_day, origin_is_next_day) {
+            (true, false) => NaiveDateTime::new(add_1_day(date), departure_time),
+            (false, true) => NaiveDateTime::new(sub_1_day(date), departure_time),
+            _ => NaiveDateTime::new(date, departure_time),
         }
     }
 
@@ -710,8 +871,8 @@ pub struct Platform {
     sectors: Option<String>,
     stop_id: i32,
     sloid: String,
-    lv95_coordinate: Coordinate,
-    wgs84_coordinate: Coordinate,
+    lv95_coordinates: Coordinates,
+    wgs84_coordinates: Coordinates,
 }
 
 impl_Model!(Platform);
@@ -724,8 +885,8 @@ impl Platform {
             sectors,
             stop_id,
             sloid: String::default(),
-            lv95_coordinate: Coordinate::default(),
-            wgs84_coordinate: Coordinate::default(),
+            lv95_coordinates: Coordinates::default(),
+            wgs84_coordinates: Coordinates::default(),
         }
     }
 
@@ -735,12 +896,12 @@ impl Platform {
         self.sloid = value;
     }
 
-    pub fn set_lv95_coordinate(&mut self, value: Coordinate) {
-        self.lv95_coordinate = value;
+    pub fn set_lv95_coordinates(&mut self, value: Coordinates) {
+        self.lv95_coordinates = value;
     }
 
-    pub fn set_wgs84_coordinate(&mut self, value: Coordinate) {
-        self.wgs84_coordinate = value;
+    pub fn set_wgs84_coordinates(&mut self, value: Coordinates) {
+        self.wgs84_coordinates = value;
     }
 
     // Functions
@@ -757,8 +918,8 @@ pub struct Stop {
     long_name: Option<String>,
     abbreviation: Option<String>,
     synonyms: Option<Vec<String>>,
-    lv95_coordinate: Option<Coordinate>,
-    wgs84_coordinate: Option<Coordinate>,
+    lv95_coordinates: Option<Coordinates>,
+    wgs84_coordinates: Option<Coordinates>,
     exchange_priority: i16,
     exchange_flag: i16,
     exchange_time_inter_city: i16,
@@ -785,8 +946,8 @@ impl Stop {
             long_name,
             abbreviation,
             synonyms,
-            lv95_coordinate: None,
-            wgs84_coordinate: None,
+            lv95_coordinates: None,
+            wgs84_coordinates: None,
             exchange_priority: 8, // 8 is the default priority.
             exchange_flag: 0,
             exchange_time_inter_city: 0,
@@ -804,12 +965,16 @@ impl Stop {
         &self.name
     }
 
-    pub fn set_lv95_coordinate(&mut self, value: Coordinate) {
-        self.lv95_coordinate = Some(value);
+    pub fn set_lv95_coordinates(&mut self, value: Coordinates) {
+        self.lv95_coordinates = Some(value);
     }
 
-    pub fn set_wgs84_coordinate(&mut self, value: Coordinate) {
-        self.wgs84_coordinate = Some(value);
+    pub fn wgs84_coordinates(&self) -> Option<Coordinates> {
+        self.wgs84_coordinates
+    }
+
+    pub fn set_wgs84_coordinates(&mut self, value: Coordinates) {
+        self.wgs84_coordinates = Some(value);
     }
 
     pub fn set_exchange_priority(&mut self, value: i16) {
@@ -974,144 +1139,6 @@ impl TimetableMetadataEntry {
     pub fn value_as_NaiveDate(&self) -> NaiveDate {
         NaiveDate::parse_from_str(self.value(), "%Y-%m-%d").unwrap()
     }
-
-    // Functions
-}
-
-// ------------------------------------------------------------------------------------------------
-// --- ExchangeTimeAdministration
-// ------------------------------------------------------------------------------------------------
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ExchangeTimeAdministration {
-    id: i32,
-    stop_id: Option<i32>, // A None value means that the exchange time applies to all stops if there is no specific entry for the stop and the 2 administrations.
-    administration_1: String,
-    administration_2: String,
-    duration: i16, // Exchange time from administration 1 to administration 2 is in minutes.
-}
-
-impl_Model!(ExchangeTimeAdministration);
-
-impl ExchangeTimeAdministration {
-    pub fn new(
-        id: i32,
-        stop_id: Option<i32>,
-        administration_1: String,
-        administration_2: String,
-        duration: i16,
-    ) -> Self {
-        Self {
-            id,
-            stop_id,
-            administration_1,
-            administration_2,
-            duration,
-        }
-    }
-
-    // Getters/Setters
-
-    // Functions
-}
-
-// ------------------------------------------------------------------------------------------------
-// --- ExchangeTimeJourney
-// ------------------------------------------------------------------------------------------------
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ExchangeTimeJourney {
-    id: i32,
-    stop_id: i32,
-    journey_id_1: i32,
-    journey_id_2: i32,
-    duration: i16, // Exchange time from journey 1 to journey 2 is in minutes.
-    is_guaranteed: bool,
-    bit_field_id: Option<i32>,
-}
-
-impl_Model!(ExchangeTimeJourney);
-
-impl ExchangeTimeJourney {
-    pub fn new(
-        id: i32,
-        stop_id: i32,
-        journey_id_1: i32,
-        journey_id_2: i32,
-        duration: i16,
-        is_guaranteed: bool,
-        bit_field_id: Option<i32>,
-    ) -> Self {
-        Self {
-            id,
-            stop_id,
-            journey_id_1,
-            journey_id_2,
-            duration,
-            is_guaranteed,
-            bit_field_id,
-        }
-    }
-
-    // Getters/Setters
-
-    // Functions
-}
-
-// ------------------------------------------------------------------------------------------------
-// --- ExchangeTimeLine
-// ------------------------------------------------------------------------------------------------
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ExchangeTimeLine {
-    id: i32,
-    stop_id: i32,
-    administration_1: String,
-    transport_type_id_1: i32,
-    line_id_1: Option<String>, // If the value is None, then the exchange time applies to all lines in administration_1.
-    direction_1: Option<DirectionType>, // If the value is None, then the match time applies in both directions.
-    administration_2: String,
-    transport_type_id_2: i32,
-    line_id_2: Option<String>, // If the value is None, then the exchange time applies to all lines in administration_2.
-    direction_2: Option<DirectionType>, // If the value is None, then the match time applies in both directions.
-    duration: i16,                      // Exchange time from line 1 to line 2 is in minutes.
-    is_guaranteed: bool,
-}
-
-impl_Model!(ExchangeTimeLine);
-
-impl ExchangeTimeLine {
-    pub fn new(
-        id: i32,
-        stop_id: i32,
-        administration_1: String,
-        transport_type_id_1: i32,
-        line_id_1: Option<String>,
-        direction_1: Option<DirectionType>,
-        administration_2: String,
-        transport_type_id_2: i32,
-        line_id_2: Option<String>,
-        direction_2: Option<DirectionType>,
-        duration: i16,
-        is_guaranteed: bool,
-    ) -> Self {
-        Self {
-            id,
-            stop_id,
-            administration_1,
-            transport_type_id_1,
-            line_id_1,
-            direction_1,
-            administration_2,
-            transport_type_id_2,
-            line_id_2,
-            direction_2,
-            duration,
-            is_guaranteed,
-        }
-    }
-
-    // Getters/Setters
 
     // Functions
 }

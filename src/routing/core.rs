@@ -7,7 +7,7 @@ use super::{
     connections::next_departures,
     constants::MAXIMUM_NUMBER_OF_EXPLORABLE_CONNECTIONS,
     exploration::explore_routes,
-    models::{Route, RouteSection, RoutingAlgorithmArgs, RoutingAlgorithmMode},
+    models::{Route, RouteResult, RouteSection, RoutingAlgorithmArgs, RoutingAlgorithmMode},
     utils::{get_stop_connections, sort_routes},
 };
 
@@ -17,7 +17,7 @@ pub fn compute_routing(
     departure_at: NaiveDateTime,
     verbose: bool,
     args: RoutingAlgorithmArgs,
-) -> FxHashMap<i32, Route> {
+) -> FxHashMap<i32, RouteResult> {
     let mut routes = create_initial_routes(data_storage, departure_stop_id, departure_at);
     let mut journeys_to_ignore = FxHashSet::default();
     let mut earliest_arrival_by_stop_id = FxHashMap::default();
@@ -70,14 +70,10 @@ pub fn compute_routing(
         routes = new_routes;
     }
 
-    if verbose && args.mode() == RoutingAlgorithmMode::SolveFromDepartureStopToArrivalStop {
-        if let Some(sol) = solutions.get(&args.arrival_stop_id()) {
-            println!();
-            sol.print(data_storage);
-        }
-    }
-
     solutions
+        .into_iter()
+        .map(|(k, v)| (k, v.to_route_result(data_storage)))
+        .collect()
 }
 
 pub fn create_initial_routes(
@@ -231,6 +227,11 @@ fn is_improving_solution(
             .journey(data_storage)
             .unwrap()
             .count_stops(section.departure_stop_id(), section.arrival_stop_id())
+    }
+
+    if candidate.sections().len() == 1 && candidate.last_section().journey_id().is_none() {
+        // If the candidate contains only a walking trip, it is not a valid solution.
+        return false;
     }
 
     if solution.is_none() {

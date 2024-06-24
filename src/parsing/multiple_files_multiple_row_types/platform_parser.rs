@@ -8,7 +8,7 @@ use std::error::Error;
 use rustc_hash::FxHashMap;
 
 use crate::{
-    models::{Coordinate, CoordinateType, JourneyPlatform, Model, Platform},
+    models::{Coordinates, CoordinateSystem, JourneyPlatform, Model, Platform},
     parsing::{
         ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, ParsedValue, RowDefinition,
         RowParser,
@@ -90,10 +90,10 @@ pub fn parse(
 
     println!("Parsing GLEIS_LV95...");
     #[rustfmt::skip]
-    load_coordinates_for_platforms(CoordinateType::LV95, bytes_offset, &platforms_pk_type_converter, &mut platforms)?;
+    load_coordinates_for_platforms(CoordinateSystem::LV95, bytes_offset, &platforms_pk_type_converter, &mut platforms)?;
     println!("Parsing GLEIS_WGS84...");
     #[rustfmt::skip]
-    load_coordinates_for_platforms(CoordinateType::WGS84, bytes_offset, &platforms_pk_type_converter, &mut platforms)?;
+    load_coordinates_for_platforms(CoordinateSystem::WGS84, bytes_offset, &platforms_pk_type_converter, &mut platforms)?;
 
     Ok((
         SimpleResourceStorage::new(journey_platform),
@@ -102,7 +102,7 @@ pub fn parse(
 }
 
 fn load_coordinates_for_platforms(
-    coordinate_type: CoordinateType,
+    coordinate_system: CoordinateSystem,
     bytes_offset: u64,
     pk_type_converter: &FxHashMap<(i32, i32), i32>,
     data: &mut FxHashMap<i32, Platform>,
@@ -129,17 +129,17 @@ fn load_coordinates_for_platforms(
             ColumnDefinition::new(28, 34, ExpectedType::Float),     // This column has not been explicitly defined in the SBB specification.
         ]),
     ]);
-    let filename = match coordinate_type {
-        CoordinateType::LV95 => "GLEIS_LV95",
-        CoordinateType::WGS84 => "GLEIS_WGS",
+    let filename = match coordinate_system {
+        CoordinateSystem::LV95 => "GLEIS_LV95",
+        CoordinateSystem::WGS84 => "GLEIS_WGS",
     };
     let path = format!("data/{}", filename);
     let parser = FileParser::new_with_bytes_offset(&path, row_parser, bytes_offset)?;
 
     parser.parse().for_each(|(id, _, values)| match id {
         ROW_A => {}
-        ROW_B => platform_set_sloid(values, coordinate_type, pk_type_converter, data),
-        ROW_C => platform_set_coordinate(values, coordinate_type, pk_type_converter, data),
+        ROW_B => platform_set_sloid(values, coordinate_system, pk_type_converter, data),
+        ROW_C => platform_set_coordinates(values, coordinate_system, pk_type_converter, data),
         _ => unreachable!(),
     });
 
@@ -191,12 +191,12 @@ fn create_platform(
 
 fn platform_set_sloid(
     mut values: Vec<ParsedValue>,
-    coordinate_type: CoordinateType,
+    coordinate_system: CoordinateSystem,
     pk_type_converter: &FxHashMap<(i32, i32), i32>,
     data: &mut FxHashMap<i32, Platform>,
 ) {
     // The SLOID is processed only when loading LV95 coordinates.
-    if coordinate_type == CoordinateType::LV95 {
+    if coordinate_system == CoordinateSystem::LV95 {
         let stop_id: i32 = values.remove(0).into();
         let index: i32 = values.remove(0).into();
         let sloid: String = values.remove(0).into();
@@ -207,9 +207,9 @@ fn platform_set_sloid(
     }
 }
 
-fn platform_set_coordinate(
+fn platform_set_coordinates(
     mut values: Vec<ParsedValue>,
-    coordinate_type: CoordinateType,
+    coordinate_system: CoordinateSystem,
     pk_type_converter: &FxHashMap<(i32, i32), i32>,
     data: &mut FxHashMap<i32, Platform>,
 ) {
@@ -220,19 +220,19 @@ fn platform_set_coordinate(
     // Altitude is not provided for platforms.
     let altitude = 0;
 
-    if coordinate_type == CoordinateType::WGS84 {
+    if coordinate_system == CoordinateSystem::WGS84 {
         // WGS84 coordinates are stored in reverse order for some unknown reason.
         (xy1, xy2) = (xy2, xy1);
     }
 
-    let coordinate = Coordinate::new(coordinate_type, xy1, xy2, altitude);
+    let coordinate = Coordinates::new(coordinate_system, xy1, xy2, altitude);
     let platform = data
         .get_mut(&pk_type_converter.get(&(stop_id, index)).unwrap())
         .unwrap();
 
-    match coordinate_type {
-        CoordinateType::LV95 => platform.set_lv95_coordinate(coordinate),
-        CoordinateType::WGS84 => platform.set_wgs84_coordinate(coordinate),
+    match coordinate_system {
+        CoordinateSystem::LV95 => platform.set_lv95_coordinates(coordinate),
+        CoordinateSystem::WGS84 => platform.set_wgs84_coordinates(coordinate),
     }
 }
 
