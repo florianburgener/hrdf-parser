@@ -7,10 +7,12 @@ mod models;
 mod route_impl;
 mod utils;
 
+pub use models::RouteResult;
+
 use core::compute_routing;
 
 use chrono::{Duration, NaiveDateTime};
-use models::{RouteResult, RoutingAlgorithmArgs};
+use models::RoutingAlgorithmArgs;
 use rustc_hash::FxHashMap;
 
 use crate::hrdf::Hrdf;

@@ -1,7 +1,8 @@
 use std::process;
 
-fn main() {
-    if let Err(e) = hrdf::run() {
+#[tokio::main]
+async fn main() {
+    if let Err(e) = hrdf::run().await {
         eprintln!("Application error: {e}");
         process::exit(1);
     }

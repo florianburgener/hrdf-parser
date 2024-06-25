@@ -1,5 +1,6 @@
 use chrono::NaiveDateTime;
 use rustc_hash::FxHashSet;
+use serde::Serialize;
 
 use crate::{
     models::{Coordinates, Journey},
@@ -187,7 +188,7 @@ impl RoutingAlgorithmArgs {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct RouteResult {
     departure_at: NaiveDateTime,
     arrival_at: NaiveDateTime,
@@ -214,7 +215,7 @@ impl RouteResult {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct RouteSectionResult {
     journey_id: Option<i32>,
     departure_stop_id: i32,
