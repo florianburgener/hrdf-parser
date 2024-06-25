@@ -167,17 +167,15 @@ pub struct Coordinates {
     coordinate_system: CoordinateSystem,
     x: f64,
     y: f64,
-    z: i16,
 }
 
 #[allow(unused)]
 impl Coordinates {
-    pub fn new(coordinate_system: CoordinateSystem, x: f64, y: f64, z: i16) -> Self {
+    pub fn new(coordinate_system: CoordinateSystem, x: f64, y: f64) -> Self {
         Self {
             coordinate_system,
             x,
             y,
-            z,
         }
     }
 
@@ -202,13 +200,6 @@ impl Coordinates {
         assert!(self.coordinate_system == CoordinateSystem::WGS84);
         self.y
     }
-
-    // TODO: most stops have no specified altitude.
-    pub fn altitude(&self) -> i16 {
-        self.z
-    }
-
-    // Functions
 }
 
 // ------------------------------------------------------------------------------------------------

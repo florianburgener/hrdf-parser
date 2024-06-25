@@ -217,15 +217,13 @@ fn platform_set_coordinates(
     let index: i32 = values.remove(0).into();
     let mut xy1: f64 = values.remove(0).into();
     let mut xy2: f64 = values.remove(0).into();
-    // Altitude is not provided for platforms.
-    let altitude = 0;
 
     if coordinate_system == CoordinateSystem::WGS84 {
         // WGS84 coordinates are stored in reverse order for some unknown reason.
         (xy1, xy2) = (xy2, xy1);
     }
 
-    let coordinate = Coordinates::new(coordinate_system, xy1, xy2, altitude);
+    let coordinate = Coordinates::new(coordinate_system, xy1, xy2);
     let platform = data
         .get_mut(&pk_type_converter.get(&(stop_id, index)).unwrap())
         .unwrap();

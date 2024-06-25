@@ -62,7 +62,8 @@ pub fn next_departures<'a>(
         (journeys, max_departure_at)
     }
 
-    let (journeys_1, mut findaname) = get_journeys(data_storage, departure_at.date(), departure_stop_id);
+    let (journeys_1, mut findaname) =
+        get_journeys(data_storage, departure_at.date(), departure_stop_id);
     findaname = findaname.checked_add_signed(Duration::hours(-4)).unwrap();
 
     let (journeys_2, max_departure_at) = if departure_at > findaname {
@@ -125,12 +126,11 @@ pub fn get_operating_journeys(
     date: NaiveDate,
     stop_id: i32,
 ) -> Vec<&Journey> {
-    let bit_fields_1 = data_storage.bit_fields().find_by_day(date);
-
     data_storage
         .bit_fields()
         .find_by_stop_id(stop_id)
-        .map_or(Vec::new(), |bit_fields_2| {
+        .map_or(Vec::new(), |bit_fields_1| {
+            let bit_fields_2 = data_storage.bit_fields().find_by_day(date);
             let bit_fields: Vec<_> = bit_fields_1.intersection(&bit_fields_2).collect();
 
             bit_fields

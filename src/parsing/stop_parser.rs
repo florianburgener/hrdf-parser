@@ -225,7 +225,8 @@ fn set_coordinates(
     let stop_id: i32 = values.remove(0).into();
     let mut xy1: f64 = values.remove(0).into();
     let mut xy2: f64 = values.remove(0).into();
-    let altitude: i16 = values.remove(0).into();
+    // Altitude is not stored, as it is not provided for 95% of stops.
+    let _altitude: i16 = values.remove(0).into();
 
     if coordinate_system == CoordinateSystem::WGS84 {
         // WGS84 coordinates are stored in reverse order for some unknown reason.
@@ -233,7 +234,7 @@ fn set_coordinates(
     }
 
     let stop = data.get_mut(&stop_id).unwrap();
-    let coordinate = Coordinates::new(coordinate_system, xy1, xy2, altitude);
+    let coordinate = Coordinates::new(coordinate_system, xy1, xy2);
 
     match coordinate_system {
         CoordinateSystem::LV95 => stop.set_lv95_coordinates(coordinate),
