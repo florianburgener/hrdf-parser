@@ -13,7 +13,6 @@ use core::compute_routing;
 
 use chrono::{Duration, NaiveDateTime};
 use models::RoutingAlgorithmArgs;
-use rustc_hash::FxHashMap;
 
 use crate::hrdf::Hrdf;
 
@@ -52,8 +51,8 @@ impl Hrdf {
         departure_at: NaiveDateTime,
         time_limit: Duration,
         verbose: bool,
-    ) -> FxHashMap<i32, RouteResult> {
-        compute_routing(
+    ) -> Vec<RouteResult> {
+        let routes = compute_routing(
             self.data_storage(),
             departure_stop_id,
             departure_at,
@@ -61,6 +60,7 @@ impl Hrdf {
             RoutingAlgorithmArgs::solve_from_departure_stop_to_reachable_arrival_stops(
                 departure_at.checked_add_signed(time_limit).unwrap(),
             ),
-        )
+        );
+        routes.into_iter().map(|(_, v)| v).collect()
     }
 }

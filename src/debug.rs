@@ -121,5 +121,5 @@ fn test_find_reachable_stops_within_time_limit(hrdf: &Hrdf) {
         true,
     );
     println!("\n{}\n", routes.len());
-    routes.get(&8592690).unwrap().print(hrdf.data_storage());
+    // routes.get(&8592690).unwrap().print(hrdf.data_storage());
 }

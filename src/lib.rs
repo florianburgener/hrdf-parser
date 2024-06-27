@@ -1,5 +1,6 @@
 mod debug;
 mod hrdf;
+mod isochrone;
 mod models;
 mod parsing;
 mod routing;
@@ -29,9 +30,10 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
 
 pub fn load_hrdf() -> Result<Hrdf, Box<dyn Error>> {
     const CACHED_PATH: &str = "data.cache";
+    const FORCE_REBUILD_CACHE: bool = false;
 
     let now = Instant::now();
-    let hrdf = if Path::new(CACHED_PATH).exists() && true {
+    let hrdf = if Path::new(CACHED_PATH).exists() && !FORCE_REBUILD_CACHE {
         println!("Reading from cache...");
         Hrdf::load_from_cache()?
     } else {

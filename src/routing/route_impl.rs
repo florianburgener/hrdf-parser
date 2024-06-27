@@ -152,8 +152,10 @@ impl RouteSection {
         RouteSectionResult::new(
             self.journey_id(),
             departure_stop.id(),
+            departure_stop.lv95_coordinates(),
             departure_stop.wgs84_coordinates(),
             arrival_stop.id(),
+            arrival_stop.lv95_coordinates(),
             arrival_stop.wgs84_coordinates(),
             departure_at,
             arrival_at,

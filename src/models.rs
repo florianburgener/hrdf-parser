@@ -956,6 +956,10 @@ impl Stop {
         &self.name
     }
 
+    pub fn lv95_coordinates(&self) -> Option<Coordinates> {
+        self.lv95_coordinates
+    }
+
     pub fn set_lv95_coordinates(&mut self, value: Coordinates) {
         self.lv95_coordinates = Some(value);
     }
