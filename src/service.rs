@@ -67,7 +67,7 @@ async fn get_reachable_stops_within_time_limit(
 async fn get_isochrones(hrdf: Arc<Hrdf>) -> Json<IsochroneCollection> {
     let isochrones = hrdf.get_isochrones(
         8587418,
-        create_date_time(2023, 2, 3, 13, 25),
+        create_date_time(2024, 2, 3, 13, 25),
         Duration::minutes(60),
         Duration::minutes(240),
         false,

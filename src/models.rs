@@ -350,7 +350,7 @@ impl ExchangeTimeJourney {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ExchangeTimeLine {
     id: i32,
-    stop_id: i32,
+    stop_id: Option<i32>,
     administration_1: String,
     transport_type_id_1: i32,
     line_id_1: Option<String>, // If the value is None, then the exchange time applies to all lines in administration_1.
@@ -368,7 +368,7 @@ impl_Model!(ExchangeTimeLine);
 impl ExchangeTimeLine {
     pub fn new(
         id: i32,
-        stop_id: i32,
+        stop_id: Option<i32>,
         administration_1: String,
         transport_type_id_1: i32,
         line_id_1: Option<String>,

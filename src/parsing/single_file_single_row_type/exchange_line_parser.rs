@@ -20,7 +20,7 @@ pub fn parse(
     let row_parser = RowParser::new(vec![
         // This row is used to create a LineExchangeTime instance.
         RowDefinition::from(vec![
-            ColumnDefinition::new(1, 7, ExpectedType::Integer32),
+            ColumnDefinition::new(1, 7, ExpectedType::OptionInteger32),
             ColumnDefinition::new(9, 14, ExpectedType::String),
             ColumnDefinition::new(16, 18, ExpectedType::String),
             ColumnDefinition::new(20, 27, ExpectedType::String),
@@ -57,7 +57,7 @@ fn create_instance(
     auto_increment: &AutoIncrement,
     transport_types_pk_type_converter: &FxHashMap<String, i32>,
 ) -> ExchangeTimeLine {
-    let stop_id: i32 = values.remove(0).into();
+    let stop_id: Option<i32> = values.remove(0).into();
     let administration_1: String = values.remove(0).into();
     let transport_type_id_1: String = values.remove(0).into();
     let line_id_1: String = values.remove(0).into();

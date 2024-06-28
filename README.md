@@ -38,6 +38,9 @@ Progression (38/38) :
 * ZUGART
 * ZEITVS (fichier pas utilisé dans le code)
 
+HRDF (2.0.5) :
+
+
 Affichage : ATTRIBUT, BAHNHOF, BETRIEB_DE, BETRIEB_EN, BETRIEB_FR, BETRIEB_IT, BFKOORD_LV95, BFKOORD_WGS, DURCHBI, FEIERTAG, GLEIS, GLEIS_LV95, GLEIS_WGS
             INFOTEXT_DE, INFOTEXT_EN, INFOTEXT_FR, INFOTEXT_IT, LINIE, RICHTUNG, ZUGART
 Affichage + Algorithme : ECKDATEN, FPLAN, METABHF
@@ -47,14 +50,13 @@ Inutile : ATTRIBUT_DE, ATTRIBUT_EN, ATTRIBUT_FR, ATTRIBUT_IT, BHFART, GREENZHLT,
 
 TODO :
 * Lib :
-  * Temps de correspondance
-  * Ajouter thiserror
-  * Automatiquement télécharger les dernières données
   * Pouvoir parse la dernière version HRDF
+  * Temps de correspondance
+  * Automatiquement télécharger les dernières données
   * Logging
-* Créer un projet API qui utilise la lib
-* Créer l'application web
-* Affichage cercle
+  * Ajouter thiserror
+  * Nettoyer le code
+* Affichage : formulaire + erreurs
 * Afficher interpolation
 
 Algorithme de calcul du trajet le plus court (Résumé) :
@@ -104,4 +106,3 @@ Catégorisation parser :
 auto_increment :
 map + collect :
 vec_to_map before Storage::new :
-

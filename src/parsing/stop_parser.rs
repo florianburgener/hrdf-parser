@@ -62,9 +62,9 @@ fn load_coordinates(
         // This row contains the LV95/WGS84 coordinates.
         RowDefinition::from(vec![
             ColumnDefinition::new(1, 7, ExpectedType::Integer32),
-            ColumnDefinition::new(9, 18, ExpectedType::Float),
-            ColumnDefinition::new(20, 29, ExpectedType::Float),
-            ColumnDefinition::new(31, 36, ExpectedType::Integer16),
+            ColumnDefinition::new(9, 19, ExpectedType::Float), // 9-18
+            ColumnDefinition::new(21, 31, ExpectedType::Float), // 20-29
+            ColumnDefinition::new(33, 39, ExpectedType::Integer16), // 31-36
         ]),
     ]);
     let filename = match coordinate_system {

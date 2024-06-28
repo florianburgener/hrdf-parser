@@ -44,6 +44,10 @@ pub fn run_debug(hrdf: Hrdf) {
 
 #[rustfmt::skip]
 fn test_plan_journey(hrdf: &Hrdf, verbose: bool) {
+    // ------------------------------------------------------------------------------------------------
+    // --- 2.0.4
+    // ------------------------------------------------------------------------------------------------
+
     // 8592688     Chancy, Les Bouveries
     // 8592690     Chancy, usine
     // 8587031     Avully, village
@@ -85,7 +89,7 @@ fn test_plan_journey(hrdf: &Hrdf, verbose: bool) {
     // hrdf.plan_journey(8592688, 8501008, create_date_time(2023, 2, 3, 14, 31), verbose);
 
     // Chancy, Les Bouveries => Lausanne
-    hrdf.plan_journey(8592688, 8501120, create_date_time(2023, 2, 3, 14, 31), verbose);
+    // hrdf.plan_journey(8592688, 8501120, create_date_time(2023, 2, 3, 14, 31), verbose);
     // hrdf.plan_journey(8592688, 8501120, create_date_time(2023, 2, 3, 23, 31), verbose);
 
     // Chancy, Les Bouveries => Sevelen, Post
@@ -111,6 +115,13 @@ fn test_plan_journey(hrdf: &Hrdf, verbose: bool) {
 
     // Genève, gare Cornavin => Paris Gare de Lyon
     // hrdf.plan_journey(8587057, 8768600, create_date_time(2023, 2, 3, 13, 25), verbose);
+
+    // ------------------------------------------------------------------------------------------------
+    // --- 2.0.5
+    // ------------------------------------------------------------------------------------------------
+
+    // hrdf.plan_journey(8592688, 8501120, create_date_time(2024, 2, 3, 14, 31), verbose);
+    hrdf.plan_journey(8592688, 8587057, create_date_time(2024, 9, 10, 14, 39), verbose); // 03.02.2024 14:39
 }
 
 fn test_find_reachable_stops_within_time_limit(hrdf: &Hrdf) {
