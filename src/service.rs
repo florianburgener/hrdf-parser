@@ -9,7 +9,7 @@ use serde::Deserialize;
 use tower_http::cors::{Any, CorsLayer};
 
 use crate::{
-    hrdf::Hrdf, isochrone, models::Coordinates, routing::RouteResult, utils::create_date_time,
+    hrdf::Hrdf, isochrone::IsochroneCollection, routing::RouteResult, utils::create_date_time,
 };
 
 pub async fn run_service(hrdf: Hrdf) {
@@ -64,13 +64,13 @@ async fn get_reachable_stops_within_time_limit(
     Json(routes)
 }
 
-async fn get_isochrones(hrdf: Arc<Hrdf>) -> Json<Vec<Vec<Coordinates>>> {
-    let routes = hrdf.find_reachable_stops_within_time_limit(
+async fn get_isochrones(hrdf: Arc<Hrdf>) -> Json<IsochroneCollection> {
+    let isochrones = hrdf.get_isochrones(
         8587418,
         create_date_time(2023, 2, 3, 13, 25),
-        Duration::minutes(30),
+        Duration::minutes(60),
+        Duration::minutes(240),
         false,
     );
-    let isochrones = isochrone::get_isochrones(routes);
     Json(isochrones)
 }

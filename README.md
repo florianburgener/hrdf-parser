@@ -54,6 +54,8 @@ TODO :
   * Logging
 * Créer un projet API qui utilise la lib
 * Créer l'application web
+* Affichage cercle
+* Afficher interpolation
 
 Algorithme de calcul du trajet le plus court (Résumé) :
 * Maximum N connexions

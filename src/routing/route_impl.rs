@@ -75,7 +75,7 @@ impl Route {
 
         let arrival_at = if sections.last().unwrap().is_walking_trip() {
             // This section is guaranteed not to be a walking trip.
-            sections[sections.len() - 2].departure_at().unwrap()
+            sections[sections.len() - 2].arrival_at().unwrap()
         } else {
             sections.last().unwrap().arrival_at().unwrap()
         };

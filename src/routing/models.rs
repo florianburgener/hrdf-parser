@@ -210,6 +210,10 @@ impl RouteResult {
 
     // Getters/Setters
 
+    pub fn arrival_at(&self) -> NaiveDateTime {
+        self.arrival_at
+    }
+
     pub fn sections(&self) -> &Vec<RouteSectionResult> {
         &self.sections
     }

@@ -61,6 +61,9 @@ impl Hrdf {
                 departure_at.checked_add_signed(time_limit).unwrap(),
             ),
         );
+        // if let Some(rou) = routes.get(&8774538) {
+        //     rou.print(self.data_storage());
+        // }
         routes.into_iter().map(|(_, v)| v).collect()
     }
 }
