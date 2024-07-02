@@ -49,39 +49,40 @@ pub struct DataStorage {
 
 #[allow(unused)]
 impl DataStorage {
-    pub fn new(version: Version) -> Result<Self, Box<dyn Error>> {
+    pub fn new(version: Version, path: &str) -> Result<Self, Box<dyn Error>> {
         // Time-relevant data.
-        let bit_fields = parsing::load_bit_fields()?;
-        let holidays = parsing::load_holidays()?;
-        let timetable_metadata = parsing::load_timetable_metadata()?;
+        let bit_fields = parsing::load_bit_fields(path)?;
+        let holidays = parsing::load_holidays(path)?;
+        let timetable_metadata = parsing::load_timetable_metadata(path)?;
 
         // Master data.
-        let (attributes, attributes_pk_type_converter) = parsing::load_attributes()?;
-        let (directions, directions_pk_type_converter) = parsing::load_directions()?;
-        let information_texts = parsing::load_information_texts()?;
-        let lines = parsing::load_lines()?;
-        let transport_companies = parsing::load_transport_companies()?;
-        let (transport_types, transport_types_pk_type_converter) = parsing::load_transport_types()?;
+        let (attributes, attributes_pk_type_converter) = parsing::load_attributes(path)?;
+        let (directions, directions_pk_type_converter) = parsing::load_directions(path)?;
+        let information_texts = parsing::load_information_texts(path)?;
+        let lines = parsing::load_lines(path)?;
+        let transport_companies = parsing::load_transport_companies(path)?;
+        let (transport_types, transport_types_pk_type_converter) = parsing::load_transport_types(path)?;
 
         // Stop data.
-        let stop_connections = parsing::load_stop_connections(&attributes_pk_type_converter)?;
-        let stops = parsing::load_stops(version)?;
+        let stop_connections = parsing::load_stop_connections(path, &attributes_pk_type_converter)?;
+        let stops = parsing::load_stops(version, path)?;
 
         // Timetable data.
         let (journeys, journeys_pk_type_converter) = parsing::load_journeys(
+            path,
             &transport_types_pk_type_converter,
             &attributes_pk_type_converter,
             &directions_pk_type_converter,
         )?;
-        let (journey_platform, platforms) = parsing::load_platforms(&journeys_pk_type_converter)?;
-        let through_service = parsing::load_through_service(&journeys_pk_type_converter)?;
+        let (journey_platform, platforms) = parsing::load_platforms(path, &journeys_pk_type_converter)?;
+        let through_service = parsing::load_through_service(path, &journeys_pk_type_converter)?;
 
         // Exchange times.
-        let exchange_times_administration = parsing::load_exchange_times_administration()?;
+        let exchange_times_administration = parsing::load_exchange_times_administration(path)?;
         let exchange_times_journey =
-            parsing::load_exchange_times_journey(&journeys_pk_type_converter)?;
+            parsing::load_exchange_times_journey(path, &journeys_pk_type_converter)?;
         let exchange_times_line =
-            parsing::load_exchange_times_line(&transport_types_pk_type_converter)?;
+            parsing::load_exchange_times_line(path, &transport_types_pk_type_converter)?;
 
         let mut data_storage = Self {
             // Time-relevant data.

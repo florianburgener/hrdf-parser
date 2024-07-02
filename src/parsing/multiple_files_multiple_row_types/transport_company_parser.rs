@@ -15,7 +15,7 @@ use crate::{
     storage::SimpleResourceStorage,
 };
 
-pub fn parse() -> Result<SimpleResourceStorage<TransportCompany>, Box<dyn Error>> {
+pub fn parse(path: &str) -> Result<SimpleResourceStorage<TransportCompany>, Box<dyn Error>> {
     println!("Parsing BETRIEB_DE...");
     println!("Parsing BETRIEB_EN...");
     println!("Parsing BETRIEB_FR...");
@@ -33,7 +33,7 @@ pub fn parse() -> Result<SimpleResourceStorage<TransportCompany>, Box<dyn Error>
             ColumnDefinition::new(9, -1, ExpectedType::String),
         ]),
     ]);
-    let parser = FileParser::new("data/BETRIEB_DE", row_parser)?;
+    let parser = FileParser::new(&format!("{path}/BETRIEB_DE"), row_parser)?;
 
     let data = parser
         .parse()
@@ -48,15 +48,16 @@ pub fn parse() -> Result<SimpleResourceStorage<TransportCompany>, Box<dyn Error>
         .collect();
     let mut data = TransportCompany::vec_to_map(data);
 
-    load_designations(&mut data, Language::German)?;
-    load_designations(&mut data, Language::English)?;
-    load_designations(&mut data, Language::French)?;
-    load_designations(&mut data, Language::Italian)?;
+    load_designations(path, &mut data, Language::German)?;
+    load_designations(path, &mut data, Language::English)?;
+    load_designations(path, &mut data, Language::French)?;
+    load_designations(path, &mut data, Language::Italian)?;
 
     Ok(SimpleResourceStorage::new(data))
 }
 
 fn load_designations(
+    path: &str,
     data: &mut FxHashMap<i32, TransportCompany>,
     language: Language,
 ) -> Result<(), Box<dyn Error>> {
@@ -79,8 +80,7 @@ fn load_designations(
         Language::French => "BETRIEB_FR",
         Language::Italian => "BETRIEB_IT",
     };
-    let path = format!("data/{}", filename);
-    let parser = FileParser::new(&path, row_parser)?;
+    let parser = FileParser::new(&format!("{path}/{filename}"), row_parser)?;
 
     parser.parse().for_each(|(id, _, values)| match id {
         ROW_A => set_designations(values, data, language),

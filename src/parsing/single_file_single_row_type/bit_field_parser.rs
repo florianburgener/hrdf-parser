@@ -9,7 +9,7 @@ use crate::{
     storage::BitFieldStorage,
 };
 
-pub fn parse() -> Result<BitFieldStorage, Box<dyn Error>> {
+pub fn parse(path: &str) -> Result<BitFieldStorage, Box<dyn Error>> {
     println!("Parsing BITFELD...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -19,7 +19,7 @@ pub fn parse() -> Result<BitFieldStorage, Box<dyn Error>> {
             ColumnDefinition::new(8, 103, ExpectedType::String),
         ]),
     ]);
-    let parser = FileParser::new("data/BITFELD", row_parser)?;
+    let parser = FileParser::new(&format!("{path}/BITFELD"), row_parser)?;
 
     let data = parser
         .parse()

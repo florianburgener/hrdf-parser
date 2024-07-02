@@ -11,7 +11,7 @@ use crate::{
     storage::SimpleResourceStorage,
 };
 
-pub fn parse() -> Result<SimpleResourceStorage<InformationText>, Box<dyn Error>> {
+pub fn parse(path: &str) -> Result<SimpleResourceStorage<InformationText>, Box<dyn Error>> {
     println!("Parsing INFOTEXT_DE...");
     println!("Parsing INFOTEXT_EN...");
     println!("Parsing INFOTEXT_FR...");
@@ -24,7 +24,7 @@ pub fn parse() -> Result<SimpleResourceStorage<InformationText>, Box<dyn Error>>
             ColumnDefinition::new(1, 9, ExpectedType::Integer32),
         ]),
     ]);
-    let parser = FileParser::new("data/INFOTEXT_DE", row_parser)?;
+    let parser = FileParser::new(&format!("{path}/INFOTEXT_DE"), row_parser)?;
 
     let data = parser
         .parse()
@@ -32,15 +32,16 @@ pub fn parse() -> Result<SimpleResourceStorage<InformationText>, Box<dyn Error>>
         .collect();
     let mut data = InformationText::vec_to_map(data);
 
-    load_content(&mut data, Language::German)?;
-    load_content(&mut data, Language::English)?;
-    load_content(&mut data, Language::French)?;
-    load_content(&mut data, Language::Italian)?;
+    load_content(path, &mut data, Language::German)?;
+    load_content(path, &mut data, Language::English)?;
+    load_content(path, &mut data, Language::French)?;
+    load_content(path, &mut data, Language::Italian)?;
 
     Ok(SimpleResourceStorage::new(data))
 }
 
 fn load_content(
+    path: &str,
     data: &mut FxHashMap<i32, InformationText>,
     language: Language,
 ) -> Result<(), Box<dyn Error>> {
@@ -58,8 +59,7 @@ fn load_content(
         Language::French => "INFOTEXT_FR",
         Language::Italian => "INFOTEXT_IT",
     };
-    let path = format!("data/{}", filename);
-    let parser = FileParser::new(&path, row_parser)?;
+    let parser = FileParser::new(&format!("{path}/{filename}"), row_parser)?;
 
     parser
         .parse()

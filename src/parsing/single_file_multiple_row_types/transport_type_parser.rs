@@ -16,6 +16,7 @@ use crate::{
 };
 
 pub fn parse(
+    path: &str,
 ) -> Result<(SimpleResourceStorage<TransportType>, FxHashMap<String, i32>), Box<dyn Error>> {
     println!("Parsing ZUGART...");
     const ROW_A: i32 = 1;
@@ -59,7 +60,7 @@ pub fn parse(
             ColumnDefinition::new(14, -1, ExpectedType::String),
         ]),
     ]);
-    let parser = FileParser::new("data/ZUGART", row_parser)?;
+    let parser = FileParser::new(&format!("{path}/ZUGART"), row_parser)?;
 
     let auto_increment = AutoIncrement::new();
     let mut data = Vec::new();

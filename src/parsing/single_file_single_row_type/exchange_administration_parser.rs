@@ -4,13 +4,15 @@
 use std::error::Error;
 
 use crate::{
-    models::{Model, ExchangeTimeAdministration},
+    models::{ExchangeTimeAdministration, Model},
     parsing::{ColumnDefinition, ExpectedType, FileParser, ParsedValue, RowDefinition, RowParser},
     storage::SimpleResourceStorage,
     utils::AutoIncrement,
 };
 
-pub fn parse() -> Result<SimpleResourceStorage<ExchangeTimeAdministration>, Box<dyn Error>> {
+pub fn parse(
+    path: &str,
+) -> Result<SimpleResourceStorage<ExchangeTimeAdministration>, Box<dyn Error>> {
     println!("Parsing UMSTEIGV...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -22,7 +24,7 @@ pub fn parse() -> Result<SimpleResourceStorage<ExchangeTimeAdministration>, Box<
             ColumnDefinition::new(23, 24, ExpectedType::Integer16),
         ]),
     ]);
-    let parser = FileParser::new("data/UMSTEIGV", row_parser)?;
+    let parser = FileParser::new(&format!("{path}/UMSTEIGV"), row_parser)?;
 
     let auto_increment = AutoIncrement::new();
 

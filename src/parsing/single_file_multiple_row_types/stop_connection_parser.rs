@@ -16,6 +16,7 @@ use crate::{
 };
 
 pub fn parse(
+    path: &str,
     attributes_pk_type_converter: &FxHashMap<String, i32>,
 ) -> Result<StopConnectionStorage, Box<dyn Error>> {
     println!("Parsing METABHF 2/2...");
@@ -38,7 +39,7 @@ pub fn parse(
         // This row is ignored.
         RowDefinition::new(ROW_C, Box::new(FastRowMatcher::new(8, 1, ":", true)), Vec::new()),
     ]);
-    let parser = FileParser::new("data/METABHF", row_parser)?;
+    let parser = FileParser::new(&format!("{path}/METABHF"), row_parser)?;
 
     let auto_increment = AutoIncrement::new();
     let mut data = Vec::new();

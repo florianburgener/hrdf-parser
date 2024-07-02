@@ -17,7 +17,7 @@ use crate::{
     storage::SimpleResourceStorage,
 };
 
-pub fn parse(version: Version) -> Result<SimpleResourceStorage<Stop>, Box<dyn Error>> {
+pub fn parse(version: Version, path: &str) -> Result<SimpleResourceStorage<Stop>, Box<dyn Error>> {
     println!("Parsing BAHNHOF...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -27,7 +27,7 @@ pub fn parse(version: Version) -> Result<SimpleResourceStorage<Stop>, Box<dyn Er
             ColumnDefinition::new(13, -1, ExpectedType::String), // Should be 13-62, but some entries go beyond column 62.
         ]),
     ]);
-    let parser = FileParser::new("data/BAHNHOF", row_parser)?;
+    let parser = FileParser::new(&format!("{path}/BAHNHOF"), row_parser)?;
 
     let data = parser
         .parse()
@@ -36,25 +36,26 @@ pub fn parse(version: Version) -> Result<SimpleResourceStorage<Stop>, Box<dyn Er
     let mut data = Stop::vec_to_map(data);
 
     println!("Parsing BFKOORD_LV95...");
-    load_coordinates(version, CoordinateSystem::LV95, &mut data)?;
+    load_coordinates(version, path, CoordinateSystem::LV95, &mut data)?;
     println!("Parsing BFKOORD_WGS...");
-    load_coordinates(version, CoordinateSystem::WGS84, &mut data)?;
+    load_coordinates(version, path, CoordinateSystem::WGS84, &mut data)?;
     println!("Parsing BFPRIOS...");
-    load_exchange_priorities(&mut data)?;
+    load_exchange_priorities(path, &mut data)?;
     println!("Parsing KMINFO...");
-    load_exchange_flags(&mut data)?;
+    load_exchange_flags(path, &mut data)?;
     println!("Parsing UMSTEIGB...");
-    load_exchange_times(&mut data)?;
+    load_exchange_times(path, &mut data)?;
     println!("Parsing METABHF 1/2...");
-    load_connections(&mut data)?;
+    load_connections(path, &mut data)?;
     println!("Parsing BHFART_60...");
-    load_descriptions(&mut data)?;
+    load_descriptions(path, &mut data)?;
 
     Ok(SimpleResourceStorage::new(data))
 }
 
 fn load_coordinates(
     version: Version,
+    path: &str,
     coordinate_system: CoordinateSystem,
     data: &mut FxHashMap<i32, Stop>,
 ) -> Result<(), Box<dyn Error>> {
@@ -82,8 +83,7 @@ fn load_coordinates(
         CoordinateSystem::LV95 => "BFKOORD_LV95",
         CoordinateSystem::WGS84 => "BFKOORD_WGS",
     };
-    let path = format!("data/{}", filename);
-    let parser = FileParser::new(&path, row_parser)?;
+    let parser = FileParser::new(&format!("{path}/{filename}"), row_parser)?;
 
     parser
         .parse()
@@ -92,7 +92,10 @@ fn load_coordinates(
     Ok(())
 }
 
-fn load_exchange_priorities(data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
+fn load_exchange_priorities(
+    path: &str,
+    data: &mut FxHashMap<i32, Stop>,
+) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row contains the changing priority.
@@ -101,8 +104,7 @@ fn load_exchange_priorities(data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<d
             ColumnDefinition::new(9, 10, ExpectedType::Integer16),
         ]),
     ]);
-    let path = "data/BFPRIOS";
-    let parser = FileParser::new(&path, row_parser)?;
+    let parser = FileParser::new(&format!("{path}/BFPRIOS"), row_parser)?;
 
     parser
         .parse()
@@ -111,7 +113,7 @@ fn load_exchange_priorities(data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<d
     Ok(())
 }
 
-fn load_exchange_flags(data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
+fn load_exchange_flags(path: &str, data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row contains the changing flag.
@@ -120,7 +122,7 @@ fn load_exchange_flags(data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Er
             ColumnDefinition::new(9, 13, ExpectedType::Integer16),
         ]),
     ]);
-    let parser = FileParser::new("data/KMINFO", row_parser)?;
+    let parser = FileParser::new(&format!("{path}/KMINFO"), row_parser)?;
 
     parser
         .parse()
@@ -129,7 +131,7 @@ fn load_exchange_flags(data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Er
     Ok(())
 }
 
-fn load_exchange_times(data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
+fn load_exchange_times(path: &str, data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row contains the changing time.
@@ -139,7 +141,7 @@ fn load_exchange_times(data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Er
             ColumnDefinition::new(12, 13, ExpectedType::Integer16),
         ]),
     ]);
-    let parser = FileParser::new("data/UMSTEIGB", row_parser)?;
+    let parser = FileParser::new(&format!("{path}/UMSTEIGB"), row_parser)?;
 
     parser
         .parse()
@@ -148,7 +150,7 @@ fn load_exchange_times(data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Er
     Ok(())
 }
 
-fn load_connections(data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
+fn load_connections(path: &str, data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
     const ROW_C: i32 = 3;
@@ -165,7 +167,7 @@ fn load_connections(data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Error
             ColumnDefinition::new(11, -1, ExpectedType::String),
         ]),
     ]);
-    let parser = FileParser::new("data/METABHF", row_parser)?;
+    let parser = FileParser::new(&format!("{path}/METABHF"), row_parser)?;
 
     parser.parse().for_each(|(id, _, values)| match id {
         ROW_A | ROW_B => {}
@@ -176,7 +178,7 @@ fn load_connections(data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Error
     Ok(())
 }
 
-fn load_descriptions(data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
+fn load_descriptions(path: &str, data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
     const ROW_C: i32 = 3;
@@ -202,7 +204,7 @@ fn load_descriptions(data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Erro
             ColumnDefinition::new(13, -1, ExpectedType::String),
         ]),
     ]);
-    let parser = FileParser::new("data/BHFART_60", row_parser)?;
+    let parser = FileParser::new(&format!("{path}/BHFART_60"), row_parser)?;
 
     parser.parse().for_each(|(id, _, values)| match id {
         ROW_A => {}

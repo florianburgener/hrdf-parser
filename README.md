@@ -50,7 +50,6 @@ Incertain : BFPRIOS, BHFART_60
 Inutile : ATTRIBUT_DE, ATTRIBUT_EN, ATTRIBUT_FR, ATTRIBUT_IT, BHFART, GREENZHLT, ZEITVS
 
 TODO :
-* Library : Data downloading from an URL + unzipping + better cache system
 * Isochrone Map : Interpolation
 * Isochrone Map : Form (select an origin point + time limit + isochrone interval)
 * Library : Include exchange times

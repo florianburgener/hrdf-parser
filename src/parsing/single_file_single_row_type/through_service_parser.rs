@@ -13,6 +13,7 @@ use crate::{
 };
 
 pub fn parse(
+    path: &str,
     journeys_pk_type_converter: &FxHashMap<(i32, String), i32>,
 ) -> Result<SimpleResourceStorage<ThroughService>, Box<dyn Error>> {
     println!("Parsing DURCHBI...");
@@ -29,7 +30,7 @@ pub fn parse(
             ColumnDefinition::new(44, 50, ExpectedType::OptionInteger32),
         ]),
     ]);
-    let parser = FileParser::new("data/DURCHBI", row_parser)?;
+    let parser = FileParser::new(&format!("{path}/DURCHBI"), row_parser)?;
 
     let auto_increment = AutoIncrement::new();
 

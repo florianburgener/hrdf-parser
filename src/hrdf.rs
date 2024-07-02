@@ -1,12 +1,16 @@
-use std::{error::Error, fs, path::Path, time::Instant};
-
-use serde::{Deserialize, Serialize};
-
-use crate::{
-    constants::{CACHE_PATH, FORCE_REBUILD_CACHE},
-    models::Version,
-    storage::DataStorage,
+use std::{
+    error::Error,
+    fs::{self, File},
+    io::{BufReader, Cursor},
+    path::Path,
+    time::Instant,
 };
+
+use crate::{constants::FORCE_REBUILD_CACHE, models::Version, storage::DataStorage};
+use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
+use url::Url;
+use zip::ZipArchive;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Hrdf {
@@ -14,23 +18,63 @@ pub struct Hrdf {
 }
 
 impl Hrdf {
-    pub fn new(version: Version, verbose: bool) -> Result<Self, Box<dyn Error>> {
+    pub async fn new(
+        version: Version,
+        url_or_path: &str,
+        verbose: bool,
+    ) -> Result<Self, Box<dyn Error>> {
         let now = Instant::now();
-        let hrdf = if Path::new(CACHE_PATH).exists() && !FORCE_REBUILD_CACHE {
+
+        let unique_filename = format!("{:x}", Sha256::digest(url_or_path.as_bytes()));
+        let cache_path = format!("{unique_filename}.cache");
+
+        let hrdf = if Path::new(&cache_path).exists() && !FORCE_REBUILD_CACHE {
             if verbose {
                 println!("Reading from cache...");
             }
-            Hrdf::load_from_cache()?
+
+            Hrdf::load_from_cache(&cache_path)?
         } else {
+            let compressed_data_path = if Url::parse(url_or_path).is_ok() {
+                let compressed_data_path = format!("/tmp/{unique_filename}.zip");
+
+                if !Path::new(&compressed_data_path).exists() {
+                    // The data must be downloaded.
+                    println!("Downloading data...");
+                    let response = reqwest::get(url_or_path).await?;
+                    let mut file = std::fs::File::create(&compressed_data_path)?;
+                    let mut content = Cursor::new(response.bytes().await?);
+                    std::io::copy(&mut content, &mut file)?;
+                }
+
+                compressed_data_path
+            } else {
+                url_or_path.to_string()
+            };
+
+            let decompressed_data_path = format!("/tmp/{unique_filename}");
+
+            if !Path::new(&decompressed_data_path).exists() {
+                // The data must be decompressed.
+                println!("Unzipping archive...");
+                let file = File::open(&compressed_data_path)?;
+                let mut archive = ZipArchive::new(BufReader::new(file))?;
+                archive.extract(&decompressed_data_path)?;
+            }
+
             if verbose {
+                println!("{decompressed_data_path}");
                 println!("Building cache...");
             }
+
             let hrdf = Self {
-                data_storage: DataStorage::new(version)?,
+                data_storage: DataStorage::new(version, &decompressed_data_path)?,
             };
-            hrdf.build_cache()?;
+
+            hrdf.build_cache(&cache_path)?;
             hrdf
         };
+
         let elapsed = now.elapsed();
 
         if verbose {
@@ -48,14 +92,14 @@ impl Hrdf {
 
     // Functions
 
-    pub fn build_cache(&self) -> Result<(), Box<dyn Error>> {
+    pub fn build_cache(&self, path: &str) -> Result<(), Box<dyn Error>> {
         let data = bincode::serialize(&self)?;
-        fs::write(CACHE_PATH, data)?;
+        fs::write(path, data)?;
         Ok(())
     }
 
-    pub fn load_from_cache() -> Result<Self, Box<dyn Error>> {
-        let data = fs::read(CACHE_PATH)?;
+    pub fn load_from_cache(path: &str) -> Result<Self, Box<dyn Error>> {
+        let data = fs::read(path)?;
         let hrdf: Self = bincode::deserialize(&data)?;
         Ok(hrdf)
     }

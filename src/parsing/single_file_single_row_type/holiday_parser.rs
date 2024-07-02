@@ -13,7 +13,7 @@ use crate::{
     utils::AutoIncrement,
 };
 
-pub fn parse() -> Result<SimpleResourceStorage<Holiday>, Box<dyn Error>> {
+pub fn parse(path: &str) -> Result<SimpleResourceStorage<Holiday>, Box<dyn Error>> {
     println!("Parsing FEIERTAG...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -23,7 +23,7 @@ pub fn parse() -> Result<SimpleResourceStorage<Holiday>, Box<dyn Error>> {
             ColumnDefinition::new(12, -1, ExpectedType::String),
         ]),
     ]);
-    let parser = FileParser::new("data/FEIERTAG", row_parser)?;
+    let parser = FileParser::new(&format!("{path}/FEIERTAG"), row_parser)?;
 
     let auto_increment = AutoIncrement::new();
 

@@ -8,7 +8,7 @@ use std::error::Error;
 use rustc_hash::FxHashMap;
 
 use crate::{
-    models::{Coordinates, CoordinateSystem, JourneyPlatform, Model, Platform},
+    models::{CoordinateSystem, Coordinates, JourneyPlatform, Model, Platform},
     parsing::{
         ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, ParsedValue, RowDefinition,
         RowParser,
@@ -18,6 +18,7 @@ use crate::{
 };
 
 pub fn parse(
+    path: &str,
     journeys_pk_type_converter: &FxHashMap<(i32, String), i32>,
 ) -> Result<
     (
@@ -48,7 +49,7 @@ pub fn parse(
             ColumnDefinition::new(18, -1, ExpectedType::String),
         ]),
     ]);
-    let parser = FileParser::new("data/GLEIS", row_parser)?;
+    let parser = FileParser::new(&format!("{path}/GLEIS"), row_parser)?;
 
     let auto_increment = AutoIncrement::new();
     let mut platforms = Vec::new();
@@ -90,10 +91,10 @@ pub fn parse(
 
     println!("Parsing GLEIS_LV95...");
     #[rustfmt::skip]
-    load_coordinates_for_platforms(CoordinateSystem::LV95, bytes_offset, &platforms_pk_type_converter, &mut platforms)?;
+    load_coordinates_for_platforms(path, CoordinateSystem::LV95, bytes_offset, &platforms_pk_type_converter, &mut platforms)?;
     println!("Parsing GLEIS_WGS84...");
     #[rustfmt::skip]
-    load_coordinates_for_platforms(CoordinateSystem::WGS84, bytes_offset, &platforms_pk_type_converter, &mut platforms)?;
+    load_coordinates_for_platforms(path, CoordinateSystem::WGS84, bytes_offset, &platforms_pk_type_converter, &mut platforms)?;
 
     Ok((
         SimpleResourceStorage::new(journey_platform),
@@ -102,6 +103,7 @@ pub fn parse(
 }
 
 fn load_coordinates_for_platforms(
+    path: &str,
     coordinate_system: CoordinateSystem,
     bytes_offset: u64,
     pk_type_converter: &FxHashMap<(i32, i32), i32>,
@@ -133,8 +135,8 @@ fn load_coordinates_for_platforms(
         CoordinateSystem::LV95 => "GLEIS_LV95",
         CoordinateSystem::WGS84 => "GLEIS_WGS",
     };
-    let path = format!("data/{}", filename);
-    let parser = FileParser::new_with_bytes_offset(&path, row_parser, bytes_offset)?;
+    let parser =
+        FileParser::new_with_bytes_offset(&format!("{path}/{filename}"), row_parser, bytes_offset)?;
 
     parser.parse().for_each(|(id, _, values)| match id {
         ROW_A => {}

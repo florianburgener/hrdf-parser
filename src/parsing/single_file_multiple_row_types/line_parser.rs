@@ -12,7 +12,7 @@ use crate::{
     storage::SimpleResourceStorage,
 };
 
-pub fn parse() -> Result<SimpleResourceStorage<Line>, Box<dyn Error>> {
+pub fn parse(path: &str) -> Result<SimpleResourceStorage<Line>, Box<dyn Error>> {
     println!("Parsing LINIE...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -43,7 +43,7 @@ pub fn parse() -> Result<SimpleResourceStorage<Line>, Box<dyn Error>> {
             ColumnDefinition::new(19, 21, ExpectedType::Integer16),
         ]),
     ]);
-    let parser = FileParser::new("data/LINIE", row_parser)?;
+    let parser = FileParser::new(&format!("{path}/LINIE"), row_parser)?;
 
     let mut data = Vec::new();
 

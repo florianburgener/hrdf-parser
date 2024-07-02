@@ -18,8 +18,9 @@ use crate::{
     utils::AutoIncrement,
 };
 
-pub fn parse() -> Result<(SimpleResourceStorage<Attribute>, FxHashMap<String, i32>), Box<dyn Error>>
-{
+pub fn parse(
+    path: &str,
+) -> Result<(SimpleResourceStorage<Attribute>, FxHashMap<String, i32>), Box<dyn Error>> {
     println!("Parsing ATTRIBUT...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -50,7 +51,7 @@ pub fn parse() -> Result<(SimpleResourceStorage<Attribute>, FxHashMap<String, i3
         ]),
     ]);
     // The ATTRIBUT file is used instead of ATTRIBUT_* for simplicity's sake.
-    let parser = FileParser::new("data/ATTRIBUT", row_parser)?;
+    let parser = FileParser::new(&format!("{path}/ATTRIBUT"), row_parser)?;
 
     let auto_increment = AutoIncrement::new();
     let mut data = FxHashMap::default();

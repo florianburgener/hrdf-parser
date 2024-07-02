@@ -11,8 +11,9 @@ use crate::{
     storage::SimpleResourceStorage,
 };
 
-pub fn parse() -> Result<(SimpleResourceStorage<Direction>, FxHashMap<String, i32>), Box<dyn Error>>
-{
+pub fn parse(
+    path: &str,
+) -> Result<(SimpleResourceStorage<Direction>, FxHashMap<String, i32>), Box<dyn Error>> {
     println!("Parsing RICHTUNG...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -22,7 +23,7 @@ pub fn parse() -> Result<(SimpleResourceStorage<Direction>, FxHashMap<String, i3
             ColumnDefinition::new(9, -1, ExpectedType::String),
         ]),
     ]);
-    let parser = FileParser::new("data/RICHTUNG", row_parser)?;
+    let parser = FileParser::new(&format!("{path}/RICHTUNG"), row_parser)?;
 
     let mut pk_type_converter = FxHashMap::default();
 

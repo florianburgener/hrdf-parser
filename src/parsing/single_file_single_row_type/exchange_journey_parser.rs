@@ -6,13 +6,14 @@ use std::error::Error;
 use rustc_hash::FxHashMap;
 
 use crate::{
-    models::{Model, ExchangeTimeJourney},
+    models::{ExchangeTimeJourney, Model},
     parsing::{ColumnDefinition, ExpectedType, FileParser, ParsedValue, RowDefinition, RowParser},
     storage::SimpleResourceStorage,
     utils::AutoIncrement,
 };
 
 pub fn parse(
+    path: &str,
     journeys_pk_type_converter: &FxHashMap<(i32, String), i32>,
 ) -> Result<SimpleResourceStorage<ExchangeTimeJourney>, Box<dyn Error>> {
     println!("Parsing UMSTEIGZ...");
@@ -30,7 +31,7 @@ pub fn parse(
             ColumnDefinition::new(42, 47, ExpectedType::OptionInteger32),
         ]),
     ]);
-    let parser = FileParser::new("data/UMSTEIGZ", row_parser)?;
+    let parser = FileParser::new(&format!("{path}/UMSTEIGZ"), row_parser)?;
 
     let auto_increment = AutoIncrement::new();
 

@@ -15,7 +15,7 @@ use crate::{
     utils::AutoIncrement,
 };
 
-pub fn parse() -> Result<TimetableMetadataStorage, Box<dyn Error>> {
+pub fn parse(path: &str) -> Result<TimetableMetadataStorage, Box<dyn Error>> {
     println!("Parsing ECKDATEN...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -31,7 +31,7 @@ pub fn parse() -> Result<TimetableMetadataStorage, Box<dyn Error>> {
             ColumnDefinition::new(1, -1, ExpectedType::String),
         ]),
     ]);
-    let parser = FileParser::new("data/ECKDATEN", row_parser)?;
+    let parser = FileParser::new(&format!("{path}/ECKDATEN"), row_parser)?;
 
     let mut data: Vec<ParsedValue> = parser
         .parse()

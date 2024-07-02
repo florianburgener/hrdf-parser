@@ -17,6 +17,7 @@ use crate::{
 };
 
 pub fn parse(
+    path: &str,
     transport_types_pk_type_converter: &FxHashMap<String, i32>,
     attributes_pk_type_converter: &FxHashMap<String, i32>,
     directions_pk_type_converter: &FxHashMap<String, i32>,
@@ -98,7 +99,7 @@ pub fn parse(
             ColumnDefinition::new(37, 42, ExpectedType::OptionInteger32),
         ]),
     ]);
-    let parser = FileParser::new("data/FPLAN", row_parser)?;
+    let parser = FileParser::new(&format!("{path}/FPLAN"), row_parser)?;
 
     let auto_increment = AutoIncrement::new();
     let mut data = Vec::new();
