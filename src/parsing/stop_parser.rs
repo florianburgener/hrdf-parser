@@ -4,12 +4,12 @@
 // ---
 // Files not used by the parser:
 // BHFART
-use std::error::Error;
+use std::{error::Error, vec};
 
 use rustc_hash::FxHashMap;
 
 use crate::{
-    models::{Coordinates, CoordinateSystem, Model, Stop},
+    models::{CoordinateSystem, Coordinates, Model, Stop, Version},
     parsing::{
         AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser,
         ParsedValue, RowDefinition, RowParser,
@@ -17,7 +17,7 @@ use crate::{
     storage::SimpleResourceStorage,
 };
 
-pub fn parse() -> Result<SimpleResourceStorage<Stop>, Box<dyn Error>> {
+pub fn parse(version: Version) -> Result<SimpleResourceStorage<Stop>, Box<dyn Error>> {
     println!("Parsing BAHNHOF...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -36,9 +36,9 @@ pub fn parse() -> Result<SimpleResourceStorage<Stop>, Box<dyn Error>> {
     let mut data = Stop::vec_to_map(data);
 
     println!("Parsing BFKOORD_LV95...");
-    load_coordinates(CoordinateSystem::LV95, &mut data)?;
+    load_coordinates(version, CoordinateSystem::LV95, &mut data)?;
     println!("Parsing BFKOORD_WGS...");
-    load_coordinates(CoordinateSystem::WGS84, &mut data)?;
+    load_coordinates(version, CoordinateSystem::WGS84, &mut data)?;
     println!("Parsing BFPRIOS...");
     load_exchange_priorities(&mut data)?;
     println!("Parsing KMINFO...");
@@ -54,18 +54,29 @@ pub fn parse() -> Result<SimpleResourceStorage<Stop>, Box<dyn Error>> {
 }
 
 fn load_coordinates(
+    version: Version,
     coordinate_system: CoordinateSystem,
     data: &mut FxHashMap<i32, Stop>,
 ) -> Result<(), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row contains the LV95/WGS84 coordinates.
-        RowDefinition::from(vec![
-            ColumnDefinition::new(1, 7, ExpectedType::Integer32),
-            ColumnDefinition::new(9, 19, ExpectedType::Float), // 9-18
-            ColumnDefinition::new(21, 31, ExpectedType::Float), // 20-29
-            ColumnDefinition::new(33, 39, ExpectedType::Integer16), // 31-36
-        ]),
+        RowDefinition::from(
+            match version {
+                Version::V_5_40_41_2_0_4 => vec![
+                    ColumnDefinition::new(1, 7, ExpectedType::Integer32),
+                    ColumnDefinition::new(9, 18, ExpectedType::Float),
+                    ColumnDefinition::new(20, 29, ExpectedType::Float),
+                    ColumnDefinition::new(31, 36, ExpectedType::Integer16),
+                ],
+                Version::V_5_40_41_2_0_5 => vec![
+                    ColumnDefinition::new(1, 7, ExpectedType::Integer32),
+                    ColumnDefinition::new(9, 19, ExpectedType::Float),
+                    ColumnDefinition::new(21, 31, ExpectedType::Float),
+                    ColumnDefinition::new(33, 39, ExpectedType::Integer16),
+                ],
+            }
+        ),
     ]);
     let filename = match coordinate_system {
         CoordinateSystem::LV95 => "BFKOORD_LV95",

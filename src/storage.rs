@@ -6,10 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     models::{
-        Attribute, BitField, Direction, Holiday, InformationText, Journey, JourneyPlatform, Line,
-        Model, Platform, Stop, StopConnection, ThroughService, TimetableMetadataEntry,
-        ExchangeTimeAdministration, ExchangeTimeJourney, ExchangeTimeLine, TransportCompany,
-        TransportType,
+        Attribute, BitField, Direction, ExchangeTimeAdministration, ExchangeTimeJourney, ExchangeTimeLine, Holiday, InformationText, Journey, JourneyPlatform, Line, Model, Platform, Stop, StopConnection, ThroughService, TimetableMetadataEntry, TransportCompany, TransportType, Version
     },
     parsing,
     utils::count_days_between_two_dates,
@@ -52,7 +49,7 @@ pub struct DataStorage {
 
 #[allow(unused)]
 impl DataStorage {
-    pub fn new() -> Result<Self, Box<dyn Error>> {
+    pub fn new(version: Version) -> Result<Self, Box<dyn Error>> {
         // Time-relevant data.
         let bit_fields = parsing::load_bit_fields()?;
         let holidays = parsing::load_holidays()?;
@@ -68,7 +65,7 @@ impl DataStorage {
 
         // Stop data.
         let stop_connections = parsing::load_stop_connections(&attributes_pk_type_converter)?;
-        let stops = parsing::load_stops()?;
+        let stops = parsing::load_stops(version)?;
 
         // Timetable data.
         let (journeys, journeys_pk_type_converter) = parsing::load_journeys(

@@ -1,3 +1,4 @@
+mod constants;
 mod debug;
 mod hrdf;
 mod isochrone;
@@ -8,14 +9,15 @@ mod service;
 mod storage;
 mod utils;
 
-use std::{env, error::Error, path::Path, time::Instant};
+use std::{env, error::Error};
 
 use debug::run_debug;
 use hrdf::Hrdf;
+use models::Version;
 use service::run_service;
 
 pub async fn run() -> Result<(), Box<dyn Error>> {
-    let hrdf = load_hrdf()?;
+    let hrdf = Hrdf::new(Version::V_5_40_41_2_0_5, true)?;
 
     let args: Vec<String> = env::args().collect();
 
@@ -26,22 +28,4 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     Ok(())
-}
-
-pub fn load_hrdf() -> Result<Hrdf, Box<dyn Error>> {
-    const CACHED_PATH: &str = "data.cache";
-    const FORCE_REBUILD_CACHE: bool = false;
-
-    let now = Instant::now();
-    let hrdf = if Path::new(CACHED_PATH).exists() && !FORCE_REBUILD_CACHE {
-        println!("Reading from cache...");
-        Hrdf::load_from_cache()?
-    } else {
-        println!("Building cache...");
-        Hrdf::new()?.build_cache()?
-    };
-    let elapsed = now.elapsed();
-    println!("{:.2?}", elapsed);
-
-    Ok(hrdf)
 }

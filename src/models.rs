@@ -1242,3 +1242,14 @@ impl TransportType {
 
     // Functions
 }
+
+// ------------------------------------------------------------------------------------------------
+// --- Version
+// ------------------------------------------------------------------------------------------------
+
+#[derive(Clone, Copy, Debug, Display, Eq, Hash, PartialEq, Serialize, Deserialize)]
+#[allow(non_camel_case_types)]
+pub enum Version {
+    V_5_40_41_2_0_4,
+    V_5_40_41_2_0_5,
+}

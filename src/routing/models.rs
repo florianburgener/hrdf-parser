@@ -278,9 +278,9 @@ impl RouteSectionResult {
         self.arrival_stop_lv95_coordinates
     }
 
-    pub fn arrival_stop_wgs84_coordinates(&self) -> Option<Coordinates> {
-        self.arrival_stop_wgs84_coordinates
-    }
+    // pub fn arrival_stop_wgs84_coordinates(&self) -> Option<Coordinates> {
+    //     self.arrival_stop_wgs84_coordinates
+    // }
 
     pub fn arrival_at(&self) -> Option<NaiveDateTime> {
         self.arrival_at

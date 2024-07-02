@@ -68,8 +68,8 @@ async fn get_isochrones(hrdf: Arc<Hrdf>) -> Json<IsochroneCollection> {
     let isochrones = hrdf.get_isochrones(
         8587418,
         create_date_time(2024, 2, 3, 13, 25),
+        Duration::minutes(10),
         Duration::minutes(60),
-        Duration::minutes(240),
         false,
     );
     Json(isochrones)

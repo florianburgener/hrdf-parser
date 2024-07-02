@@ -1,10 +1,12 @@
-use std::{error::Error, fs};
+use std::{error::Error, fs, path::Path, time::Instant};
 
 use serde::{Deserialize, Serialize};
 
-use crate::storage::DataStorage;
-
-const CACHED_PATH: &str = "data.cache";
+use crate::{
+    constants::{CACHE_PATH, FORCE_REBUILD_CACHE},
+    models::Version,
+    storage::DataStorage,
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Hrdf {
@@ -12,11 +14,30 @@ pub struct Hrdf {
 }
 
 impl Hrdf {
-    pub fn new() -> Result<Self, Box<dyn Error>> {
-        let instance = Self {
-            data_storage: DataStorage::new()?,
+    pub fn new(version: Version, verbose: bool) -> Result<Self, Box<dyn Error>> {
+        let now = Instant::now();
+        let hrdf = if Path::new(CACHE_PATH).exists() && !FORCE_REBUILD_CACHE {
+            if verbose {
+                println!("Reading from cache...");
+            }
+            Hrdf::load_from_cache()?
+        } else {
+            if verbose {
+                println!("Building cache...");
+            }
+            let hrdf = Self {
+                data_storage: DataStorage::new(version)?,
+            };
+            hrdf.build_cache()?;
+            hrdf
         };
-        Ok(instance)
+        let elapsed = now.elapsed();
+
+        if verbose {
+            println!("{:.2?}", elapsed);
+        }
+
+        Ok(hrdf)
     }
 
     // Getters/Setters
@@ -27,17 +48,15 @@ impl Hrdf {
 
     // Functions
 
-    pub fn build_cache(self) -> Result<Self, Box<dyn Error>> {
-        let data = bincode::serialize(&self).unwrap();
-        fs::write(CACHED_PATH, data)?;
-
-        Ok(self)
+    pub fn build_cache(&self) -> Result<(), Box<dyn Error>> {
+        let data = bincode::serialize(&self)?;
+        fs::write(CACHE_PATH, data)?;
+        Ok(())
     }
 
-    pub fn load_from_cache() -> Result<Hrdf, Box<dyn Error>> {
-        let data = fs::read(CACHED_PATH)?;
-        let hrdf: Hrdf = bincode::deserialize(&data).unwrap();
-
+    pub fn load_from_cache() -> Result<Self, Box<dyn Error>> {
+        let data = fs::read(CACHE_PATH)?;
+        let hrdf: Self = bincode::deserialize(&data)?;
         Ok(hrdf)
     }
 }

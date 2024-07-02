@@ -50,12 +50,11 @@ Incertain : BFPRIOS, BHFART_60
 Inutile : ATTRIBUT_DE, ATTRIBUT_EN, ATTRIBUT_FR, ATTRIBUT_IT, BHFART, GREENZHLT, ZEITVS
 
 TODO :
-* Library : Handle versions 2.0.4 and 2.0.5, with a parameter ?
-* Isochrone Map : Form (select an origin point + time limit + isochrone interval)
-* Isochrone Map : Interpolation
 * Library : Data downloading from an URL + unzipping + better cache system
-* Isochrone Map : Errors ?
+* Isochrone Map : Interpolation
+* Isochrone Map : Form (select an origin point + time limit + isochrone interval)
 * Library : Include exchange times
+* Isochrone Map : Errors ?
 * Library : Errors (no route found, no journey including the departure or arrival stop)
 * Library : Logging ?
 * Library : thiserror ?
