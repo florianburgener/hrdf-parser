@@ -306,6 +306,8 @@ impl BitFieldStorage {
                 let indexes: Vec<usize> = bit_field
                     .bits()
                     .iter()
+                    // The first two bits must be ignored.
+                    .skip(2)
                     .enumerate()
                     .filter(|(i, &x)| *i < num_days && x == 1)
                     .map(|(i, _)| i)

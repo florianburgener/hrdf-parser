@@ -53,7 +53,7 @@ TODO :
 * Isochrone Map : Interpolation
 * Isochrone Map : Form (select an origin point + time limit + isochrone interval)
 * Library : Include exchange times
-* Isochrone Map : Errors ?
+* Isochrone Map : Errors ? + loading anim, etc.
 * Library : Errors (no route found, no journey including the departure or arrival stop)
 * Library : Logging ?
 * Library : thiserror ?
