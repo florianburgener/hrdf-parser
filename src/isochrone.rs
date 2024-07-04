@@ -31,7 +31,6 @@ impl Hrdf {
         );
 
         let grid = if display_mode == models::DisplayMode::ContourLine {
-            // Slow !!!
             Some(contour_line::create_grid(&routes, departure_at, time_limit))
         } else {
             None

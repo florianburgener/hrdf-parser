@@ -11,6 +11,8 @@ use super::{
     utils::{distance_between_2_points, distance_to_time, lv95_to_wgs84, time_to_distance},
 };
 
+use rayon::prelude::*;
+
 pub fn create_grid(
     routes: &Vec<RouteResult>,
     departure_at: NaiveDateTime,
@@ -50,10 +52,10 @@ pub fn create_grid(
     }
 
     let grid = grid
-        .into_iter()
-        .map(|coord1| {
+        .par_iter()
+        .map(|&coord1| {
             let duration = data
-                .iter()
+                .par_iter()
                 .map(|&(coord2, duration)| {
                     let distance = distance_between_2_points(coord1, coord2);
 
