@@ -32,7 +32,8 @@ pub async fn run_service(hrdf: Hrdf) {
 
 #[derive(Debug, Deserialize)]
 struct ComputeIsochronesRequest {
-    departure_stop_id: i32,
+    origin_point_latitude: f64,
+    origin_point_longitude: f64,
     departure_date: NaiveDate,
     departure_time: NaiveTime,
     time_limit: u32,
@@ -45,7 +46,8 @@ async fn compute_isochrones(
     Query(params): Query<ComputeIsochronesRequest>,
 ) -> Json<IsochroneCollection> {
     let isochrones = hrdf.compute_isochrones(
-        params.departure_stop_id,
+        params.origin_point_latitude,
+        params.origin_point_longitude,
         NaiveDateTime::new(params.departure_date, params.departure_time),
         Duration::minutes(params.time_limit.into()),
         Duration::minutes(params.isochrone_interval.into()),

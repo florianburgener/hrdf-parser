@@ -1,3 +1,5 @@
+use std::f64::consts::PI;
+
 use chrono::Duration;
 
 use crate::models::Coordinates;
@@ -44,4 +46,26 @@ pub fn distance_to_time(distance: f64, speed_in_kilometers_per_hour: f64) -> Dur
 pub fn time_to_distance(duration: Duration, speed_in_kilometers_per_hour: f64) -> f64 {
     let speed_in_meters_per_second = speed_in_kilometers_per_hour / 3.6;
     duration.num_seconds() as f64 * speed_in_meters_per_second
+}
+
+fn degrees_to_radians(degrees: f64) -> f64 {
+    degrees * PI / 180.0
+}
+
+pub fn haversine_distance(lat1: f64, lon1: f64, lat2: f64, lon2: f64) -> f64 {
+    let radius_of_earth_km = 6371.0;
+
+    let lat1_rad = degrees_to_radians(lat1);
+    let lon1_rad = degrees_to_radians(lon1);
+    let lat2_rad = degrees_to_radians(lat2);
+    let lon2_rad = degrees_to_radians(lon2);
+
+    let delta_lat = lat2_rad - lat1_rad;
+    let delta_lon = lon2_rad - lon1_rad;
+
+    let a = (delta_lat / 2.0).sin().powi(2)
+        + lat1_rad.cos() * lat2_rad.cos() * (delta_lon / 2.0).sin().powi(2);
+    let c = 2.0 * a.sqrt().atan2((1.0 - a).sqrt());
+
+    radius_of_earth_km * c
 }

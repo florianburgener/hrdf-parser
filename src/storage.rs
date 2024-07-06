@@ -6,7 +6,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     models::{
-        Attribute, BitField, Direction, ExchangeTimeAdministration, ExchangeTimeJourney, ExchangeTimeLine, Holiday, InformationText, Journey, JourneyPlatform, Line, Model, Platform, Stop, StopConnection, ThroughService, TimetableMetadataEntry, TransportCompany, TransportType, Version
+        Attribute, BitField, Direction, ExchangeTimeAdministration, ExchangeTimeJourney,
+        ExchangeTimeLine, Holiday, InformationText, Journey, JourneyPlatform, Line, Model,
+        Platform, Stop, StopConnection, ThroughService, TimetableMetadataEntry, TransportCompany,
+        TransportType, Version,
     },
     parsing,
     utils::count_days_between_two_dates,
@@ -61,7 +64,8 @@ impl DataStorage {
         let information_texts = parsing::load_information_texts(path)?;
         let lines = parsing::load_lines(path)?;
         let transport_companies = parsing::load_transport_companies(path)?;
-        let (transport_types, transport_types_pk_type_converter) = parsing::load_transport_types(path)?;
+        let (transport_types, transport_types_pk_type_converter) =
+            parsing::load_transport_types(path)?;
 
         // Stop data.
         let stop_connections = parsing::load_stop_connections(path, &attributes_pk_type_converter)?;
@@ -74,7 +78,8 @@ impl DataStorage {
             &attributes_pk_type_converter,
             &directions_pk_type_converter,
         )?;
-        let (journey_platform, platforms) = parsing::load_platforms(path, &journeys_pk_type_converter)?;
+        let (journey_platform, platforms) =
+            parsing::load_platforms(path, &journeys_pk_type_converter)?;
         let through_service = parsing::load_through_service(path, &journeys_pk_type_converter)?;
 
         // Exchange times.
@@ -180,6 +185,10 @@ impl<M: Model<M>> SimpleResourceStorage<M> {
 
     pub fn find(&self, k: M::K) -> &M {
         &self.data().get(&k).unwrap()
+    }
+
+    pub fn entries(&self) -> Vec<&M> {
+        self.data.values().collect()
     }
 }
 

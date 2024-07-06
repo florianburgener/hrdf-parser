@@ -50,10 +50,8 @@ Incertain : BFPRIOS, BHFART_60
 Inutile : ATTRIBUT_DE, ATTRIBUT_EN, ATTRIBUT_FR, ATTRIBUT_IT, BHFART, GREENZHLT, ZEITVS
 
 TODO :
-* Isochrone Map : Interpolation
-* Isochrone Map : Form (select an origin point + time limit + isochrone interval)
 * Library : Include exchange times
-* Isochrone Map : Errors ? + loading anim, etc.
+* Isochrone Map : Errors ? + loading anim, etc. + edge cases
 * Library : Errors (no route found, no journey including the departure or arrival stop)
 * Library : Logging ?
 * Library : thiserror ?
