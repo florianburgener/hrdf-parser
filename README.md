@@ -50,15 +50,15 @@ Incertain : BFPRIOS, BHFART_60
 Inutile : ATTRIBUT_DE, ATTRIBUT_EN, ATTRIBUT_FR, ATTRIBUT_IT, BHFART, GREENZHLT, ZEITVS
 
 TODO :
-* Library : Include exchange times
-* Isochrone Map : Errors ? + loading anim, etc. + edge cases
-* Library : Errors (no route found, no journey including the departure or arrival stop)
-* Library : Logging ?
-* Library : thiserror ?
-* Isochrone Map : Make the display more pleasant
+* Exchange times
+* Isochrone Map : loading anim + marker cursor
+* Errors and edge cases
 * Refactoring
+  * Seperate parser and the rest
+  * Errors handling
   * iter vs into_inter ?
   * Delete unnecessary getters
+  * Clean the code
 * Comments
 
 Catégorisation parser :

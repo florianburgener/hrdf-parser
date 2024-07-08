@@ -124,7 +124,8 @@ fn test_plan_journey(hrdf: &Hrdf, verbose: bool) {
     // hrdf.plan_journey(8592688, 8587057, create_date_time(2024, 2, 3, 14, 39), verbose);
     // hrdf.plan_journey(8592688, 8501008, create_date_time(2024, 9, 10, 14, 39), verbose);
     // hrdf.plan_journey(8592688, 8501008, create_date_time(2024, 9, 10, 14, 39), verbose);
-    hrdf.plan_journey(8592688, 8501008, create_date_time(2024, 9, 10, 15, 40), verbose);
+    // hrdf.plan_journey(8592688, 8501008, create_date_time(2024, 9, 10, 15, 40), verbose);
+    hrdf.plan_journey(8592688, 8588197, create_date_time(2024, 9, 10, 13, 37), verbose);
 }
 
 fn test_find_reachable_stops_within_time_limit(hrdf: &Hrdf) {

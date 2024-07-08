@@ -8,12 +8,12 @@ use rustc_hash::FxHashMap;
 use crate::{
     models::{Direction, Model},
     parsing::{ColumnDefinition, ExpectedType, FileParser, ParsedValue, RowDefinition, RowParser},
-    storage::SimpleResourceStorage,
+    storage::ResourceStorage,
 };
 
 pub fn parse(
     path: &str,
-) -> Result<(SimpleResourceStorage<Direction>, FxHashMap<String, i32>), Box<dyn Error>> {
+) -> Result<(ResourceStorage<Direction>, FxHashMap<String, i32>), Box<dyn Error>> {
     println!("Parsing RICHTUNG...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -33,7 +33,7 @@ pub fn parse(
         .collect();
     let data = Direction::vec_to_map(data);
 
-    Ok((SimpleResourceStorage::new(data), pk_type_converter))
+    Ok((ResourceStorage::new(data), pk_type_converter))
 }
 
 // ------------------------------------------------------------------------------------------------

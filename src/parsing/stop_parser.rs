@@ -14,10 +14,10 @@ use crate::{
         AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser,
         ParsedValue, RowDefinition, RowParser,
     },
-    storage::SimpleResourceStorage,
+    storage::ResourceStorage,
 };
 
-pub fn parse(version: Version, path: &str) -> Result<SimpleResourceStorage<Stop>, Box<dyn Error>> {
+pub fn parse(version: Version, path: &str) -> Result<ResourceStorage<Stop>, Box<dyn Error>> {
     println!("Parsing BAHNHOF...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -50,7 +50,7 @@ pub fn parse(version: Version, path: &str) -> Result<SimpleResourceStorage<Stop>
     println!("Parsing BHFART_60...");
     load_descriptions(path, &mut data)?;
 
-    Ok(SimpleResourceStorage::new(data))
+    Ok(ResourceStorage::new(data))
 }
 
 fn load_coordinates(

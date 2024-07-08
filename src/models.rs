@@ -19,7 +19,7 @@ use crate::{
 
 pub trait Model<M: Model<M>> {
     // Primary key type.
-    type K: Eq + Hash + Serialize + for<'a> Deserialize<'a>;
+    type K: Copy + Eq + Hash + Serialize + for<'a> Deserialize<'a>;
 
     fn id(&self) -> M::K;
 

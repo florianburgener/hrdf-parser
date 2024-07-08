@@ -9,10 +9,10 @@ use crate::{
         ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, ParsedValue, RowDefinition,
         RowParser,
     },
-    storage::SimpleResourceStorage,
+    storage::ResourceStorage,
 };
 
-pub fn parse(path: &str) -> Result<SimpleResourceStorage<Line>, Box<dyn Error>> {
+pub fn parse(path: &str) -> Result<ResourceStorage<Line>, Box<dyn Error>> {
     println!("Parsing LINIE...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -67,7 +67,7 @@ pub fn parse(path: &str) -> Result<SimpleResourceStorage<Line>, Box<dyn Error>> 
 
     let data = Line::vec_to_map(data);
 
-    Ok(SimpleResourceStorage::new(data))
+    Ok(ResourceStorage::new(data))
 }
 
 // ------------------------------------------------------------------------------------------------

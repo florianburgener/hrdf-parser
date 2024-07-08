@@ -8,10 +8,10 @@ use rustc_hash::FxHashMap;
 use crate::{
     models::{InformationText, Language, Model},
     parsing::{ColumnDefinition, ExpectedType, FileParser, ParsedValue, RowDefinition, RowParser},
-    storage::SimpleResourceStorage,
+    storage::ResourceStorage,
 };
 
-pub fn parse(path: &str) -> Result<SimpleResourceStorage<InformationText>, Box<dyn Error>> {
+pub fn parse(path: &str) -> Result<ResourceStorage<InformationText>, Box<dyn Error>> {
     println!("Parsing INFOTEXT_DE...");
     println!("Parsing INFOTEXT_EN...");
     println!("Parsing INFOTEXT_FR...");
@@ -37,7 +37,7 @@ pub fn parse(path: &str) -> Result<SimpleResourceStorage<InformationText>, Box<d
     load_content(path, &mut data, Language::French)?;
     load_content(path, &mut data, Language::Italian)?;
 
-    Ok(SimpleResourceStorage::new(data))
+    Ok(ResourceStorage::new(data))
 }
 
 fn load_content(

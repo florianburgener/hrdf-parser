@@ -11,14 +11,14 @@ use crate::{
         AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser,
         ParsedValue, RowDefinition, RowParser,
     },
-    storage::StopConnectionStorage,
+    storage::ResourceStorage,
     utils::AutoIncrement,
 };
 
 pub fn parse(
     path: &str,
     attributes_pk_type_converter: &FxHashMap<String, i32>,
-) -> Result<StopConnectionStorage, Box<dyn Error>> {
+) -> Result<ResourceStorage<StopConnection>, Box<dyn Error>> {
     println!("Parsing METABHF 2/2...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -61,7 +61,7 @@ pub fn parse(
 
     let data = StopConnection::vec_to_map(data);
 
-    Ok(StopConnectionStorage::new(data))
+    Ok(ResourceStorage::new(data))
 }
 
 // ------------------------------------------------------------------------------------------------

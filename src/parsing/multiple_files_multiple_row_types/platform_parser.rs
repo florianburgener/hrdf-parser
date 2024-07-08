@@ -13,7 +13,7 @@ use crate::{
         ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, ParsedValue, RowDefinition,
         RowParser,
     },
-    storage::SimpleResourceStorage,
+    storage::ResourceStorage,
     utils::{create_time_from_value, AutoIncrement},
 };
 
@@ -22,8 +22,8 @@ pub fn parse(
     journeys_pk_type_converter: &FxHashMap<(i32, String), i32>,
 ) -> Result<
     (
-        SimpleResourceStorage<JourneyPlatform>,
-        SimpleResourceStorage<Platform>,
+        ResourceStorage<JourneyPlatform>,
+        ResourceStorage<Platform>,
     ),
     Box<dyn Error>,
 > {
@@ -97,8 +97,8 @@ pub fn parse(
     load_coordinates_for_platforms(path, CoordinateSystem::WGS84, bytes_offset, &platforms_pk_type_converter, &mut platforms)?;
 
     Ok((
-        SimpleResourceStorage::new(journey_platform),
-        SimpleResourceStorage::new(platforms),
+        ResourceStorage::new(journey_platform),
+        ResourceStorage::new(platforms),
     ))
 }
 

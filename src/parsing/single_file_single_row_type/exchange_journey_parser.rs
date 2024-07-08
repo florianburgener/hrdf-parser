@@ -8,14 +8,14 @@ use rustc_hash::FxHashMap;
 use crate::{
     models::{ExchangeTimeJourney, Model},
     parsing::{ColumnDefinition, ExpectedType, FileParser, ParsedValue, RowDefinition, RowParser},
-    storage::SimpleResourceStorage,
+    storage::ResourceStorage,
     utils::AutoIncrement,
 };
 
 pub fn parse(
     path: &str,
     journeys_pk_type_converter: &FxHashMap<(i32, String), i32>,
-) -> Result<SimpleResourceStorage<ExchangeTimeJourney>, Box<dyn Error>> {
+) -> Result<ResourceStorage<ExchangeTimeJourney>, Box<dyn Error>> {
     println!("Parsing UMSTEIGZ...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -41,7 +41,7 @@ pub fn parse(
         .collect();
     let data = ExchangeTimeJourney::vec_to_map(data);
 
-    Ok(SimpleResourceStorage::new(data))
+    Ok(ResourceStorage::new(data))
 }
 
 // ------------------------------------------------------------------------------------------------

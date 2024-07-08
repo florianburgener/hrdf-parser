@@ -12,10 +12,10 @@ use crate::{
         ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, ParsedValue, RowDefinition,
         RowParser,
     },
-    storage::SimpleResourceStorage,
+    storage::ResourceStorage,
 };
 
-pub fn parse(path: &str) -> Result<SimpleResourceStorage<TransportCompany>, Box<dyn Error>> {
+pub fn parse(path: &str) -> Result<ResourceStorage<TransportCompany>, Box<dyn Error>> {
     println!("Parsing BETRIEB_DE...");
     println!("Parsing BETRIEB_EN...");
     println!("Parsing BETRIEB_FR...");
@@ -53,7 +53,7 @@ pub fn parse(path: &str) -> Result<SimpleResourceStorage<TransportCompany>, Box<
     load_designations(path, &mut data, Language::French)?;
     load_designations(path, &mut data, Language::Italian)?;
 
-    Ok(SimpleResourceStorage::new(data))
+    Ok(ResourceStorage::new(data))
 }
 
 fn load_designations(

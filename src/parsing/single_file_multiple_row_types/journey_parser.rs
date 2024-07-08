@@ -12,7 +12,7 @@ use crate::{
         ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, ParsedValue, RowDefinition,
         RowParser,
     },
-    storage::JourneyStorage,
+    storage::ResourceStorage,
     utils::{create_time_from_value, AutoIncrement},
 };
 
@@ -21,7 +21,7 @@ pub fn parse(
     transport_types_pk_type_converter: &FxHashMap<String, i32>,
     attributes_pk_type_converter: &FxHashMap<String, i32>,
     directions_pk_type_converter: &FxHashMap<String, i32>,
-) -> Result<(JourneyStorage, FxHashMap<(i32, String), i32>), Box<dyn Error>> {
+) -> Result<(ResourceStorage<Journey>, FxHashMap<(i32, String), i32>), Box<dyn Error>> {
     println!("Parsing FPLAN...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -134,7 +134,7 @@ pub fn parse(
 
     let data = Journey::vec_to_map(data);
 
-    Ok((JourneyStorage::new(data), pk_type_converter))
+    Ok((ResourceStorage::new(data), pk_type_converter))
 }
 
 // ------------------------------------------------------------------------------------------------

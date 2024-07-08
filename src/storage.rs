@@ -12,7 +12,7 @@ use crate::{
         TransportType, Version,
     },
     parsing,
-    utils::count_days_between_two_dates,
+    utils::{count_days_between_two_dates, timetable_end_date, timetable_start_date},
 };
 
 // ------------------------------------------------------------------------------------------------
@@ -22,32 +22,38 @@ use crate::{
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DataStorage {
     // Time-relevant data.
-    bit_fields: BitFieldStorage,
-    holidays: SimpleResourceStorage<Holiday>,
-    timetable_metadata: TimetableMetadataStorage,
+    bit_fields: ResourceStorage<BitField>,
+    holidays: ResourceStorage<Holiday>,
+    timetable_metadata: ResourceStorage<TimetableMetadataEntry>,
 
     // Master data.
-    attributes: SimpleResourceStorage<Attribute>,
-    information_texts: SimpleResourceStorage<InformationText>,
-    directions: SimpleResourceStorage<Direction>,
-    lines: SimpleResourceStorage<Line>,
-    transport_companies: SimpleResourceStorage<TransportCompany>,
-    transport_types: SimpleResourceStorage<TransportType>,
+    attributes: ResourceStorage<Attribute>,
+    information_texts: ResourceStorage<InformationText>,
+    directions: ResourceStorage<Direction>,
+    lines: ResourceStorage<Line>,
+    transport_companies: ResourceStorage<TransportCompany>,
+    transport_types: ResourceStorage<TransportType>,
 
     // Stop data.
-    stops: SimpleResourceStorage<Stop>,
-    stop_connections: StopConnectionStorage,
+    stops: ResourceStorage<Stop>,
+    stop_connections: ResourceStorage<StopConnection>,
 
     // Timetable data.
-    journeys: JourneyStorage,
-    journey_platform: SimpleResourceStorage<JourneyPlatform>,
-    platforms: SimpleResourceStorage<Platform>,
-    through_service: SimpleResourceStorage<ThroughService>,
+    journeys: ResourceStorage<Journey>,
+    journey_platform: ResourceStorage<JourneyPlatform>,
+    platforms: ResourceStorage<Platform>,
+    through_service: ResourceStorage<ThroughService>,
 
     // Exchange times.
-    exchange_times_administration: SimpleResourceStorage<ExchangeTimeAdministration>,
-    exchange_times_journey: SimpleResourceStorage<ExchangeTimeJourney>,
-    exchange_times_line: SimpleResourceStorage<ExchangeTimeLine>,
+    exchange_times_administration: ResourceStorage<ExchangeTimeAdministration>,
+    exchange_times_journey: ResourceStorage<ExchangeTimeJourney>,
+    exchange_times_line: ResourceStorage<ExchangeTimeLine>,
+
+    // Maps.
+    bit_fields_by_day: FxHashMap<NaiveDate, FxHashSet<i32>>,
+    bit_fields_by_stop_id: FxHashMap<i32, FxHashSet<i32>>,
+    journeys_by_stop_id_and_bit_field_id: FxHashMap<(i32, i32), Vec<i32>>,
+    stop_connections_by_stop_id: FxHashMap<i32, FxHashSet<i32>>,
 }
 
 #[allow(unused)]
@@ -89,6 +95,12 @@ impl DataStorage {
         let exchange_times_line =
             parsing::load_exchange_times_line(path, &transport_types_pk_type_converter)?;
 
+        let bit_fields_by_day = create_bit_fields_by_day(&bit_fields, &timetable_metadata);
+        let bit_fields_by_stop_id = create_bit_fields_by_stop_id(&journeys);
+        let journeys_by_stop_id_and_bit_field_id =
+            create_journeys_by_stop_id_and_bit_field_id(&journeys);
+        let stop_connections_by_stop_id = create_stop_connections_by_stop_id(&stop_connections);
+
         let mut data_storage = Self {
             // Time-relevant data.
             bit_fields,
@@ -113,68 +125,71 @@ impl DataStorage {
             exchange_times_administration,
             exchange_times_journey,
             exchange_times_line,
+            // Maps.
+            bit_fields_by_day,
+            bit_fields_by_stop_id,
+            journeys_by_stop_id_and_bit_field_id,
+            stop_connections_by_stop_id,
         };
 
-        data_storage.build_indexes();
         Ok(data_storage)
     }
 
-    fn build_indexes(&mut self) {
-        let indexes = self.create_indexes();
-        self.set_indexes(indexes);
-    }
-
-    fn create_indexes(&self) -> (BitFieldIndexes, JourneyIndexes) {
-        let bit_field_indexes = self.bit_fields.create_indexes(self);
-        let journey_indexes = self.journeys.create_indexes(self);
-        (bit_field_indexes, journey_indexes)
-    }
-
-    fn set_indexes(&mut self, indexes: (BitFieldIndexes, JourneyIndexes)) {
-        let (bit_field_indexes, journey_indexes) = indexes;
-        self.bit_fields.set_indexes(bit_field_indexes);
-        self.journeys.set_indexes(journey_indexes);
-    }
-
-    pub fn bit_fields(&self) -> &BitFieldStorage {
+    pub fn bit_fields(&self) -> &ResourceStorage<BitField> {
         &self.bit_fields
     }
 
-    pub fn journeys(&self) -> &JourneyStorage {
+    pub fn journeys(&self) -> &ResourceStorage<Journey> {
         &self.journeys
     }
 
-    pub fn lines(&self) -> &SimpleResourceStorage<Line> {
+    pub fn lines(&self) -> &ResourceStorage<Line> {
         &self.lines
     }
 
-    pub fn platforms(&self) -> &SimpleResourceStorage<Platform> {
+    pub fn platforms(&self) -> &ResourceStorage<Platform> {
         &self.platforms
     }
 
-    pub fn stop_connections(&self) -> &StopConnectionStorage {
+    pub fn stop_connections(&self) -> &ResourceStorage<StopConnection> {
         &self.stop_connections
     }
 
-    pub fn stops(&self) -> &SimpleResourceStorage<Stop> {
+    pub fn stops(&self) -> &ResourceStorage<Stop> {
         &self.stops
     }
 
-    pub fn timetable_metadata(&self) -> &TimetableMetadataStorage {
+    pub fn timetable_metadata(&self) -> &ResourceStorage<TimetableMetadataEntry> {
         &self.timetable_metadata
+    }
+
+    pub fn bit_fields_by_day(&self) -> &FxHashMap<NaiveDate, FxHashSet<i32>> {
+        &self.bit_fields_by_day
+    }
+
+    pub fn bit_fields_by_stop_id(&self) -> &FxHashMap<i32, FxHashSet<i32>> {
+        &self.bit_fields_by_stop_id
+    }
+
+    pub fn journeys_by_stop_id_and_bit_field_id(&self) -> &FxHashMap<(i32, i32), Vec<i32>> {
+        &self.journeys_by_stop_id_and_bit_field_id
+    }
+
+    pub fn stop_connections_by_stop_id(&self) -> &FxHashMap<i32, FxHashSet<i32>> {
+        &self.stop_connections_by_stop_id
     }
 }
 
 // ------------------------------------------------------------------------------------------------
-// --- SimpleResourceStorage
+// --- ResourceStorage
 // ------------------------------------------------------------------------------------------------
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct SimpleResourceStorage<M: Model<M>> {
+pub struct ResourceStorage<M: Model<M>> {
     data: FxHashMap<M::K, M>,
 }
 
-impl<M: Model<M>> SimpleResourceStorage<M> {
+impl<M: Model<M>> ResourceStorage<M> {
     pub fn new(data: FxHashMap<M::K, M>) -> Self {
         Self { data }
     }
@@ -190,318 +205,101 @@ impl<M: Model<M>> SimpleResourceStorage<M> {
     pub fn entries(&self) -> Vec<&M> {
         self.data.values().collect()
     }
-}
 
-// ------------------------------------------------------------------------------------------------
-// --- impl_Storage
-// ------------------------------------------------------------------------------------------------
-
-macro_rules! impl_Storage {
-    ($s:ty, $m:ty) => {
-        #[allow(unused)]
-        impl $s {
-            // Getters/Setters
-
-            pub fn data(&self) -> &FxHashMap<i32, $m> {
-                &self.data
-            }
-
-            // Functions
-
-            pub fn entries(&self) -> Vec<&$m> {
-                self.data.values().collect()
-            }
-
-            pub fn find(&self, id: i32) -> &$m {
-                self.data.get(&id).unwrap()
-            }
-
-            pub fn resolve_ids(&self, ids: &FxHashSet<i32>) -> Vec<&$m> {
-                ids.iter().map(|&id| self.find(id)).collect()
-            }
-        }
-    };
-}
-
-// ------------------------------------------------------------------------------------------------
-// --- BitFieldStorage
-// ------------------------------------------------------------------------------------------------
-
-type BitFieldIndex1 = FxHashMap<NaiveDate, FxHashSet<i32>>;
-type BitFieldIndex2 = FxHashMap<i32, FxHashSet<i32>>;
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct BitFieldStorage {
-    data: FxHashMap<i32, BitField>,
-    bit_fields_by_day: BitFieldIndex1,
-    bit_fields_by_stop_id: BitFieldIndex2,
-}
-
-impl_Storage!(BitFieldStorage, BitField);
-
-impl BitFieldStorage {
-    pub fn new(data: FxHashMap<i32, BitField>) -> Self {
-        Self {
-            data,
-            bit_fields_by_day: FxHashMap::default(),
-            bit_fields_by_stop_id: FxHashMap::default(),
-        }
-    }
-
-    // Getters/Setters
-
-    fn set_bit_fields_by_day(&mut self, value: BitFieldIndex1) {
-        self.bit_fields_by_day = value;
-    }
-
-    fn set_bit_fields_by_stop_id(&mut self, value: BitFieldIndex2) {
-        self.bit_fields_by_stop_id = value;
-    }
-
-    // Functions
-
-    pub fn find_by_day(&self, day: NaiveDate) -> &FxHashSet<i32> {
-        self.bit_fields_by_day.get(&day).unwrap()
-    }
-
-    pub fn find_by_stop_id(&self, stop_id: i32) -> Option<&FxHashSet<i32>> {
-        self.bit_fields_by_stop_id.get(&stop_id)
+    pub fn resolve_ids(&self, ids: &FxHashSet<M::K>) -> Vec<&M> {
+        ids.iter().map(|&id| self.find(id)).collect()
     }
 }
 
-type BitFieldIndexes = (BitFieldIndex1, BitFieldIndex2);
+// ------------------------------------------------------------------------------------------------
+// --- Maps
+// ------------------------------------------------------------------------------------------------
 
-// Indexes:
-impl BitFieldStorage {
-    pub fn create_indexes(&self, data_storage: &DataStorage) -> BitFieldIndexes {
-        (
-            self.create_bit_fields_by_day(data_storage),
-            self.create_bit_fields_by_stop_id(data_storage),
-        )
-    }
+fn create_bit_fields_by_day(
+    bit_fields: &ResourceStorage<BitField>,
+    timetable_metadata: &ResourceStorage<TimetableMetadataEntry>,
+) -> FxHashMap<NaiveDate, FxHashSet<i32>> {
+    let start_date = timetable_start_date(timetable_metadata);
+    let num_days = count_days_between_two_dates(start_date, timetable_end_date(timetable_metadata));
 
-    pub fn set_indexes(&mut self, indexes: BitFieldIndexes) {
-        let (bit_fields_by_day, bit_fields_by_stop_id) = indexes;
+    let dates: Vec<NaiveDate> = (0..num_days)
+        .into_iter()
+        .map(|i| {
+            start_date
+                .checked_add_days(Days::new(i.try_into().unwrap()))
+                .unwrap()
+        })
+        .collect();
 
-        self.set_bit_fields_by_day(bit_fields_by_day);
-        self.set_bit_fields_by_stop_id(bit_fields_by_stop_id);
-    }
+    let mut map = FxHashMap::default();
+    dates.iter().for_each(|date| {
+        map.entry(*date).or_insert(FxHashSet::default()).insert(0);
+    });
 
-    fn create_bit_fields_by_day(&self, data_storage: &DataStorage) -> BitFieldIndex1 {
-        let timetable_metadata = data_storage.timetable_metadata();
-        let start_date = timetable_metadata.start_date();
-        let num_days = count_days_between_two_dates(start_date, timetable_metadata.end_date());
-
-        let dates: Vec<NaiveDate> = (0..num_days)
-            .into_iter()
-            .map(|i| {
-                start_date
-                    .checked_add_days(Days::new(i.try_into().unwrap()))
-                    .unwrap()
-            })
+    bit_fields.data().keys().fold(map, |mut acc, bit_field_id| {
+        let bit_field = bit_fields.find(*bit_field_id);
+        let indexes: Vec<usize> = bit_field
+            .bits()
+            .iter()
+            // The first two bits must be ignored.
+            .skip(2)
+            .enumerate()
+            .filter(|(i, &x)| *i < num_days && x == 1)
+            .map(|(i, _)| i)
             .collect();
 
-        let mut map = FxHashMap::default();
-        dates.iter().for_each(|date| {
-            map.entry(*date).or_insert(FxHashSet::default()).insert(0);
+        indexes.into_iter().for_each(|i| {
+            acc.entry(dates[i])
+                .or_insert(FxHashSet::default())
+                .insert(bit_field.id());
         });
 
-        data_storage
-            .bit_fields()
-            .data()
-            .keys()
-            .fold(map, |mut acc, bit_field_id| {
-                let bit_field = data_storage.bit_fields().find(*bit_field_id);
-                let indexes: Vec<usize> = bit_field
-                    .bits()
-                    .iter()
-                    // The first two bits must be ignored.
-                    .skip(2)
-                    .enumerate()
-                    .filter(|(i, &x)| *i < num_days && x == 1)
-                    .map(|(i, _)| i)
-                    .collect();
-
-                indexes.into_iter().for_each(|i| {
-                    acc.entry(dates[i])
-                        .or_insert(FxHashSet::default())
-                        .insert(bit_field.id());
-                });
-
-                acc
-            })
-    }
-
-    fn create_bit_fields_by_stop_id(&self, data_storage: &DataStorage) -> BitFieldIndex2 {
-        data_storage
-            .journeys()
-            .entries()
-            .iter()
-            .fold(FxHashMap::default(), |mut acc, journey| {
-                journey.route().iter().for_each(|route_entry| {
-                    acc.entry(route_entry.stop_id())
-                        .or_insert(FxHashSet::default())
-                        .insert(journey.bit_field_id().unwrap_or(0));
-                });
-                acc
-            })
-    }
+        acc
+    })
 }
 
-// ------------------------------------------------------------------------------------------------
-// --- JourneyStorage
-// ------------------------------------------------------------------------------------------------
-
-type JourneyIndex1 = FxHashMap<(i32, i32), Vec<i32>>;
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct JourneyStorage {
-    data: FxHashMap<i32, Journey>,
-    journeys_by_stop_id_and_bit_field_id: JourneyIndex1,
-}
-
-impl_Storage!(JourneyStorage, Journey);
-
-impl JourneyStorage {
-    pub fn new(data: FxHashMap<i32, Journey>) -> Self {
-        Self {
-            data,
-            journeys_by_stop_id_and_bit_field_id: FxHashMap::default(),
-        }
-    }
-
-    // Getters/Setters
-
-    fn set_journeys_by_stop_id_and_bit_field_id(&mut self, value: JourneyIndex1) {
-        self.journeys_by_stop_id_and_bit_field_id = value;
-    }
-
-    // Functions
-
-    pub fn find_by_stop_id_and_bit_field_id(&self, stop_id: i32, bit_field_id: i32) -> &Vec<i32> {
-        self.journeys_by_stop_id_and_bit_field_id
-            .get(&(stop_id, bit_field_id))
-            .unwrap()
-    }
-}
-
-type JourneyIndexes = (JourneyIndex1,);
-
-// Indexes:
-impl JourneyStorage {
-    pub fn create_indexes(&self, data_storage: &DataStorage) -> JourneyIndexes {
-        (self.create_journeys_by_stop_id_and_bit_field_id(data_storage),)
-    }
-
-    pub fn set_indexes(&mut self, indexes: JourneyIndexes) {
-        let (journeys_by_stop_id_and_bit_field_id,) = indexes;
-
-        self.set_journeys_by_stop_id_and_bit_field_id(journeys_by_stop_id_and_bit_field_id);
-    }
-
-    fn create_journeys_by_stop_id_and_bit_field_id(&self, _: &DataStorage) -> JourneyIndex1 {
-        self.entries()
-            .iter()
-            .fold(FxHashMap::default(), |mut acc, journey| {
-                journey.route().iter().for_each(|route_entry| {
-                    acc.entry((route_entry.stop_id(), journey.bit_field_id().unwrap_or(0)))
-                        .or_insert(Vec::new())
-                        .push(journey.id());
-                });
-                acc
-            })
-    }
-}
-
-// ------------------------------------------------------------------------------------------------
-// --- StopConnectionStorage
-// ------------------------------------------------------------------------------------------------
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct StopConnectionStorage {
-    data: FxHashMap<i32, StopConnection>,
-    stop_connections_by_stop_id: FxHashMap<i32, FxHashSet<i32>>,
-}
-
-impl_Storage!(StopConnectionStorage, StopConnection);
-
-impl StopConnectionStorage {
-    pub fn new(data: FxHashMap<i32, StopConnection>) -> Self {
-        let stop_connections_by_stop_id = Self::create_stop_connections_by_stop_id(&data);
-
-        Self {
-            data,
-            stop_connections_by_stop_id,
-        }
-    }
-
-    // Functions
-
-    pub fn find_by_stop_id(&self, stop_id: i32) -> Option<&FxHashSet<i32>> {
-        self.stop_connections_by_stop_id.get(&stop_id)
-    }
-}
-
-// Indexes:
-impl StopConnectionStorage {
-    fn create_stop_connections_by_stop_id(
-        data: &FxHashMap<i32, StopConnection>,
-    ) -> FxHashMap<i32, FxHashSet<i32>> {
-        data.values()
-            .fold(FxHashMap::default(), |mut acc, stop_connection| {
-                acc.entry(stop_connection.stop_id_1())
+fn create_bit_fields_by_stop_id(
+    journeys: &ResourceStorage<Journey>,
+) -> FxHashMap<i32, FxHashSet<i32>> {
+    journeys
+        .entries()
+        .into_iter()
+        .fold(FxHashMap::default(), |mut acc, journey| {
+            journey.route().iter().for_each(|route_entry| {
+                acc.entry(route_entry.stop_id())
                     .or_insert(FxHashSet::default())
-                    .insert(stop_connection.id());
-                acc
-            })
-    }
-}
-
-// ------------------------------------------------------------------------------------------------
-// --- TimetableMetadataStorage
-// ------------------------------------------------------------------------------------------------
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct TimetableMetadataStorage {
-    data: FxHashMap<i32, TimetableMetadataEntry>,
-    timetable_metadata_entry_by_key: FxHashMap<String, i32>,
-}
-
-impl_Storage!(TimetableMetadataStorage, TimetableMetadataEntry);
-
-impl TimetableMetadataStorage {
-    pub fn new(data: FxHashMap<i32, TimetableMetadataEntry>) -> Self {
-        let timetable_metadata_entry_by_key = Self::create_timetable_metadata_entry_by_key(&data);
-
-        Self {
-            data,
-            timetable_metadata_entry_by_key,
-        }
-    }
-
-    // Functions.
-
-    pub fn find_by_key(&self, key: &str) -> &TimetableMetadataEntry {
-        self.find(*self.timetable_metadata_entry_by_key.get(key).unwrap())
-    }
-
-    pub fn start_date(&self) -> NaiveDate {
-        self.find_by_key("start_date").value_as_NaiveDate()
-    }
-
-    pub fn end_date(&self) -> NaiveDate {
-        self.find_by_key("end_date").value_as_NaiveDate()
-    }
-}
-
-// Indexes:
-impl TimetableMetadataStorage {
-    fn create_timetable_metadata_entry_by_key(
-        data: &FxHashMap<i32, TimetableMetadataEntry>,
-    ) -> FxHashMap<String, i32> {
-        data.values().fold(FxHashMap::default(), |mut acc, item| {
-            acc.insert(item.key().to_owned(), item.id());
+                    .insert(journey.bit_field_id().unwrap_or(0));
+            });
             acc
         })
-    }
+}
+
+fn create_journeys_by_stop_id_and_bit_field_id(
+    journeys: &ResourceStorage<Journey>,
+) -> FxHashMap<(i32, i32), Vec<i32>> {
+    journeys
+        .entries()
+        .into_iter()
+        .fold(FxHashMap::default(), |mut acc, journey| {
+            journey.route().iter().for_each(|route_entry| {
+                acc.entry((route_entry.stop_id(), journey.bit_field_id().unwrap_or(0)))
+                    .or_insert(Vec::new())
+                    .push(journey.id());
+            });
+            acc
+        })
+}
+
+fn create_stop_connections_by_stop_id(
+    stop_connections: &ResourceStorage<StopConnection>,
+) -> FxHashMap<i32, FxHashSet<i32>> {
+    stop_connections
+        .data()
+        .values()
+        .fold(FxHashMap::default(), |mut acc, stop_connection| {
+            acc.entry(stop_connection.stop_id_1())
+                .or_insert(FxHashSet::default())
+                .insert(stop_connection.id());
+            acc
+        })
 }

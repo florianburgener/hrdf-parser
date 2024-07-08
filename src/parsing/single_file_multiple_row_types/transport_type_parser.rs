@@ -11,13 +11,13 @@ use crate::{
         AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser,
         ParsedValue, RowDefinition, RowParser,
     },
-    storage::SimpleResourceStorage,
+    storage::ResourceStorage,
     utils::AutoIncrement,
 };
 
 pub fn parse(
     path: &str,
-) -> Result<(SimpleResourceStorage<TransportType>, FxHashMap<String, i32>), Box<dyn Error>> {
+) -> Result<(ResourceStorage<TransportType>, FxHashMap<String, i32>), Box<dyn Error>> {
     println!("Parsing ZUGART...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -93,7 +93,7 @@ pub fn parse(
 
     let data = TransportType::vec_to_map(data);
 
-    Ok((SimpleResourceStorage::new(data), pk_type_converter))
+    Ok((ResourceStorage::new(data), pk_type_converter))
 }
 
 // ------------------------------------------------------------------------------------------------

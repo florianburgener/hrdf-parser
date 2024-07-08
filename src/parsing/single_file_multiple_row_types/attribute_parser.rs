@@ -14,13 +14,13 @@ use crate::{
         AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser,
         ParsedValue, RowDefinition, RowParser,
     },
-    storage::SimpleResourceStorage,
+    storage::ResourceStorage,
     utils::AutoIncrement,
 };
 
 pub fn parse(
     path: &str,
-) -> Result<(SimpleResourceStorage<Attribute>, FxHashMap<String, i32>), Box<dyn Error>> {
+) -> Result<(ResourceStorage<Attribute>, FxHashMap<String, i32>), Box<dyn Error>> {
     println!("Parsing ATTRIBUT...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -72,7 +72,7 @@ pub fn parse(
         }
     }
 
-    Ok((SimpleResourceStorage::new(data), pk_type_converter))
+    Ok((ResourceStorage::new(data), pk_type_converter))
 }
 
 // ------------------------------------------------------------------------------------------------

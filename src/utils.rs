@@ -6,6 +6,8 @@ use std::cell::RefCell;
 
 use chrono::{Days, Duration, NaiveDate, NaiveDateTime, NaiveTime};
 
+use crate::{models::TimetableMetadataEntry, storage::ResourceStorage};
+
 pub struct AutoIncrement {
     value: RefCell<i32>,
 }
@@ -55,4 +57,26 @@ pub fn create_time_from_value(value: u32) -> NaiveTime {
 
 pub fn create_date_time(year: i32, month: u32, day: u32, hour: u32, minute: u32) -> NaiveDateTime {
     NaiveDateTime::new(create_date(year, month, day), create_time(hour, minute))
+}
+
+pub fn timetable_start_date(
+    timetable_metadata: &ResourceStorage<TimetableMetadataEntry>,
+) -> NaiveDate {
+    timetable_metadata
+        .data()
+        .values()
+        .find(|val| val.key() == "start_date")
+        .unwrap()
+        .value_as_NaiveDate()
+}
+
+pub fn timetable_end_date(
+    timetable_metadata: &ResourceStorage<TimetableMetadataEntry>,
+) -> NaiveDate {
+    timetable_metadata
+        .data()
+        .values()
+        .find(|val| val.key() == "end_date")
+        .unwrap()
+        .value_as_NaiveDate()
 }

@@ -11,11 +11,11 @@ use crate::{
         AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser,
         ParsedValue, RowDefinition, RowParser,
     },
-    storage::TimetableMetadataStorage,
+    storage::ResourceStorage,
     utils::AutoIncrement,
 };
 
-pub fn parse(path: &str) -> Result<TimetableMetadataStorage, Box<dyn Error>> {
+pub fn parse(path: &str) -> Result<ResourceStorage<TimetableMetadataEntry>, Box<dyn Error>> {
     println!("Parsing ECKDATEN...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -65,5 +65,5 @@ pub fn parse(path: &str) -> Result<TimetableMetadataStorage, Box<dyn Error>> {
         .collect();
     let data = TimetableMetadataEntry::vec_to_map(data);
 
-    Ok(TimetableMetadataStorage::new(data))
+    Ok(ResourceStorage::new(data))
 }

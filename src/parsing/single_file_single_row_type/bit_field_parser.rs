@@ -6,10 +6,10 @@ use std::error::Error;
 use crate::{
     models::{BitField, Model},
     parsing::{ColumnDefinition, ExpectedType, FileParser, ParsedValue, RowDefinition, RowParser},
-    storage::BitFieldStorage,
+    storage::ResourceStorage,
 };
 
-pub fn parse(path: &str) -> Result<BitFieldStorage, Box<dyn Error>> {
+pub fn parse(path: &str) -> Result<ResourceStorage<BitField>, Box<dyn Error>> {
     println!("Parsing BITFELD...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -27,7 +27,7 @@ pub fn parse(path: &str) -> Result<BitFieldStorage, Box<dyn Error>> {
         .collect();
     let data = BitField::vec_to_map(data);
 
-    Ok(BitFieldStorage::new(data))
+    Ok(ResourceStorage::new(data))
 }
 
 // ------------------------------------------------------------------------------------------------

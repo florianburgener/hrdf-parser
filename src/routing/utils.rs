@@ -21,8 +21,8 @@ pub fn get_stop_connections(
     stop_id: i32,
 ) -> Option<Vec<&StopConnection>> {
     data_storage
-        .stop_connections()
-        .find_by_stop_id(stop_id)
+        .stop_connections_by_stop_id()
+        .get(&stop_id)
         .map(|ids| data_storage.stop_connections().resolve_ids(ids))
 }
 

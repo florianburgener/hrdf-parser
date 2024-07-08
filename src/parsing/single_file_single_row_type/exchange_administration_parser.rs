@@ -6,13 +6,13 @@ use std::error::Error;
 use crate::{
     models::{ExchangeTimeAdministration, Model},
     parsing::{ColumnDefinition, ExpectedType, FileParser, ParsedValue, RowDefinition, RowParser},
-    storage::SimpleResourceStorage,
+    storage::ResourceStorage,
     utils::AutoIncrement,
 };
 
 pub fn parse(
     path: &str,
-) -> Result<SimpleResourceStorage<ExchangeTimeAdministration>, Box<dyn Error>> {
+) -> Result<ResourceStorage<ExchangeTimeAdministration>, Box<dyn Error>> {
     println!("Parsing UMSTEIGV...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -34,7 +34,7 @@ pub fn parse(
         .collect();
     let data = ExchangeTimeAdministration::vec_to_map(data);
 
-    Ok(SimpleResourceStorage::new(data))
+    Ok(ResourceStorage::new(data))
 }
 
 // ------------------------------------------------------------------------------------------------

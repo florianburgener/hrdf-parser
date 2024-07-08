@@ -9,11 +9,11 @@ use rustc_hash::FxHashMap;
 use crate::{
     models::{Holiday, Language, Model},
     parsing::{ColumnDefinition, ExpectedType, FileParser, ParsedValue, RowDefinition, RowParser},
-    storage::SimpleResourceStorage,
+    storage::ResourceStorage,
     utils::AutoIncrement,
 };
 
-pub fn parse(path: &str) -> Result<SimpleResourceStorage<Holiday>, Box<dyn Error>> {
+pub fn parse(path: &str) -> Result<ResourceStorage<Holiday>, Box<dyn Error>> {
     println!("Parsing FEIERTAG...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -33,7 +33,7 @@ pub fn parse(path: &str) -> Result<SimpleResourceStorage<Holiday>, Box<dyn Error
         .collect();
     let data = Holiday::vec_to_map(data);
 
-    Ok(SimpleResourceStorage::new(data))
+    Ok(ResourceStorage::new(data))
 }
 
 // ------------------------------------------------------------------------------------------------
