@@ -50,7 +50,6 @@ Incertain : BFPRIOS, BHFART_60
 Inutile : ATTRIBUT_DE, ATTRIBUT_EN, ATTRIBUT_FR, ATTRIBUT_IT, BHFART, GREENZHLT, ZEITVS
 
 TODO :
-* Exchange times
 * Isochrone Map : loading anim + marker cursor
 * Errors and edge cases
 * Refactoring
@@ -65,3 +64,5 @@ Catégorisation parser :
     auto_increment :
     map + collect :
     vec_to_map before Storage::new :
+
+~18 ms

@@ -21,12 +21,12 @@ use crate::{
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DataStorage {
-    // Time-relevant data.
+    // Time-relevant data
     bit_fields: ResourceStorage<BitField>,
     holidays: ResourceStorage<Holiday>,
     timetable_metadata: ResourceStorage<TimetableMetadataEntry>,
 
-    // Master data.
+    // Master data
     attributes: ResourceStorage<Attribute>,
     information_texts: ResourceStorage<InformationText>,
     directions: ResourceStorage<Direction>,
@@ -34,37 +34,42 @@ pub struct DataStorage {
     transport_companies: ResourceStorage<TransportCompany>,
     transport_types: ResourceStorage<TransportType>,
 
-    // Stop data.
+    // Stop data
     stops: ResourceStorage<Stop>,
     stop_connections: ResourceStorage<StopConnection>,
 
-    // Timetable data.
+    // Timetable data
     journeys: ResourceStorage<Journey>,
     journey_platform: ResourceStorage<JourneyPlatform>,
     platforms: ResourceStorage<Platform>,
     through_service: ResourceStorage<ThroughService>,
 
-    // Exchange times.
+    // Exchange times
     exchange_times_administration: ResourceStorage<ExchangeTimeAdministration>,
     exchange_times_journey: ResourceStorage<ExchangeTimeJourney>,
     exchange_times_line: ResourceStorage<ExchangeTimeLine>,
 
-    // Maps.
+    // Maps
     bit_fields_by_day: FxHashMap<NaiveDate, FxHashSet<i32>>,
     bit_fields_by_stop_id: FxHashMap<i32, FxHashSet<i32>>,
     journeys_by_stop_id_and_bit_field_id: FxHashMap<(i32, i32), Vec<i32>>,
     stop_connections_by_stop_id: FxHashMap<i32, FxHashSet<i32>>,
+    exchange_times_administration_map: FxHashMap<(Option<i32>, String, String), i32>,
+    exchange_times_journey_map: FxHashMap<(i32, i32, i32), FxHashSet<i32>>,
+
+    // Additional global data
+    default_exchange_time: (i16, i16), // (InterCity exchange time, Exchange time for all other journey types)
 }
 
 #[allow(unused)]
 impl DataStorage {
     pub fn new(version: Version, path: &str) -> Result<Self, Box<dyn Error>> {
-        // Time-relevant data.
+        // Time-relevant data
         let bit_fields = parsing::load_bit_fields(path)?;
         let holidays = parsing::load_holidays(path)?;
         let timetable_metadata = parsing::load_timetable_metadata(path)?;
 
-        // Master data.
+        // Master data
         let (attributes, attributes_pk_type_converter) = parsing::load_attributes(path)?;
         let (directions, directions_pk_type_converter) = parsing::load_directions(path)?;
         let information_texts = parsing::load_information_texts(path)?;
@@ -73,11 +78,11 @@ impl DataStorage {
         let (transport_types, transport_types_pk_type_converter) =
             parsing::load_transport_types(path)?;
 
-        // Stop data.
+        // Stop data
         let stop_connections = parsing::load_stop_connections(path, &attributes_pk_type_converter)?;
-        let stops = parsing::load_stops(version, path)?;
+        let (stops, default_exchange_time) = parsing::load_stops(version, path)?;
 
-        // Timetable data.
+        // Timetable data
         let (journeys, journeys_pk_type_converter) = parsing::load_journeys(
             path,
             &transport_types_pk_type_converter,
@@ -88,7 +93,7 @@ impl DataStorage {
             parsing::load_platforms(path, &journeys_pk_type_converter)?;
         let through_service = parsing::load_through_service(path, &journeys_pk_type_converter)?;
 
-        // Exchange times.
+        // Exchange times
         let exchange_times_administration = parsing::load_exchange_times_administration(path)?;
         let exchange_times_journey =
             parsing::load_exchange_times_journey(path, &journeys_pk_type_converter)?;
@@ -100,40 +105,49 @@ impl DataStorage {
         let journeys_by_stop_id_and_bit_field_id =
             create_journeys_by_stop_id_and_bit_field_id(&journeys);
         let stop_connections_by_stop_id = create_stop_connections_by_stop_id(&stop_connections);
+        let exchange_times_administration_map =
+            create_exchange_times_administration_map(&exchange_times_administration);
+        let exchange_times_journey_map = create_exchange_times_journey_map(&exchange_times_journey);
 
         let mut data_storage = Self {
-            // Time-relevant data.
+            // Time-relevant data
             bit_fields,
             holidays,
             timetable_metadata,
-            // Master data.
+            // Master data
             attributes,
             information_texts,
             directions,
             lines,
             transport_companies,
             transport_types,
-            // Stop data.
+            // Stop data
             stop_connections,
             stops,
-            // Timetable data.
+            // Timetable data
             journeys,
             journey_platform,
             platforms,
             through_service,
-            // Exchange times.
+            // Exchange times
             exchange_times_administration,
             exchange_times_journey,
             exchange_times_line,
-            // Maps.
+            // Maps
             bit_fields_by_day,
             bit_fields_by_stop_id,
             journeys_by_stop_id_and_bit_field_id,
             stop_connections_by_stop_id,
+            exchange_times_administration_map,
+            exchange_times_journey_map,
+            // Additional global data
+            default_exchange_time,
         };
 
         Ok(data_storage)
     }
+
+    // Getters/Setters
 
     pub fn bit_fields(&self) -> &ResourceStorage<BitField> {
         &self.bit_fields
@@ -159,9 +173,27 @@ impl DataStorage {
         &self.stops
     }
 
+    pub fn transport_types(&self) -> &ResourceStorage<TransportType> {
+        &self.transport_types
+    }
+
     pub fn timetable_metadata(&self) -> &ResourceStorage<TimetableMetadataEntry> {
         &self.timetable_metadata
     }
+
+    pub fn exchange_times_administration(&self) -> &ResourceStorage<ExchangeTimeAdministration> {
+        &self.exchange_times_administration
+    }
+
+    pub fn exchange_times_journey(&self) -> &ResourceStorage<ExchangeTimeJourney> {
+        &self.exchange_times_journey
+    }
+
+    pub fn exchange_times_line(&self) -> &ResourceStorage<ExchangeTimeLine> {
+        &self.exchange_times_line
+    }
+
+    // ...
 
     pub fn bit_fields_by_day(&self) -> &FxHashMap<NaiveDate, FxHashSet<i32>> {
         &self.bit_fields_by_day
@@ -177,6 +209,22 @@ impl DataStorage {
 
     pub fn stop_connections_by_stop_id(&self) -> &FxHashMap<i32, FxHashSet<i32>> {
         &self.stop_connections_by_stop_id
+    }
+
+    pub fn exchange_times_administration_map(
+        &self,
+    ) -> &FxHashMap<(Option<i32>, String, String), i32> {
+        &self.exchange_times_administration_map
+    }
+
+    pub fn exchange_times_journey_map(&self) -> &FxHashMap<(i32, i32, i32), FxHashSet<i32>> {
+        &self.exchange_times_journey_map
+    }
+
+    // ...
+
+    pub fn default_exchange_time(&self) -> (i16, i16) {
+        self.default_exchange_time
     }
 }
 
@@ -294,12 +342,50 @@ fn create_stop_connections_by_stop_id(
     stop_connections: &ResourceStorage<StopConnection>,
 ) -> FxHashMap<i32, FxHashSet<i32>> {
     stop_connections
-        .data()
-        .values()
+        .entries()
+        .into_iter()
         .fold(FxHashMap::default(), |mut acc, stop_connection| {
             acc.entry(stop_connection.stop_id_1())
                 .or_insert(FxHashSet::default())
                 .insert(stop_connection.id());
             acc
         })
+}
+
+fn create_exchange_times_journey_map(
+    exchange_times_journey: &ResourceStorage<ExchangeTimeJourney>,
+) -> FxHashMap<(i32, i32, i32), FxHashSet<i32>> {
+    exchange_times_journey.entries().into_iter().fold(
+        FxHashMap::default(),
+        |mut acc, exchange_time| {
+            let key = (
+                exchange_time.stop_id(),
+                exchange_time.journey_id_1(),
+                exchange_time.journey_id_2(),
+            );
+
+            acc.entry(key)
+                .or_insert(FxHashSet::default())
+                .insert(exchange_time.id());
+            acc
+        },
+    )
+}
+
+fn create_exchange_times_administration_map(
+    exchange_times_administration: &ResourceStorage<ExchangeTimeAdministration>,
+) -> FxHashMap<(Option<i32>, String, String), i32> {
+    exchange_times_administration.entries().into_iter().fold(
+        FxHashMap::default(),
+        |mut acc, exchange_time| {
+            let key = (
+                exchange_time.stop_id(),
+                exchange_time.administration_1().into(),
+                exchange_time.administration_2().into(),
+            );
+
+            acc.insert(key, exchange_time.id());
+            acc
+        },
+    )
 }

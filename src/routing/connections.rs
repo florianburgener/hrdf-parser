@@ -2,9 +2,12 @@ use chrono::{Duration, NaiveDate, NaiveDateTime};
 use rustc_hash::FxHashSet;
 
 use crate::{
-    models::{Journey, Model},
+    models::{Journey, Model, TransportType},
     storage::DataStorage,
-    utils::{add_1_day, create_time},
+    utils::{
+        add_1_day, add_minutes_to_date_time, count_days_between_two_dates, create_time,
+        timetable_end_date,
+    },
 };
 
 use super::{models::Route, utils::get_routes_to_ignore};
@@ -39,7 +42,7 @@ pub fn next_departures<'a>(
     departure_stop_id: i32,
     departure_at: NaiveDateTime,
     routes_to_ignore: Option<FxHashSet<u64>>,
-    _previous_journey_id: Option<i32>,
+    previous_journey_id: Option<i32>,
 ) -> Vec<(&'a Journey, NaiveDateTime)> {
     fn get_journeys(
         data_storage: &DataStorage,
@@ -110,14 +113,18 @@ pub fn next_departures<'a>(
                 false
             }
         })
-        // .filter(|&(journey, journey_departure_at)| {
-        //     previous_journey_id.map_or(true, |id| {
-        //         add_minutes_to_date_time(
-        //             departure_at,
-        //             exchange_time(data_storage, departure_stop_id, id, journey.id()) as i64,
-        //         ) <= journey_departure_at
-        //     })
-        // })
+        .filter(|&(journey, journey_departure_at)| {
+            previous_journey_id.map_or(true, |id| {
+                let exchange_time = get_exchange_time(
+                    data_storage,
+                    departure_stop_id,
+                    id,
+                    journey.id(),
+                    journey_departure_at,
+                );
+                add_minutes_to_date_time(departure_at, exchange_time.into()) <= journey_departure_at
+            })
+        })
         .collect()
 }
 
@@ -147,11 +154,120 @@ pub fn get_operating_journeys(
         })
 }
 
-// pub fn exchange_time(
-//     data_storage: &DataStorage,
-//     stop_id: i32,
-//     journey_id_1: i32,
-//     journey_id_2: i32,
-// ) -> i16 {
-//     2
-// }
+pub fn get_exchange_time(
+    data_storage: &DataStorage,
+    stop_id: i32,
+    journey_id_1: i32,
+    journey_id_2: i32,
+    departure_at: NaiveDateTime,
+) -> i16 {
+    let stop = data_storage.stops().find(stop_id);
+    let journey_1 = data_storage.journeys().find(journey_id_1);
+    let journey_2 = data_storage.journeys().find(journey_id_2);
+
+    // Fahrtpaarbezogene Umsteigezeiten /-\ Journey pair-related exchange times.
+    if let Some(exchange_time) = exchange_time_journey_pair(
+        data_storage,
+        stop_id,
+        journey_id_1,
+        journey_id_2,
+        departure_at,
+    ) {
+        return exchange_time;
+    }
+
+    // Linienbezogene Umsteigezeiten an Haltestellen /-\ Line-related exchange times at stops.
+
+    // Verwaltungsbezogene Umsteigezeiten an Haltestellen /-\ Administration-related exchange times at stops.
+    if let Some(&id) = data_storage.exchange_times_administration_map().get(&(
+        Some(stop_id),
+        journey_1.administration().into(),
+        journey_2.administration().into(),
+    )) {
+        return data_storage
+            .exchange_times_administration()
+            .find(id)
+            .duration();
+    }
+
+    // Haltestellenbezogene Umsteigezeiten /-\ Stop-related exchange times.
+    if let Some(exchange_time) = stop.exchange_time() {
+        return exchange_time_at_stop(
+            exchange_time,
+            journey_1.transport_type(data_storage),
+            journey_2.transport_type(data_storage),
+        );
+    }
+
+    // Linienbezogene Umsteigezeiten (global) /-\ Line-related exchange times (global).
+
+    // Verwaltungsbezogene Umsteigezeiten (global) /-\ Administration-related exchange times (global).
+    if let Some(&id) = data_storage.exchange_times_administration_map().get(&(
+        None,
+        journey_1.administration().into(),
+        journey_2.administration().into(),
+    )) {
+        return data_storage
+            .exchange_times_administration()
+            .find(id)
+            .duration();
+    }
+
+    // Standardumsteigezeit /-\ Standard exchange time.
+    exchange_time_at_stop(
+        data_storage.default_exchange_time(),
+        journey_1.transport_type(data_storage),
+        journey_2.transport_type(data_storage),
+    )
+}
+
+fn exchange_time_journey_pair(
+    data_storage: &DataStorage,
+    stop_id: i32,
+    journey_id_1: i32,
+    journey_id_2: i32,
+    departure_at: NaiveDateTime,
+) -> Option<i16> {
+    let Some(exchange_times) =
+        data_storage
+            .exchange_times_journey_map()
+            .get(&(stop_id, journey_id_1, journey_id_2))
+    else {
+        return None;
+    };
+
+    // "2 +" because a 2-bit offset is mandatory.
+    // "- 1" to obtain an index.
+    let index = 2 + count_days_between_two_dates(
+        departure_at.date(),
+        timetable_end_date(data_storage.timetable_metadata()),
+    ) - 1;
+
+    for &id in exchange_times {
+        let exchange_time = data_storage.exchange_times_journey().find(id);
+
+        if let Some(bit_field_id) = exchange_time.bit_field_id() {
+            let bit_field = data_storage.bit_fields().find(bit_field_id);
+
+            if bit_field.bits()[index] == 1 {
+                return Some(exchange_time.duration());
+            }
+        } else {
+            return Some(exchange_time.duration());
+        }
+    }
+
+    None
+}
+
+fn exchange_time_at_stop(
+    exchange_time: (i16, i16),
+    transport_type_1: &TransportType,
+    transport_type_2: &TransportType,
+) -> i16 {
+    if transport_type_1.designation() == "IC" && transport_type_2.designation() == "IC" {
+        exchange_time.0
+    } else {
+        exchange_time.1
+    }
+}

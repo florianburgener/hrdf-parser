@@ -17,7 +17,10 @@ use crate::{
     storage::ResourceStorage,
 };
 
-pub fn parse(version: Version, path: &str) -> Result<ResourceStorage<Stop>, Box<dyn Error>> {
+pub fn parse(
+    version: Version,
+    path: &str,
+) -> Result<(ResourceStorage<Stop>, (i16, i16)), Box<dyn Error>> {
     println!("Parsing BAHNHOF...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -44,13 +47,13 @@ pub fn parse(version: Version, path: &str) -> Result<ResourceStorage<Stop>, Box<
     println!("Parsing KMINFO...");
     load_exchange_flags(path, &mut data)?;
     println!("Parsing UMSTEIGB...");
-    load_exchange_times(path, &mut data)?;
+    let default_exchange_time = load_exchange_times(path, &mut data)?;
     println!("Parsing METABHF 1/2...");
     load_connections(path, &mut data)?;
     println!("Parsing BHFART_60...");
     load_descriptions(path, &mut data)?;
 
-    Ok(ResourceStorage::new(data))
+    Ok((ResourceStorage::new(data), default_exchange_time))
 }
 
 fn load_coordinates(
@@ -131,7 +134,10 @@ fn load_exchange_flags(path: &str, data: &mut FxHashMap<i32, Stop>) -> Result<()
     Ok(())
 }
 
-fn load_exchange_times(path: &str, data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
+fn load_exchange_times(
+    path: &str,
+    data: &mut FxHashMap<i32, Stop>,
+) -> Result<(i16, i16), Box<dyn Error>> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row contains the changing time.
@@ -143,11 +149,15 @@ fn load_exchange_times(path: &str, data: &mut FxHashMap<i32, Stop>) -> Result<()
     ]);
     let parser = FileParser::new(&format!("{path}/UMSTEIGB"), row_parser)?;
 
-    parser
-        .parse()
-        .for_each(|(_, _, values)| set_exchange_time(values, data));
+    let mut default_exchange_time = (0, 0);
 
-    Ok(())
+    parser.parse().for_each(|(_, _, values)| {
+        if let Some(x) = set_exchange_time(values, data) {
+            default_exchange_time = x;
+        }
+    });
+
+    Ok(default_exchange_time)
 }
 
 fn load_connections(path: &str, data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
@@ -271,21 +281,24 @@ fn set_exchange_flag(mut values: Vec<ParsedValue>, data: &mut FxHashMap<i32, Sto
     stop.set_exchange_flag(exchange_flag);
 }
 
-fn set_exchange_time(mut values: Vec<ParsedValue>, data: &mut FxHashMap<i32, Stop>) {
+fn set_exchange_time(
+    mut values: Vec<ParsedValue>,
+    data: &mut FxHashMap<i32, Stop>,
+) -> Option<(i16, i16)> {
     let stop_id: i32 = values.remove(0).into();
     let exchange_time_inter_city: i16 = values.remove(0).into();
     let exchange_time_other: i16 = values.remove(0).into();
 
+    let exchange_time = Some((exchange_time_inter_city, exchange_time_other));
+
     if stop_id == 9999999 {
-        // The first row of the file has the stop ID number 9999999. It contains the default values for all stops.
-        for stop in data.values_mut() {
-            stop.set_exchange_time_inter_city(exchange_time_inter_city);
-            stop.set_exchange_time_other(exchange_time_other);
-        }
+        // The first row of the file has the stop ID number 9999999.
+        // It contains default exchange times to be used when a stop has no specific exchange time.
+        exchange_time
     } else {
         let stop = data.get_mut(&stop_id).unwrap();
-        stop.set_exchange_time_inter_city(exchange_time_inter_city);
-        stop.set_exchange_time_other(exchange_time_other);
+        stop.set_exchange_time(exchange_time);
+        None
     }
 }
 

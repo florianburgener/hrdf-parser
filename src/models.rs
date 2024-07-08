@@ -297,6 +297,22 @@ impl ExchangeTimeAdministration {
 
     // Getters/Setters
 
+    pub fn stop_id(&self) -> Option<i32> {
+        self.stop_id
+    }
+
+    pub fn administration_1(&self) -> &str {
+        &self.administration_1
+    }
+
+    pub fn administration_2(&self) -> &str {
+        &self.administration_2
+    }
+
+    pub fn duration(&self) -> i16 {
+        self.duration
+    }
+
     // Functions
 }
 
@@ -339,6 +355,26 @@ impl ExchangeTimeJourney {
     }
 
     // Getters/Setters
+
+    pub fn stop_id(&self) -> i32 {
+        self.stop_id
+    }
+
+    pub fn journey_id_1(&self) -> i32 {
+        self.journey_id_1
+    }
+
+    pub fn journey_id_2(&self) -> i32 {
+        self.journey_id_2
+    }
+
+    pub fn duration(&self) -> i16 {
+        self.duration
+    }
+
+    pub fn bit_field_id(&self) -> Option<i32> {
+        self.bit_field_id
+    }
 
     // Functions
 }
@@ -456,6 +492,10 @@ impl Journey {
 
     // Getters/Setters
 
+    pub fn administration(&self) -> &str {
+        &self.administration
+    }
+
     fn metadata(&self) -> &FxHashMap<JourneyMetadataType, Vec<JourneyMetadataEntry>> {
         &self.metadata
     }
@@ -479,10 +519,21 @@ impl Journey {
         entry.bit_field_id
     }
 
-    // pub fn bit_field<'a>(&'a self, data_storage: &'a DataStorage) -> Option<&BitField> {
-    //     self.bit_field_id()
-    //         .map(|bit_field_id| data_storage.bit_fields().find(bit_field_id))
-    // }
+    pub fn transport_type_id(&self) -> i32 {
+        let entry = &self
+            .metadata()
+            .get(&JourneyMetadataType::TransportType)
+            .unwrap()[0];
+        entry.resource_id.unwrap()
+    }
+
+    pub fn transport_type<'a>(&'a self, data_storage: &'a DataStorage) -> &TransportType {
+        data_storage
+            .transport_types()
+            .find(self.transport_type_id())
+    }
+
+    // ...
 
     pub fn first_stop_id(&self) -> i32 {
         self.route.first().unwrap().stop_id()
@@ -913,9 +964,8 @@ pub struct Stop {
     wgs84_coordinates: Option<Coordinates>,
     exchange_priority: i16,
     exchange_flag: i16,
-    exchange_time_inter_city: i16,
-    exchange_time_other: i16,
-    connections: Vec<i32>, // Vec of Stop.id
+    exchange_time: Option<(i16, i16)>, // (InterCity exchange time, Exchange time for all other journey types)
+    connections: Vec<i32>,             // Vec of Stop.id
     restrictions: i16,
     sloid: String,
     boarding_areas: Vec<String>,
@@ -941,8 +991,7 @@ impl Stop {
             wgs84_coordinates: None,
             exchange_priority: 8, // 8 is the default priority.
             exchange_flag: 0,
-            exchange_time_inter_city: 0,
-            exchange_time_other: 0,
+            exchange_time: None,
             connections: Vec::default(),
             restrictions: 0,
             sloid: String::default(),
@@ -984,14 +1033,15 @@ impl Stop {
         self.exchange_flag = value;
     }
 
-    pub fn set_exchange_time_inter_city(&mut self, value: i16) {
-        self.exchange_time_inter_city = value;
+    pub fn exchange_time(&self) -> Option<(i16, i16)> {
+        self.exchange_time
     }
 
-    pub fn set_exchange_time_other(&mut self, value: i16) {
-        self.exchange_time_other = value;
+    pub fn set_exchange_time(&mut self, value: Option<(i16, i16)>) {
+        self.exchange_time = value;
     }
 
+    // Useless.
     pub fn set_connections(&mut self, value: Vec<i32>) {
         self.connections = value;
     }
@@ -1227,6 +1277,10 @@ impl TransportType {
     }
 
     // Getters/Setters
+
+    pub fn designation(&self) -> &str {
+        &self.designation
+    }
 
     pub fn product_class_id(&self) -> i16 {
         self.product_class_id
