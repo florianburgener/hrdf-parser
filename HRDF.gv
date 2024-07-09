@@ -59,7 +59,7 @@ digraph {
         subgraph cluster_0 {
             color=gray94
             fontsize=34
-            label=< <B>Transfer times</B> >
+            label=< <B>Données de correspondance</B> >
             margin=30
             style=filled
 
@@ -79,7 +79,7 @@ digraph {
         subgraph cluster_1 {
             color=gray94
             fontsize=34
-            label=< <B>Time-relevant data</B> >
+            label=< <B>Données temporelles</B> >
             margin=30
             style=filled
 
@@ -100,7 +100,7 @@ digraph {
         subgraph cluster_2 {
             color=gray94
             fontsize=34
-            label=< <B>Timetable data</B> >
+            label=< <B>Données horaires</B> >
             margin=30
             style=filled
 
@@ -118,7 +118,7 @@ digraph {
         subgraph cluster_3 {
             color=gray94
             fontsize=34
-            label=< <B>Master data</B> >
+            label=< <B>Données de base</B> >
             margin=30
             style=filled
 
@@ -140,7 +140,7 @@ digraph {
         subgraph cluster_4 {
             color=gray94
             fontsize=34
-            label=< <B>Stop data</B> >
+            label=< <B>Données relative aux arrêts</B> >
             margin=30
             style=filled
 
