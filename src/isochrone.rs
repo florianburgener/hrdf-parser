@@ -35,6 +35,7 @@ impl Hrdf {
             origin_point_latitude,
             origin_point_longitude,
         );
+        let departure_stop_coord = departure_stop.wgs84_coordinates().unwrap();
 
         let (adjusted_departure_at, adjusted_time_limit) = adjust_departure_at(
             departure_at,
@@ -44,9 +45,7 @@ impl Hrdf {
             &departure_stop,
         );
 
-        // TODO : check for impossible time
-
-        let routes = self
+        let routes: Vec<_> = self
             .find_reachable_stops_within_time_limit(
                 departure_stop.id(),
                 adjusted_departure_at,
@@ -61,7 +60,9 @@ impl Hrdf {
             })
             .collect();
 
-        // TODO : check if routes returned
+        if routes.len() == 0 {
+            return IsochroneCollection::new(vec![], departure_stop_coord);
+        }
 
         let grid = if display_mode == models::DisplayMode::ContourLine {
             Some(contour_line::create_grid(&routes, departure_at, time_limit))
@@ -94,7 +95,6 @@ impl Hrdf {
             isochrones.push(Isochrone::new(polygons, time_limit.num_minutes() as u32));
         }
 
-        let departure_stop_coord = departure_stop.wgs84_coordinates().unwrap();
         IsochroneCollection::new(isochrones, departure_stop_coord)
     }
 }

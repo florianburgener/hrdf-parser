@@ -55,7 +55,7 @@ pub fn create_grid(
         .par_iter()
         .map(|&coord1| {
             let duration = data
-                .par_iter()
+                .iter()
                 .map(|&(coord2, duration)| {
                     let distance = distance_between_2_points(coord1, coord2);
 
