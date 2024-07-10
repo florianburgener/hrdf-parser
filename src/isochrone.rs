@@ -12,12 +12,14 @@ use crate::routing::RouteSectionResult;
 use crate::storage::DataStorage;
 use constants::WALKING_SPEED_IN_KILOMETERS_PER_HOUR;
 pub use models::DisplayMode as IsochroneDisplayMode;
-pub use models::IsochroneCollection;
+pub use models::IsochroneMap;
 
 use chrono::{Duration, NaiveDateTime};
 
 use models::Isochrone;
 use utils::distance_to_time;
+use utils::lv95_to_wgs84;
+use utils::time_to_distance;
 use utils::wgs84_to_lv95;
 
 use crate::hrdf::Hrdf;
@@ -33,7 +35,7 @@ impl Hrdf {
         isochrone_interval: Duration,
         display_mode: models::DisplayMode,
         verbose: bool,
-    ) -> IsochroneCollection {
+    ) -> IsochroneMap {
         let departure_stop = find_nearest_stop(
             self.data_storage(),
             origin_point_latitude,
@@ -87,12 +89,11 @@ impl Hrdf {
         );
         routes.push(route);
 
-        if routes.len() == 0 {
-            return IsochroneCollection::new(vec![], departure_stop_coord);
-        }
+        let data = get_data(routes, departure_at);
+        let bounding_box = get_bounding_box(&data, time_limit);
 
         let grid = if display_mode == models::DisplayMode::ContourLine {
-            Some(contour_line::create_grid(&routes, departure_at, time_limit))
+            Some(contour_line::create_grid(&data, bounding_box))
         } else {
             None
         };
@@ -104,16 +105,14 @@ impl Hrdf {
             let time_limit = Duration::minutes(isochrone_interval.num_minutes() * (i + 1));
 
             let polygons = match display_mode {
-                IsochroneDisplayMode::Circles => {
-                    circles::get_polygons(&routes, departure_at, time_limit)
-                }
+                IsochroneDisplayMode::Circles => circles::get_polygons(&data, time_limit),
                 IsochroneDisplayMode::ContourLine => {
-                    let (grid, num_points_x, num_points_y, min_point) = grid.as_ref().unwrap();
+                    let (grid, num_points_x, num_points_y) = grid.as_ref().unwrap();
                     contour_line::get_polygons(
                         &grid,
                         *num_points_x,
                         *num_points_y,
-                        *min_point,
+                        bounding_box.0,
                         time_limit,
                     )
                 }
@@ -122,7 +121,11 @@ impl Hrdf {
             isochrones.push(Isochrone::new(polygons, time_limit.num_minutes() as u32));
         }
 
-        IsochroneCollection::new(isochrones, departure_stop_coord)
+        IsochroneMap::new(
+            isochrones,
+            departure_stop_coord,
+            convert_bounding_box_to_wgs84(bounding_box),
+        )
     }
 }
 
@@ -185,4 +188,68 @@ fn adjust_departure_at(
     let adjusted_time_limit = time_limit - duration;
 
     (adjusted_departure_at, adjusted_time_limit)
+}
+
+fn get_data(routes: Vec<RouteResult>, departure_at: NaiveDateTime) -> Vec<(Coordinates, Duration)> {
+    routes
+        .iter()
+        .filter_map(|route| {
+            let coord = route
+                .sections()
+                .last()
+                .unwrap()
+                .arrival_stop_lv95_coordinates();
+
+            let duration = route.arrival_at() - departure_at;
+            coord.zip(Some(duration))
+        })
+        .collect()
+}
+
+fn get_bounding_box(
+    data: &Vec<(Coordinates, Duration)>,
+    time_limit: Duration,
+) -> ((f64, f64), (f64, f64)) {
+    let min_x = data
+        .iter()
+        .fold(f64::INFINITY, |result, &(coord, duration)| {
+            let candidate = coord.easting()
+                - time_to_distance(time_limit - duration, WALKING_SPEED_IN_KILOMETERS_PER_HOUR);
+            f64::min(result, candidate)
+        });
+
+    let max_x = data
+        .iter()
+        .fold(f64::NEG_INFINITY, |result, &(coord, duration)| {
+            let candidate = coord.easting()
+                + time_to_distance(time_limit - duration, WALKING_SPEED_IN_KILOMETERS_PER_HOUR);
+            f64::max(result, candidate)
+        });
+
+    let min_y = data
+        .iter()
+        .fold(f64::INFINITY, |result, &(coord, duration)| {
+            let candidate = coord.northing()
+                - time_to_distance(time_limit - duration, WALKING_SPEED_IN_KILOMETERS_PER_HOUR);
+            f64::min(result, candidate)
+        });
+
+    let max_y = data
+        .iter()
+        .fold(f64::NEG_INFINITY, |result, &(coord, duration)| {
+            let candidate = coord.northing()
+                + time_to_distance(time_limit - duration, WALKING_SPEED_IN_KILOMETERS_PER_HOUR);
+            f64::max(result, candidate)
+        });
+
+    ((min_x, min_y), (max_x, max_y))
+}
+
+fn convert_bounding_box_to_wgs84(
+    bounding_box: ((f64, f64), (f64, f64)),
+) -> ((f64, f64), (f64, f64)) {
+    (
+        lv95_to_wgs84(bounding_box.0 .0, bounding_box.0 .1),
+        lv95_to_wgs84(bounding_box.1 .0, bounding_box.1 .1),
+    )
 }

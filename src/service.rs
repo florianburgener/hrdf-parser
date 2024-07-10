@@ -8,7 +8,7 @@ use tower_http::cors::{Any, CorsLayer};
 
 use crate::{
     hrdf::Hrdf,
-    isochrone::{IsochroneCollection, IsochroneDisplayMode},
+    isochrone::{IsochroneMap, IsochroneDisplayMode},
     utils::{timetable_end_date, timetable_start_date},
 };
 
@@ -65,7 +65,7 @@ struct ComputeIsochronesRequest {
 async fn compute_isochrones(
     hrdf: Arc<Hrdf>,
     Query(params): Query<ComputeIsochronesRequest>,
-) -> Result<Json<IsochroneCollection>, StatusCode> {
+) -> Result<Json<IsochroneMap>, StatusCode> {
     // The coordinates are not checked but should be.
 
     let start_date = timetable_start_date(hrdf.data_storage().timetable_metadata());

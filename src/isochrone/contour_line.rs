@@ -1,47 +1,29 @@
-use chrono::{Duration, NaiveDateTime};
+use chrono::Duration;
 use contour::ContourBuilder;
 
-use crate::{
-    models::{CoordinateSystem, Coordinates},
-    routing::RouteResult,
-};
+use crate::models::{CoordinateSystem, Coordinates};
 
 use super::{
     constants::{GRID_SPACING_IN_METERS, WALKING_SPEED_IN_KILOMETERS_PER_HOUR},
-    utils::{distance_between_2_points, distance_to_time, lv95_to_wgs84, time_to_distance},
+    utils::{distance_between_2_points, distance_to_time, lv95_to_wgs84},
 };
 
 use rayon::prelude::*;
 
 pub fn create_grid(
-    routes: &Vec<RouteResult>,
-    departure_at: NaiveDateTime,
-    time_limit: Duration,
-) -> (Vec<(Coordinates, Duration)>, usize, usize, (f64, f64)) {
-    let data: Vec<_> = routes
-        .iter()
-        .filter_map(|route| {
-            let coord = route
-                .sections()
-                .last()
-                .unwrap()
-                .arrival_stop_lv95_coordinates();
-
-            let duration = route.arrival_at() - departure_at;
-            coord.zip(Some(duration))
-        })
-        .collect();
-
-    let (min_point, max_point) = get_bounding_box(&data, time_limit);
-
+    data: &Vec<(Coordinates, Duration)>,
+    bounding_box: ((f64, f64), (f64, f64)),
+) -> (Vec<(Coordinates, Duration)>, usize, usize) {
     let mut grid = Vec::new();
 
-    let num_points_x = ((max_point.0 - min_point.0) / GRID_SPACING_IN_METERS).ceil() as usize;
-    let num_points_y = ((max_point.1 - min_point.1) / GRID_SPACING_IN_METERS).ceil() as usize;
+    let num_points_x =
+        ((bounding_box.1 .0 - bounding_box.0 .0) / GRID_SPACING_IN_METERS).ceil() as usize;
+    let num_points_y =
+        ((bounding_box.1 .1 - bounding_box.0 .1) / GRID_SPACING_IN_METERS).ceil() as usize;
 
-    let mut y = min_point.1;
+    let mut y = bounding_box.0 .1;
     for _ in 0..num_points_y {
-        let mut x = min_point.0;
+        let mut x = bounding_box.0 .0;
 
         for _ in 0..num_points_x {
             grid.push(Coordinates::new(CoordinateSystem::LV95, x, y));
@@ -66,46 +48,7 @@ pub fn create_grid(
             (coord1, duration)
         })
         .collect();
-    (grid, num_points_x, num_points_y, min_point)
-}
-
-fn get_bounding_box(
-    data: &Vec<(Coordinates, Duration)>,
-    time_limit: Duration,
-) -> ((f64, f64), (f64, f64)) {
-    let min_x = data
-        .iter()
-        .fold(f64::INFINITY, |result, &(coord, duration)| {
-            let candidate = coord.easting()
-                - time_to_distance(time_limit - duration, WALKING_SPEED_IN_KILOMETERS_PER_HOUR);
-            f64::min(result, candidate)
-        });
-
-    let max_x = data
-        .iter()
-        .fold(f64::NEG_INFINITY, |result, &(coord, duration)| {
-            let candidate = coord.easting()
-                + time_to_distance(time_limit - duration, WALKING_SPEED_IN_KILOMETERS_PER_HOUR);
-            f64::max(result, candidate)
-        });
-
-    let min_y = data
-        .iter()
-        .fold(f64::INFINITY, |result, &(coord, duration)| {
-            let candidate = coord.northing()
-                - time_to_distance(time_limit - duration, WALKING_SPEED_IN_KILOMETERS_PER_HOUR);
-            f64::min(result, candidate)
-        });
-
-    let max_y = data
-        .iter()
-        .fold(f64::NEG_INFINITY, |result, &(coord, duration)| {
-            let candidate = coord.northing()
-                + time_to_distance(time_limit - duration, WALKING_SPEED_IN_KILOMETERS_PER_HOUR);
-            f64::max(result, candidate)
-        });
-
-    ((min_x, min_y), (max_x, max_y))
+    (grid, num_points_x, num_points_y)
 }
 
 pub fn get_polygons(

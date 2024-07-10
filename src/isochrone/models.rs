@@ -4,16 +4,22 @@ use strum_macros::EnumString;
 use crate::models::Coordinates;
 
 #[derive(Debug, Serialize)]
-pub struct IsochroneCollection {
-    items: Vec<Isochrone>,
+pub struct IsochroneMap {
+    isochrones: Vec<Isochrone>,
     departure_stop_coord: Coordinates,
+    bounding_box: ((f64, f64), (f64, f64)),
 }
 
-impl IsochroneCollection {
-    pub fn new(isochrones: Vec<Isochrone>, departure_stop_coord: Coordinates) -> Self {
+impl IsochroneMap {
+    pub fn new(
+        isochrones: Vec<Isochrone>,
+        departure_stop_coord: Coordinates,
+        bounding_box: ((f64, f64), (f64, f64)),
+    ) -> Self {
         Self {
-            items: isochrones,
+            isochrones,
             departure_stop_coord,
+            bounding_box,
         }
     }
 }

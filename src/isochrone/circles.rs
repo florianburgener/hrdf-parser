@@ -1,35 +1,23 @@
 use std::f64::consts::PI;
 
-use chrono::{Duration, NaiveDateTime};
+use chrono::Duration;
 
-use crate::{
-    models::{CoordinateSystem, Coordinates},
-    routing::RouteResult,
+use crate::models::{CoordinateSystem, Coordinates};
+
+use super::{
+    constants::WALKING_SPEED_IN_KILOMETERS_PER_HOUR,
+    utils::{lv95_to_wgs84, time_to_distance},
 };
 
-use super::{constants::WALKING_SPEED_IN_KILOMETERS_PER_HOUR, utils::{lv95_to_wgs84, time_to_distance}};
-
 pub fn get_polygons(
-    routes: &Vec<RouteResult>,
-    departure_at: NaiveDateTime,
+    data: &Vec<(Coordinates, Duration)>,
     time_limit: Duration,
 ) -> Vec<Vec<Coordinates>> {
-    routes
-        .iter()
-        .filter_map(|route| {
-            let lv95 = route
-                .sections()
-                .last()
-                .unwrap()
-                .arrival_stop_lv95_coordinates();
-
-            let duration = route.arrival_at() - departure_at;
-            lv95.zip(Some(duration))
-        })
-        .filter(|&(_, duration)| duration <= time_limit)
+    data.iter()
+        .filter(|(_, duration)| *duration <= time_limit)
         .map(|(center_lv95, duration)| {
             let distance =
-                time_to_distance(time_limit - duration, WALKING_SPEED_IN_KILOMETERS_PER_HOUR);
+                time_to_distance(time_limit - *duration, WALKING_SPEED_IN_KILOMETERS_PER_HOUR);
 
             generate_lv95_circle_points(center_lv95.easting(), center_lv95.northing(), distance, 18)
                 .into_iter()

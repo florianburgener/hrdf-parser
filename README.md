@@ -62,7 +62,6 @@ TODO :
 * Comments
 
 * Icône vrai point de départ (arrêt)
-* Cropé la vu de l'interface
 * Bouton pour annuler
 
 * Async marche pas web service => par_iter
