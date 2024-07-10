@@ -29,12 +29,24 @@ impl Hrdf {
         let cache_path = format!("{unique_filename}.cache");
 
         let hrdf = if Path::new(&cache_path).exists() && !FORCE_REBUILD_CACHE {
+            // Loading from cache.
             if verbose {
                 println!("Reading from cache...");
             }
 
-            Hrdf::load_from_cache(&cache_path)?
+            // If loading from cache fails, None is returned.
+            Hrdf::load_from_cache(&cache_path).ok()
         } else {
+            // No loading from cache.
+            None
+        };
+
+        let hrdf = if let Some(hrdf) = hrdf {
+            // The cache has been loaded without error.
+            hrdf
+        } else {
+            // The cache must be built.
+            // If cache loading has failed, the cache must be rebuilt.
             let compressed_data_path = if Url::parse(url_or_path).is_ok() {
                 let compressed_data_path = format!("/tmp/{unique_filename}.zip");
 

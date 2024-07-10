@@ -8,6 +8,7 @@ mod route_impl;
 mod utils;
 
 pub use models::RouteResult;
+pub use models::RouteSectionResult;
 
 use core::compute_routing;
 

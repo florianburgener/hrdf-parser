@@ -5,7 +5,10 @@ mod models;
 mod utils;
 
 use crate::isochrone::utils::haversine_distance;
+use crate::models::Coordinates;
 use crate::models::Stop;
+use crate::routing::RouteResult;
+use crate::routing::RouteSectionResult;
 use crate::storage::DataStorage;
 use constants::WALKING_SPEED_IN_KILOMETERS_PER_HOUR;
 pub use models::DisplayMode as IsochroneDisplayMode;
@@ -15,6 +18,7 @@ use chrono::{Duration, NaiveDateTime};
 
 use models::Isochrone;
 use utils::distance_to_time;
+use utils::wgs84_to_lv95;
 
 use crate::hrdf::Hrdf;
 use crate::models::Model;
@@ -45,7 +49,7 @@ impl Hrdf {
             &departure_stop,
         );
 
-        let routes: Vec<_> = self
+        let mut routes: Vec<_> = self
             .find_reachable_stops_within_time_limit(
                 departure_stop.id(),
                 adjusted_departure_at,
@@ -59,6 +63,29 @@ impl Hrdf {
                 stop_id.to_string().starts_with("85")
             })
             .collect();
+
+        let (easting, northing) = wgs84_to_lv95(origin_point_latitude, origin_point_longitude);
+        let route = RouteResult::new(
+            NaiveDateTime::default(),
+            departure_at,
+            vec![RouteSectionResult::new(
+                None,
+                0,
+                Some(Coordinates::default()),
+                Some(Coordinates::default()),
+                0,
+                Some(Coordinates::new(
+                    crate::models::CoordinateSystem::LV95,
+                    easting,
+                    northing,
+                )),
+                Some(Coordinates::default()),
+                Some(NaiveDateTime::default()),
+                Some(NaiveDateTime::default()),
+                Some(0),
+            )],
+        );
+        routes.push(route);
 
         if routes.len() == 0 {
             return IsochroneCollection::new(vec![], departure_stop_coord);

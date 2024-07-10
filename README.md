@@ -1,3 +1,5 @@
+# HRDF Parser
+
 HRDF 2.04 (38 fichiers) :
 * ATTRIBUT
 * ATTRIBUT_DE (fichier pas utilisé dans le code)
@@ -53,14 +55,19 @@ TODO :
 * Refactoring
   * Seperate parser and the rest
   * Errors handling
+  * unwrap => except
   * iter vs into_inter ?
   * Delete unnecessary getters
   * Clean the code
 * Comments
 
+* Icône vrai point de départ (arrêt)
+* Cropé la vu de l'interface
+* Bouton pour annuler
+
+* Async marche pas web service => par_iter
+
 Catégorisation parser :
     auto_increment :
     map + collect :
     vec_to_map before Storage::new :
-
-~18 ms

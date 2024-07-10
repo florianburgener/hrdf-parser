@@ -4,32 +4,78 @@ use chrono::Duration;
 
 use crate::models::Coordinates;
 
+/// https://github.com/antistatique/swisstopo
+#[rustfmt::skip]
 pub fn lv95_to_wgs84(easting: f64, northing: f64) -> (f64, f64) {
-    // Convert LV95 to LV03
-    let e_lv03 = easting - 2_000_000.0;
-    let n_lv03 = northing - 1_000_000.0;
+    let y_aux = (easting - 2600000.0) / 1000000.0;
+    let x_aux = (northing - 1200000.0) / 1000000.0;
 
-    // Auxiliary values
-    let e_aux = (e_lv03 - 600_000.0) / 1_000_000.0;
-    let n_aux = (n_lv03 - 200_000.0) / 1_000_000.0;
+    // Latitude calculation.
+    let latitude = 16.9023892
+        + 3.238272 * x_aux
+        - 0.270978 * y_aux.powi(2)
+        - 0.002528 * x_aux.powi(2)
+        - 0.0447 * y_aux.powi(2) * x_aux
+        - 0.0140 * x_aux.powi(3);
+    let latitude = latitude * 100.0 / 36.0;
 
-    // Calculate latitude (in WGS84)
-    let lat = 16.9023892 + 3.238272 * n_aux
-        - 0.270978 * e_aux.powi(2)
-        - 0.002528 * n_aux.powi(2)
-        - 0.0447 * e_aux.powi(2) * n_aux
-        - 0.0140 * n_aux.powi(3);
+    // Longitude calculation.
+    let longitude = 2.6779094
+        + 4.728982 * y_aux
+        + 0.791484 * y_aux * x_aux
+        + 0.1306 * y_aux * x_aux.powi(2)
+        - 0.0436 * y_aux.powi(3);
+    let longitude = longitude * 100.0 / 36.0;
 
-    // Calculate longitude (in WGS84)
-    let lon =
-        2.6779094 + 4.728982 * e_aux + 0.791484 * e_aux * n_aux + 0.1306 * e_aux * n_aux.powi(2)
-            - 0.0436 * e_aux.powi(3);
+    (latitude, longitude)
+}
 
-    // Convert from degrees to WGS84
-    let lat_wgs84 = lat * 100.0 / 36.0;
-    let lon_wgs84 = lon * 100.0 / 36.0;
+/// https://github.com/antistatique/swisstopo
+#[rustfmt::skip]
+pub fn wgs84_to_lv95(latitude: f64, longitude: f64) -> (f64, f64) {
+    let latitude = deg_to_sex(latitude);
+    let longitude = deg_to_sex(longitude);
 
-    (lat_wgs84, lon_wgs84)
+    let phi = deg_to_sec(latitude);
+    let lambda  = deg_to_sec(longitude);
+
+    let phi_aux = (phi - 169028.66) / 10000.0;
+    let lambda_aux =  (lambda - 26782.5) / 10000.0;
+
+    // Easting calculation.
+    let easting = 2600072.37
+        + 211455.93 * lambda_aux
+        - 10938.51 * lambda_aux * phi_aux
+        - 0.36 * lambda_aux * phi_aux.powi(2)
+        - 44.54 * lambda_aux.powi(3);
+
+    // Northing calculation.
+    let northing =  1200147.07
+        + 308807.95 * phi_aux
+        + 3745.25 * lambda_aux.powi(2)
+        + 76.63 * phi_aux.powi(2)
+        - 194.56 * lambda_aux.powi(2) * phi_aux
+        + 119.79 * phi_aux.powi(3);
+
+    (easting, northing)
+}
+
+/// https://github.com/antistatique/swisstopo
+fn deg_to_sex(angle: f64) -> f64 {
+    let deg = angle as i64;
+    let min = ((angle - deg as f64) * 60.0) as i64;
+    let sec = (((angle - deg as f64) * 60.0) - min as f64) * 60.0;
+
+    return deg as f64 + min as f64 / 100.0 + sec / 10000.0;
+}
+
+/// https://github.com/antistatique/swisstopo
+fn deg_to_sec(angle: f64) -> f64 {
+    let deg = angle as i64;
+    let min = ((angle - deg as f64) * 100.0) as i64;
+    let sec = (((angle - deg as f64) * 100.0) - min as f64) * 100.0;
+
+    return sec + min as f64 * 60.0 + deg as f64 * 3600.0;
 }
 
 pub fn distance_between_2_points(point1: Coordinates, point2: Coordinates) -> f64 {
