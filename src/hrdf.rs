@@ -6,7 +6,7 @@ use std::{
     time::Instant,
 };
 
-use crate::{constants::FORCE_REBUILD_CACHE, models::Version, storage::DataStorage};
+use crate::{models::Version, storage::DataStorage};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use url::Url;
@@ -28,7 +28,8 @@ impl Hrdf {
         let unique_filename = format!("{:x}", Sha256::digest(url_or_path.as_bytes()));
         let cache_path = format!("{unique_filename}.cache");
 
-        let hrdf = if Path::new(&cache_path).exists() && !FORCE_REBUILD_CACHE {
+        // TODO: FORCE_REBUILD_CACHE as variable.
+        let hrdf = if Path::new(&cache_path).exists() {
             // Loading from cache.
             if verbose {
                 println!("Reading from cache...");
