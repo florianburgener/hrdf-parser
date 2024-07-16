@@ -26,19 +26,19 @@ impl AutoIncrement {
 }
 
 pub fn add_1_day(date: NaiveDate) -> NaiveDate {
-    date.checked_add_days(Days::new(1)).unwrap()
+    date.checked_add_days(Days::new(1)).expect("Error adding 1 day to the date.")
 }
 
 pub fn sub_1_day(date: NaiveDate) -> NaiveDate {
-    date.checked_sub_days(Days::new(1)).unwrap()
+    date.checked_sub_days(Days::new(1)).expect("Error substracting 1 day to the date.")
 }
 
 pub fn count_days_between_two_dates(date_1: NaiveDate, date_2: NaiveDate) -> usize {
-    usize::try_from((date_2 - date_1).num_days()).unwrap() + 1
+    usize::try_from((date_2 - date_1).num_days()).expect("The number of days should be positive.") + 1
 }
 
 pub fn create_time(hour: u32, minute: u32) -> NaiveTime {
-    NaiveTime::from_hms_opt(hour, minute, 0).unwrap()
+    NaiveTime::from_hms_opt(hour, minute, 0).expect("Impossible to create a NaiveTime from hour and minute.")
 }
 
 pub fn create_time_from_value(value: u32) -> NaiveTime {
@@ -52,7 +52,7 @@ pub fn timetable_start_date(
         .data()
         .values()
         .find(|val| val.key() == "start_date")
-        .unwrap()
+        .expect("Key \"start_date\" missing.")
         .value_as_NaiveDate()
 }
 
@@ -63,6 +63,6 @@ pub fn timetable_end_date(
         .data()
         .values()
         .find(|val| val.key() == "end_date")
-        .unwrap()
+        .expect("Key \"end_date\" missing.")
         .value_as_NaiveDate()
 }

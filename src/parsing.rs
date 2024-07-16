@@ -41,28 +41,28 @@ pub use single_file_multiple_row_types::load_transport_types;
 mod single_file_single_row_type {
     mod bit_field_parser;
     mod direction_parser;
-    mod holiday_parser;
-    mod through_service_parser;
     mod exchange_administration_parser;
     mod exchange_journey_parser;
     mod exchange_line_parser;
+    mod holiday_parser;
+    mod through_service_parser;
 
     pub use bit_field_parser::parse as load_bit_fields;
     pub use direction_parser::parse as load_directions;
-    pub use holiday_parser::parse as load_holidays;
-    pub use through_service_parser::parse as load_through_service;
     pub use exchange_administration_parser::parse as load_exchange_times_administration;
     pub use exchange_journey_parser::parse as load_exchange_times_journey;
     pub use exchange_line_parser::parse as load_exchange_times_line;
+    pub use holiday_parser::parse as load_holidays;
+    pub use through_service_parser::parse as load_through_service;
 }
 
 pub use single_file_single_row_type::load_bit_fields;
 pub use single_file_single_row_type::load_directions;
-pub use single_file_single_row_type::load_holidays;
-pub use single_file_single_row_type::load_through_service;
 pub use single_file_single_row_type::load_exchange_times_administration;
 pub use single_file_single_row_type::load_exchange_times_journey;
 pub use single_file_single_row_type::load_exchange_times_line;
+pub use single_file_single_row_type::load_holidays;
+pub use single_file_single_row_type::load_through_service;
 
 mod stop_parser;
 mod timetable_metadata_parser;
@@ -83,7 +83,6 @@ pub enum ExpectedType {
     Integer16,
     Integer32,
     String,
-    // OptionInteger16,
     OptionInteger32,
 }
 
@@ -132,15 +131,6 @@ impl From<ParsedValue> for String {
         }
     }
 }
-
-// impl From<ParsedValue> for Option<i16> {
-//     fn from(value: ParsedValue) -> Self {
-//         match value {
-//             ParsedValue::OptionInteger16(x) => x,
-//             _ => panic!("Failed to convert ParsedValue to Option<i16>"),
-//         }
-//     }s
-// }
 
 impl From<ParsedValue> for Option<i32> {
     fn from(value: ParsedValue) -> Self {
@@ -304,7 +294,11 @@ impl RowParser {
                     column_definition.stop as usize
                 };
 
-                let start = row.char_indices().map(|(i, _)| i).nth(start).unwrap();
+                let start = row
+                    .char_indices()
+                    .map(|(i, _)| i)
+                    .nth(start)
+                    .expect("The column at the \"start\" position does not exist.");
                 let stop = if let Some(i) = row.char_indices().map(|(i, _)| i).nth(stop) {
                     i
                 } else {
@@ -313,13 +307,17 @@ impl RowParser {
                 let value = row[start..stop].trim();
 
                 match column_definition.expected_type {
-                    ExpectedType::Float => ParsedValue::Float(value.parse().unwrap()),
-                    ExpectedType::Integer16 => ParsedValue::Integer16(value.parse().unwrap()),
-                    ExpectedType::Integer32 => ParsedValue::Integer32(value.parse().unwrap()),
+                    ExpectedType::Float => ParsedValue::Float(
+                        value.parse().expect("Unable to convert the value to f64."),
+                    ),
+                    ExpectedType::Integer16 => ParsedValue::Integer16(
+                        value.parse().expect("Unable to convert the value to i16."),
+                    ),
+                    ExpectedType::Integer32 => ParsedValue::Integer32(
+                        value.parse().expect("Unable to convert the value to i32."),
+                    ),
+                    // The "value" variable is a &str, so it's impossible to fail by converting it to a String.
                     ExpectedType::String => ParsedValue::String(value.parse().unwrap()),
-                    // ExpectedType::OptionInteger16 => {
-                    //     ParsedValue::OptionInteger16(value.parse().ok())
-                    // }
                     ExpectedType::OptionInteger32 => {
                         ParsedValue::OptionInteger32(value.parse().ok())
                     }
@@ -337,10 +335,10 @@ impl RowParser {
         let matched_row_definition = self
             .row_definitions
             .iter()
+            // "row_matcher" always has a value when there are several row definitions.
             .find(|row_definition| row_definition.row_matcher.as_ref().unwrap().match_row(row));
 
-        return matched_row_definition
-            .unwrap_or_else(|| panic!("This type of row is unknown:\n{}", row));
+        return matched_row_definition.expect(&format!("This type of row is unknown:\n{}", row));
     }
 }
 

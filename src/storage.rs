@@ -246,6 +246,7 @@ impl<M: Model<M>> ResourceStorage<M> {
         &self.data
     }
 
+    /// Do not call this function if the key is not associated with data.
     pub fn find(&self, k: M::K) -> &M {
         &self.data().get(&k).unwrap()
     }
@@ -274,7 +275,9 @@ fn create_bit_fields_by_day(
         .into_iter()
         .map(|i| {
             start_date
+                // Converting i from usize to u64 will never crash.
                 .checked_add_days(Days::new(i.try_into().unwrap()))
+                // Adding days will never crash.
                 .unwrap()
         })
         .collect();
@@ -316,6 +319,7 @@ fn create_bit_fields_by_stop_id(
             journey.route().iter().for_each(|route_entry| {
                 acc.entry(route_entry.stop_id())
                     .or_insert(FxHashSet::default())
+                    // If the journey has no bit_field_id, the default value is 0. A value of 0 means that the journey operates every day.
                     .insert(journey.bit_field_id().unwrap_or(0));
             });
             acc
@@ -330,6 +334,7 @@ fn create_journeys_by_stop_id_and_bit_field_id(
         .into_iter()
         .fold(FxHashMap::default(), |mut acc, journey| {
             journey.route().iter().for_each(|route_entry| {
+                // If the journey has no bit_field_id, the default value is 0. A value of 0 means that the journey operates every day.
                 acc.entry((route_entry.stop_id(), journey.bit_field_id().unwrap_or(0)))
                     .or_insert(Vec::new())
                     .push(journey.id());
