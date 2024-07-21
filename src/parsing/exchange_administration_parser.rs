@@ -10,9 +10,7 @@ use crate::{
     utils::AutoIncrement,
 };
 
-pub fn parse(
-    path: &str,
-) -> Result<ResourceStorage<ExchangeTimeAdministration>, Box<dyn Error>> {
+pub fn parse(path: &str) -> Result<ResourceStorage<ExchangeTimeAdministration>, Box<dyn Error>> {
     println!("Parsing UMSTEIGV...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -30,8 +28,8 @@ pub fn parse(
 
     let data = parser
         .parse()
-        .map(|(_, _, values)| create_instance(values, &auto_increment))
-        .collect();
+        .map(|x| x.map(|(_, _, values)| create_instance(values, &auto_increment)))
+        .collect::<Result<Vec<_>, _>>()?;
     let data = ExchangeTimeAdministration::vec_to_map(data);
 
     Ok(ResourceStorage::new(data))

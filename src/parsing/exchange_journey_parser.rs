@@ -37,8 +37,12 @@ pub fn parse(
 
     let data = parser
         .parse()
-        .map(|(_, _, values)| create_instance(values, &auto_increment, journeys_pk_type_converter))
-        .collect();
+        .map(|x| {
+            x.and_then(|(_, _, values)| {
+                create_instance(values, &auto_increment, journeys_pk_type_converter)
+            })
+        })
+        .collect::<Result<Vec<_>, _>>()?;
     let data = ExchangeTimeJourney::vec_to_map(data);
 
     Ok(ResourceStorage::new(data))
@@ -52,7 +56,7 @@ fn create_instance(
     mut values: Vec<ParsedValue>,
     auto_increment: &AutoIncrement,
     journeys_pk_type_converter: &FxHashMap<(i32, String), i32>,
-) -> ExchangeTimeJourney {
+) -> Result<ExchangeTimeJourney, Box<dyn Error>> {
     let stop_id: i32 = values.remove(0).into();
     let journey_id_1: i32 = values.remove(0).into();
     let administration_1: String = values.remove(0).into();
@@ -64,15 +68,15 @@ fn create_instance(
 
     let journey_id_1 = *journeys_pk_type_converter
         .get(&(journey_id_1, administration_1))
-        .unwrap();
+        .ok_or("Unknown legacy ID")?;
 
     let journey_id_2 = *journeys_pk_type_converter
         .get(&(journey_id_2, administration_2))
-        .unwrap();
+        .ok_or("Unknown legacy ID")?;
 
     let is_guaranteed = is_guaranteed == "!";
 
-    ExchangeTimeJourney::new(
+    Ok(ExchangeTimeJourney::new(
         auto_increment.next(),
         stop_id,
         journey_id_1,
@@ -80,5 +84,5 @@ fn create_instance(
         duration,
         is_guaranteed,
         bit_field_id,
-    )
+    ))
 }

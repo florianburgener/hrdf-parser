@@ -59,15 +59,16 @@ pub fn parse(
 
     let mut current_language = Language::default();
 
-    for (id, _, values) in parser.parse() {
+    for x in parser.parse() {
+        let (id, _, values) = x?;
         match id {
             ROW_A => {
                 let attribute = create_instance(values, &auto_increment, &mut pk_type_converter);
                 data.insert(attribute.id(), attribute);
             }
             ROW_B => {}
-            ROW_C => update_current_language(values, &mut current_language),
-            ROW_D => set_description(values, &pk_type_converter, &mut data, current_language),
+            ROW_C => update_current_language(values, &mut current_language)?,
+            ROW_D => set_description(values, &pk_type_converter, &mut data, current_language)?,
             _ => unreachable!(),
         }
     }
@@ -106,24 +107,34 @@ fn set_description(
     pk_type_converter: &FxHashMap<String, i32>,
     data: &mut FxHashMap<i32, Attribute>,
     language: Language,
-) {
+) -> Result<(), Box<dyn Error>> {
     let legacy_id: String = values.remove(0).into();
     let description: String = values.remove(0).into();
 
-    data.get_mut(&pk_type_converter.get(&legacy_id).unwrap())
-        .unwrap()
+    let id = pk_type_converter
+        .get(&legacy_id)
+        .ok_or("Unknown legacy ID")?;
+    data.get_mut(id)
+        .ok_or("Unknown ID")?
         .set_description(language, &description);
+
+    Ok(())
 }
 
 // ------------------------------------------------------------------------------------------------
 // --- Helper Functions
 // ------------------------------------------------------------------------------------------------
 
-fn update_current_language(mut values: Vec<ParsedValue>, current_language: &mut Language) {
+fn update_current_language(
+    mut values: Vec<ParsedValue>,
+    current_language: &mut Language,
+) -> Result<(), Box<dyn Error>> {
     let language: String = values.remove(0).into();
     let language = &language[1..&language.len() - 1];
 
     if language != "text" {
-        *current_language = Language::from_str(language).unwrap();
+        *current_language = Language::from_str(language)?;
     }
+
+    Ok(())
 }

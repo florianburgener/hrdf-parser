@@ -246,7 +246,7 @@ impl<M: Model<M>> ResourceStorage<M> {
         &self.data
     }
 
-    /// Do not call this function if the key is not associated with data.
+    /// unwrap: Do not call this function if the key is not associated with data.
     pub fn find(&self, k: M::K) -> &M {
         &self.data().get(&k).unwrap()
     }
@@ -275,9 +275,9 @@ fn create_bit_fields_by_day(
         .into_iter()
         .map(|i| {
             start_date
-                // Converting i from usize to u64 will never crash.
+                // unwrap: Converting i from usize to u64 will never fail.
                 .checked_add_days(Days::new(i.try_into().unwrap()))
-                // Adding days will never crash.
+                // unwrap: Adding days will never fail.
                 .unwrap()
         })
         .collect();

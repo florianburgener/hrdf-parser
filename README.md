@@ -89,7 +89,12 @@ Catégorisation des fichiers :
   * GREENZHLT
   * ZEITVS
 
-Catégorisation parser :
-    auto_increment :
-    map + collect :
-    vec_to_map before Storage::new :
+TODO :
+* Refactoring
+  * Errors handling
+  * unwrap => except
+  * iter vs into_inter ?
+  * "utils"
+  * Delete unnecessary getters
+  * Clean the code
+* Comments

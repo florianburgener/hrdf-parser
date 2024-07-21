@@ -44,14 +44,15 @@ pub fn parse(
     let auto_increment = AutoIncrement::new();
     let mut data = Vec::new();
 
-    for (id, _, values) in parser.parse() {
+    for x in parser.parse() {
+        let (id, _, values) = x?;
         match id {
             ROW_A => data.push(create_instance(values, &auto_increment)),
             _ => {
-                let stop_connection = data.last_mut().unwrap();
+                let stop_connection = data.last_mut().ok_or("Type A row missing.")?;
 
                 match id {
-                    ROW_B => set_attribute(values, stop_connection, attributes_pk_type_converter),
+                    ROW_B => set_attribute(values, stop_connection, attributes_pk_type_converter)?,
                     ROW_C => {}
                     _ => unreachable!(),
                 }
@@ -80,10 +81,11 @@ fn set_attribute(
     mut values: Vec<ParsedValue>,
     current_instance: &mut StopConnection,
     attributes_pk_type_converter: &FxHashMap<String, i32>,
-) {
+) -> Result<(), Box<dyn Error>> {
     let attribute_designation: String = values.remove(0).into();
     let attribute_id = *attributes_pk_type_converter
         .get(&attribute_designation)
-        .unwrap();
+        .ok_or("Unknown legacy ID")?;
     current_instance.set_attribute(attribute_id);
+    Ok(())
 }

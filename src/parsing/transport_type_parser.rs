@@ -68,7 +68,8 @@ pub fn parse(
 
     let mut current_language = Language::default();
 
-    for (id, _, values) in parser.parse() {
+    for x in parser.parse() {
+        let (id, _, values) = x?;
         match id {
             ROW_A => {
                 let transport_type =
@@ -76,7 +77,7 @@ pub fn parse(
                 data.push(transport_type);
             }
             _ => {
-                let transport_type = data.last_mut().unwrap();
+                let transport_type = data.last_mut().ok_or("Type A row missing.")?;
 
                 match id {
                     ROW_B => update_current_language(values, &mut current_language),

@@ -37,15 +37,19 @@ pub fn parse(path: &str) -> Result<ResourceStorage<TransportCompany>, Box<dyn Er
 
     let data = parser
         .parse()
-        .filter_map(|(id, _, values)| {
-            match id {
-                ROW_A => {}
-                ROW_B => return Some(create_instance(values)),
-                _ => unreachable!(),
-            };
-            None
+        .map(|x| {
+            x.map(|(id, _, values)| {
+                match id {
+                    ROW_A => {}
+                    ROW_B => return Some(create_instance(values)),
+                    _ => unreachable!(),
+                };
+                None
+            })
         })
-        .collect();
+        .collect::<Result<Vec<_>, _>>()?;
+    // If there are no errors, "None" values are removed.
+    let data = data.into_iter().filter_map(|x| x).collect();
     let mut data = TransportCompany::vec_to_map(data);
 
     load_designations(path, &mut data, Language::German)?;
@@ -82,12 +86,14 @@ fn load_designations(
     };
     let parser = FileParser::new(&format!("{path}/{filename}"), row_parser)?;
 
-    parser.parse().for_each(|(id, _, values)| match id {
-        ROW_A => set_designations(values, data, language),
-        _ => {}
-    });
-
-    Ok(())
+    parser.parse().try_for_each(|x| {
+        let (id, _, values) = x?;
+        match id {
+            ROW_A => set_designations(values, data, language)?,
+            _ => {}
+        }
+        Ok(())
+    })
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -107,16 +113,18 @@ fn set_designations(
     mut values: Vec<ParsedValue>,
     data: &mut FxHashMap<i32, TransportCompany>,
     language: Language,
-) {
+) -> Result<(), Box<dyn Error>> {
     let id: i32 = values.remove(0).into();
     let designations = values.remove(0).into();
 
     let (short_name, long_name, full_name) = parse_designations(designations);
 
-    let transport_company = data.get_mut(&id).unwrap();
+    let transport_company = data.get_mut(&id).ok_or("Unknown ID")?;
     transport_company.set_short_name(language, &short_name);
     transport_company.set_long_name(language, &long_name);
     transport_company.set_full_name(language, &full_name);
+
+    Ok(())
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -131,6 +139,7 @@ fn parse_administrations(administrations: String) -> Vec<String> {
 }
 
 fn parse_designations(designations: String) -> (String, String, String) {
+    // unwrap: The creation of this regular expression will never fail.
     let re = Regex::new(r" ?(K|L|V) ").unwrap();
     let designations: Vec<String> = re
         .split(&designations)

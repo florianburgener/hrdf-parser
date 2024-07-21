@@ -35,8 +35,8 @@ pub fn parse(path: &str) -> Result<ResourceStorage<TimetableMetadataEntry>, Box<
 
     let mut data: Vec<ParsedValue> = parser
         .parse()
-        .map(|(_, _, mut values)| values.remove(0))
-        .collect();
+        .map(|x| x.map(|(_, _, mut values)| values.remove(0)))
+        .collect::<Result<Vec<_>, _>>()?;
 
     let start_date: String = data.remove(0).into();
     let end_date: String = data.remove(0).into();

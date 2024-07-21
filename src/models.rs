@@ -515,18 +515,18 @@ impl Journey {
     }
 
     pub fn bit_field_id(&self) -> Option<i32> {
-        // There will always be a BitField entry.
+        // unwrap: There will always be a BitField entry.
         let entry = &self.metadata().get(&JourneyMetadataType::BitField).unwrap()[0];
         entry.bit_field_id
     }
 
     pub fn transport_type_id(&self) -> i32 {
-        // There will always be a TransportType entry.
+        // unwrap: There will always be a TransportType entry.
         let entry = &self
             .metadata()
             .get(&JourneyMetadataType::TransportType)
             .unwrap()[0];
-        // It's guaranteed to have value here.
+        // unwrap: It's guaranteed to have value here.
         entry.resource_id.unwrap()
     }
 
@@ -539,12 +539,12 @@ impl Journey {
     // ...
 
     pub fn first_stop_id(&self) -> i32 {
-        // The route always contains at least 2 entries.
+        // unwrap: The route always contains at least 2 entries.
         self.route.first().unwrap().stop_id()
     }
 
     pub fn last_stop_id(&self) -> i32 {
-        // The route always contains at least 2 entries.
+        // unwrap: The route always contains at least 2 entries.
         self.route.last().unwrap().stop_id()
     }
 
@@ -581,8 +581,8 @@ impl Journey {
         Some(hasher.finish())
     }
 
-    /// Do not call this function if the stop is not part of the route.
-    /// Do not call this function if the stop has no departure time (only the last stop has no departure time).
+    /// unwrap: Do not call this function if the stop is not part of the route.
+    /// unwrap: Do not call this function if the stop has no departure time (only the last stop has no departure time).
     pub fn departure_time_of(&self, stop_id: i32) -> (NaiveTime, bool) {
         let route = self.route();
         let index = route
@@ -632,8 +632,8 @@ impl Journey {
         }
     }
 
-    /// Do not call this function if the stop is not part of the route.
-    /// Do not call this function if the stop has no arrival time (only the first stop has no arrival time).
+    /// unwrap: Do not call this function if the stop is not part of the route.
+    /// unwrap: Do not call this function if the stop has no arrival time (only the first stop has no arrival time).
     pub fn arrival_time_of(&self, stop_id: i32) -> (NaiveTime, bool) {
         let route = self.route();
         let index = route
@@ -1192,7 +1192,7 @@ impl TimetableMetadataEntry {
         &self.value
     }
 
-    /// Do not call this function if the value is not a date.
+    /// unwrap: Do not call this function if the value is not a date.
     #[allow(non_snake_case)]
     pub fn value_as_NaiveDate(&self) -> NaiveDate {
         NaiveDate::parse_from_str(self.value(), "%Y-%m-%d").unwrap()

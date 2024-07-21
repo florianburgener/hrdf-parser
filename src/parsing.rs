@@ -64,7 +64,8 @@ impl From<ParsedValue> for f64 {
     fn from(value: ParsedValue) -> Self {
         match value {
             ParsedValue::Float(x) => x,
-            _ => panic!("Failed to convert ParsedValue to f64"),
+            // If this error occurs, it's due to a typing error and it's the developer's fault.
+            _ => panic!("Failed to convert ParsedValue to f64."),
         }
     }
 }
@@ -73,7 +74,8 @@ impl From<ParsedValue> for i16 {
     fn from(value: ParsedValue) -> Self {
         match value {
             ParsedValue::Integer16(x) => x,
-            _ => panic!("Failed to convert ParsedValue to i16"),
+            // If this error occurs, it's due to a typing error and it's the developer's fault.
+            _ => panic!("Failed to convert ParsedValue to i16."),
         }
     }
 }
@@ -82,7 +84,8 @@ impl From<ParsedValue> for i32 {
     fn from(value: ParsedValue) -> Self {
         match value {
             ParsedValue::Integer32(x) => x,
-            _ => panic!("Failed to convert ParsedValue to i32"),
+            // If this error occurs, it's due to a typing error and it's the developer's fault.
+            _ => panic!("Failed to convert ParsedValue to i32."),
         }
     }
 }
@@ -91,7 +94,8 @@ impl From<ParsedValue> for String {
     fn from(value: ParsedValue) -> Self {
         match value {
             ParsedValue::String(x) => x,
-            _ => panic!("Failed to convert ParsedValue to String"),
+            // If this error occurs, it's due to a typing error and it's the developer's fault.
+            _ => panic!("Failed to convert ParsedValue to String."),
         }
     }
 }
@@ -100,7 +104,8 @@ impl From<ParsedValue> for Option<i32> {
     fn from(value: ParsedValue) -> Self {
         match value {
             ParsedValue::OptionInteger32(x) => x,
-            _ => panic!("Failed to convert ParsedValue to Option<i32>"),
+            // If this error occurs, it's due to a typing error and it's the developer's fault.
+            _ => panic!("Failed to convert ParsedValue to Option<i32>."),
         }
     }
 }
@@ -243,8 +248,8 @@ impl RowParser {
         Self { row_definitions }
     }
 
-    fn parse(&self, row: &str) -> ParsedRow {
-        let row_definition = self.row_definition(row);
+    fn parse(&self, row: &str) -> Result<ParsedRow, Box<dyn Error>> {
+        let row_definition = self.row_definition(row)?;
         // 2 bytes for \r\n
         let bytes_read = row.len() as u64 + 2;
         let values = row_definition
@@ -258,51 +263,49 @@ impl RowParser {
                     column_definition.stop as usize
                 };
 
+                // Converts start/stop columns into real indexes.
                 let start = row
                     .char_indices()
                     .map(|(i, _)| i)
                     .nth(start)
-                    .expect("The column at the \"start\" position does not exist.");
+                    .ok_or("The start column is out of range.")?;
                 let stop = if let Some(i) = row.char_indices().map(|(i, _)| i).nth(stop) {
                     i
                 } else {
                     row.len()
                 };
+
                 let value = row[start..stop].trim();
 
-                match column_definition.expected_type {
-                    ExpectedType::Float => ParsedValue::Float(
-                        value.parse().expect("Unable to convert the value to f64."),
-                    ),
-                    ExpectedType::Integer16 => ParsedValue::Integer16(
-                        value.parse().expect("Unable to convert the value to i16."),
-                    ),
-                    ExpectedType::Integer32 => ParsedValue::Integer32(
-                        value.parse().expect("Unable to convert the value to i32."),
-                    ),
+                let result = match column_definition.expected_type {
+                    ExpectedType::Float => ParsedValue::Float(value.parse()?),
+                    ExpectedType::Integer16 => ParsedValue::Integer16(value.parse()?),
+                    ExpectedType::Integer32 => ParsedValue::Integer32(value.parse()?),
                     // The "value" variable is a &str, so it's impossible to fail by converting it to a String.
-                    ExpectedType::String => ParsedValue::String(value.parse().unwrap()),
+                    ExpectedType::String => ParsedValue::String(value.to_owned()),
                     ExpectedType::OptionInteger32 => {
                         ParsedValue::OptionInteger32(value.parse().ok())
                     }
-                }
+                };
+                Ok::<ParsedValue, Box<dyn Error>>(result)
             })
-            .collect();
-        (row_definition.id, bytes_read, values)
+            .collect::<Result<Vec<_>, Box<dyn Error>>>()?;
+        Ok((row_definition.id, bytes_read, values))
     }
 
-    fn row_definition(&self, row: &str) -> &RowDefinition {
+    fn row_definition(&self, row: &str) -> Result<&RowDefinition, Box<dyn Error>> {
         if self.row_definitions.len() == 1 {
-            return &self.row_definitions[0];
+            return Ok(&self.row_definitions[0]);
         }
 
         let matched_row_definition = self
             .row_definitions
             .iter()
-            // "row_matcher" always has a value when there are several row definitions.
+            // unwrap: "row_matcher" is guaranteed to always have a value when there are multiple row definitions.
             .find(|row_definition| row_definition.row_matcher.as_ref().unwrap().match_row(row));
 
-        return matched_row_definition.expect(&format!("This type of row is unknown:\n{}", row));
+        return matched_row_definition
+            .ok_or(format!("This type of row is unknown:\n{}", row).into());
     }
 }
 
@@ -357,7 +360,7 @@ pub struct ParsedRowIterator<'a> {
 }
 
 impl Iterator for ParsedRowIterator<'_> {
-    type Item = ParsedRow;
+    type Item = Result<ParsedRow, Box<dyn Error>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.rows_iter

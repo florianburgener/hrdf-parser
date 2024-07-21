@@ -28,8 +28,8 @@ pub fn parse(path: &str) -> Result<ResourceStorage<InformationText>, Box<dyn Err
 
     let data = parser
         .parse()
-        .map(|(_, _, values)| create_instance(values))
-        .collect();
+        .map(|x| x.map(|(_, _, values)| create_instance(values)))
+        .collect::<Result<Vec<_>, _>>()?;
     let mut data = InformationText::vec_to_map(data);
 
     load_content(path, &mut data, Language::German)?;
@@ -61,11 +61,11 @@ fn load_content(
     };
     let parser = FileParser::new(&format!("{path}/{filename}"), row_parser)?;
 
-    parser
-        .parse()
-        .for_each(|(_, _, values)| set_content(values, data, language));
-
-    Ok(())
+    parser.parse().try_for_each(|x| {
+        let (_, _, values) = x?;
+        set_content(values, data, language)?;
+        Ok(())
+    })
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -82,11 +82,13 @@ fn set_content(
     mut values: Vec<ParsedValue>,
     data: &mut FxHashMap<i32, InformationText>,
     language: Language,
-) {
+) -> Result<(), Box<dyn Error>> {
     let id: i32 = values.remove(0).into();
     let description: String = values.remove(0).into();
 
     data.get_mut(&id)
-        .unwrap()
+        .ok_or("Unknown ID")?
         .set_content(language, &description);
+
+    Ok(())
 }

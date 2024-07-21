@@ -34,8 +34,8 @@ pub fn parse(
 
     let data = parser
         .parse()
-        .map(|(_, _, values)| create_instance(values))
-        .collect();
+        .map(|x| x.map(|(_, _, values)| create_instance(values)))
+        .collect::<Result<Vec<_>, _>>()?;
     let mut data = Stop::vec_to_map(data);
 
     println!("Parsing BFKOORD_LV95...");
@@ -88,11 +88,11 @@ fn load_coordinates(
     };
     let parser = FileParser::new(&format!("{path}/{filename}"), row_parser)?;
 
-    parser
-        .parse()
-        .for_each(|(_, _, values)| set_coordinates(values, coordinate_system, data));
-
-    Ok(())
+    parser.parse().try_for_each(|x| {
+        let (_, _, values) = x?;
+        set_coordinates(values, coordinate_system, data)?;
+        Ok(())
+    })
 }
 
 fn load_exchange_priorities(
@@ -109,11 +109,11 @@ fn load_exchange_priorities(
     ]);
     let parser = FileParser::new(&format!("{path}/BFPRIOS"), row_parser)?;
 
-    parser
-        .parse()
-        .for_each(|(_, _, values)| set_exchange_priority(values, data));
-
-    Ok(())
+    parser.parse().try_for_each(|x| {
+        let (_, _, values) = x?;
+        set_exchange_priority(values, data)?;
+        Ok(())
+    })
 }
 
 fn load_exchange_flags(path: &str, data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
@@ -127,11 +127,11 @@ fn load_exchange_flags(path: &str, data: &mut FxHashMap<i32, Stop>) -> Result<()
     ]);
     let parser = FileParser::new(&format!("{path}/KMINFO"), row_parser)?;
 
-    parser
-        .parse()
-        .for_each(|(_, _, values)| set_exchange_flag(values, data));
-
-    Ok(())
+    parser.parse().try_for_each(|x| {
+        let (_, _, values) = x?;
+        set_exchange_flag(values, data)?;
+        Ok(())
+    })
 }
 
 fn load_exchange_times(
@@ -151,11 +151,13 @@ fn load_exchange_times(
 
     let mut default_exchange_time = (0, 0);
 
-    parser.parse().for_each(|(_, _, values)| {
-        if let Some(x) = set_exchange_time(values, data) {
+    parser.parse().try_for_each(|x| {
+        let (_, _, values) = x?;
+        if let Some(x) = set_exchange_time(values, data)? {
             default_exchange_time = x;
         }
-    });
+        Ok::<(), Box<dyn Error>>(())
+    })?;
 
     Ok(default_exchange_time)
 }
@@ -179,13 +181,15 @@ fn load_connections(path: &str, data: &mut FxHashMap<i32, Stop>) -> Result<(), B
     ]);
     let parser = FileParser::new(&format!("{path}/METABHF"), row_parser)?;
 
-    parser.parse().for_each(|(id, _, values)| match id {
-        ROW_A | ROW_B => {}
-        ROW_C => set_connections(values, data),
-        _ => unreachable!(),
-    });
-
-    Ok(())
+    parser.parse().try_for_each(|x| {
+        let (id, _, values) = x?;
+        match id {
+            ROW_A | ROW_B => {}
+            ROW_C => set_connections(values, data)?,
+            _ => unreachable!(),
+        }
+        Ok(())
+    })
 }
 
 fn load_descriptions(path: &str, data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
@@ -216,15 +220,17 @@ fn load_descriptions(path: &str, data: &mut FxHashMap<i32, Stop>) -> Result<(), 
     ]);
     let parser = FileParser::new(&format!("{path}/BHFART_60"), row_parser)?;
 
-    parser.parse().for_each(|(id, _, values)| match id {
-        ROW_A => {}
-        ROW_B => set_restrictions(values, data),
-        ROW_C => set_sloid(values, data),
-        ROW_D => add_boarding_area(values, data),
-        _ => unreachable!(),
-    });
-
-    Ok(())
+    parser.parse().try_for_each(|x| {
+        let (id, _, values) = x?;
+        match id {
+            ROW_A => {}
+            ROW_B => set_restrictions(values, data)?,
+            ROW_C => set_sloid(values, data)?,
+            ROW_D => add_boarding_area(values, data)?,
+            _ => unreachable!(),
+        }
+        Ok(())
+    })
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -244,7 +250,7 @@ fn set_coordinates(
     mut values: Vec<ParsedValue>,
     coordinate_system: CoordinateSystem,
     data: &mut FxHashMap<i32, Stop>,
-) {
+) -> Result<(), Box<dyn Error>> {
     let stop_id: i32 = values.remove(0).into();
     let mut xy1: f64 = values.remove(0).into();
     let mut xy2: f64 = values.remove(0).into();
@@ -256,35 +262,47 @@ fn set_coordinates(
         (xy1, xy2) = (xy2, xy1);
     }
 
-    let stop = data.get_mut(&stop_id).unwrap();
+    let stop = data.get_mut(&stop_id).ok_or("Unknown ID")?;
     let coordinate = Coordinates::new(coordinate_system, xy1, xy2);
 
     match coordinate_system {
         CoordinateSystem::LV95 => stop.set_lv95_coordinates(coordinate),
         CoordinateSystem::WGS84 => stop.set_wgs84_coordinates(coordinate),
     }
+
+    Ok(())
 }
 
-fn set_exchange_priority(mut values: Vec<ParsedValue>, data: &mut FxHashMap<i32, Stop>) {
+fn set_exchange_priority(
+    mut values: Vec<ParsedValue>,
+    data: &mut FxHashMap<i32, Stop>,
+) -> Result<(), Box<dyn Error>> {
     let stop_id: i32 = values.remove(0).into();
     let exchange_priority: i16 = values.remove(0).into();
 
-    let stop = data.get_mut(&stop_id).unwrap();
+    let stop = data.get_mut(&stop_id).ok_or("Unknown ID")?;
     stop.set_exchange_priority(exchange_priority);
+
+    Ok(())
 }
 
-fn set_exchange_flag(mut values: Vec<ParsedValue>, data: &mut FxHashMap<i32, Stop>) {
+fn set_exchange_flag(
+    mut values: Vec<ParsedValue>,
+    data: &mut FxHashMap<i32, Stop>,
+) -> Result<(), Box<dyn Error>> {
     let stop_id: i32 = values.remove(0).into();
     let exchange_flag: i16 = values.remove(0).into();
 
-    let stop = data.get_mut(&stop_id).unwrap();
+    let stop = data.get_mut(&stop_id).ok_or("Unknown ID")?;
     stop.set_exchange_flag(exchange_flag);
+
+    Ok(())
 }
 
 fn set_exchange_time(
     mut values: Vec<ParsedValue>,
     data: &mut FxHashMap<i32, Stop>,
-) -> Option<(i16, i16)> {
+) -> Result<Option<(i16, i16)>, Box<dyn Error>> {
     let stop_id: i32 = values.remove(0).into();
     let exchange_time_inter_city: i16 = values.remove(0).into();
     let exchange_time_other: i16 = values.remove(0).into();
@@ -294,46 +312,66 @@ fn set_exchange_time(
     if stop_id == 9999999 {
         // The first row of the file has the stop ID number 9999999.
         // It contains default exchange times to be used when a stop has no specific exchange time.
-        exchange_time
+        Ok(exchange_time)
     } else {
-        let stop = data.get_mut(&stop_id).unwrap();
+        let stop = data.get_mut(&stop_id).ok_or("Unknown ID")?;
         stop.set_exchange_time(exchange_time);
-        None
+        Ok(None)
     }
 }
 
-fn set_connections(mut values: Vec<ParsedValue>, data: &mut FxHashMap<i32, Stop>) {
+fn set_connections(
+    mut values: Vec<ParsedValue>,
+    data: &mut FxHashMap<i32, Stop>,
+) -> Result<(), Box<dyn Error>> {
     let stop_id: i32 = values.remove(0).into();
     let connections: String = values.remove(0).into();
 
     let connections = parse_connections(connections);
 
-    let stop = data.get_mut(&stop_id).unwrap();
+    let stop = data.get_mut(&stop_id).ok_or("Unknown ID")?;
     stop.set_connections(connections);
+
+    Ok(())
 }
 
-fn set_restrictions(mut values: Vec<ParsedValue>, data: &mut FxHashMap<i32, Stop>) {
+fn set_restrictions(
+    mut values: Vec<ParsedValue>,
+    data: &mut FxHashMap<i32, Stop>,
+) -> Result<(), Box<dyn Error>> {
     let stop_id: i32 = values.remove(0).into();
     let restrictions: i16 = values.remove(0).into();
 
-    let stop = data.get_mut(&stop_id).unwrap();
+    let stop = data.get_mut(&stop_id).ok_or("Unknown ID")?;
     stop.set_restrictions(restrictions);
+
+    Ok(())
 }
 
-fn set_sloid(mut values: Vec<ParsedValue>, data: &mut FxHashMap<i32, Stop>) {
+fn set_sloid(
+    mut values: Vec<ParsedValue>,
+    data: &mut FxHashMap<i32, Stop>,
+) -> Result<(), Box<dyn Error>> {
     let stop_id: i32 = values.remove(0).into();
     let sloid: String = values.remove(0).into();
 
-    let stop = data.get_mut(&stop_id).unwrap();
+    let stop = data.get_mut(&stop_id).ok_or("Unknown ID")?;
     stop.set_sloid(sloid);
+
+    Ok(())
 }
 
-fn add_boarding_area(mut values: Vec<ParsedValue>, data: &mut FxHashMap<i32, Stop>) {
+fn add_boarding_area(
+    mut values: Vec<ParsedValue>,
+    data: &mut FxHashMap<i32, Stop>,
+) -> Result<(), Box<dyn Error>> {
     let stop_id: i32 = values.remove(0).into();
     let sloid: String = values.remove(0).into();
 
-    let stop = data.get_mut(&stop_id).unwrap();
+    let stop = data.get_mut(&stop_id).ok_or("Unknown ID")?;
     stop.add_boarding_area(sloid);
+
+    Ok(())
 }
 
 // ------------------------------------------------------------------------------------------------

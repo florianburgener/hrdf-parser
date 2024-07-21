@@ -47,13 +47,14 @@ pub fn parse(path: &str) -> Result<ResourceStorage<Line>, Box<dyn Error>> {
 
     let mut data = Vec::new();
 
-    for (id, _, values) in parser.parse() {
+    for x in parser.parse() {
+        let (id, _, values) = x?;
         match id {
             ROW_A => {
                 data.push(create_instance(values));
             }
             _ => {
-                let line = data.last_mut().unwrap();
+                let line = data.last_mut().ok_or("Type A row missing.")?;
 
                 match id {
                     ROW_B => set_short_name(values, line),

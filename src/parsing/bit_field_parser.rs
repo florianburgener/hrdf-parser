@@ -23,8 +23,8 @@ pub fn parse(path: &str) -> Result<ResourceStorage<BitField>, Box<dyn Error>> {
 
     let data = parser
         .parse()
-        .map(|(_, _, values)| create_instance(values))
-        .collect();
+        .map(|x| x.and_then(|(_, _, values)| create_instance(values)))
+        .collect::<Result<Vec<_>, _>>()?;
     let data = BitField::vec_to_map(data);
 
     Ok(ResourceStorage::new(data))
@@ -34,13 +34,13 @@ pub fn parse(path: &str) -> Result<ResourceStorage<BitField>, Box<dyn Error>> {
 // --- Data Processing Functions
 // ------------------------------------------------------------------------------------------------
 
-fn create_instance(mut values: Vec<ParsedValue>) -> BitField {
+fn create_instance(mut values: Vec<ParsedValue>) -> Result<BitField, Box<dyn Error>> {
     let id: i32 = values.remove(0).into();
     let hex_number: String = values.remove(0).into();
 
-    let bits = convert_hex_number_to_bits(hex_number);
+    let bits = convert_hex_number_to_bits(hex_number)?;
 
-    BitField::new(id, bits)
+    Ok(BitField::new(id, bits))
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -48,13 +48,18 @@ fn create_instance(mut values: Vec<ParsedValue>) -> BitField {
 // ------------------------------------------------------------------------------------------------
 
 /// Converts a hexadecimal number into a list of where each item represents a bit.
-fn convert_hex_number_to_bits(hex_number: String) -> Vec<u8> {
-    hex_number
+fn convert_hex_number_to_bits(hex_number: String) -> Result<Vec<u8>, Box<dyn Error>> {
+    let result = hex_number
         .chars()
-        .flat_map(|hex_digit| {
-            (0..4)
-                .rev()
-                .map(move |i| ((hex_digit.to_digit(16).unwrap() >> i) & 1) as u8)
+        .map(|hex_digit| {
+            hex_digit
+                .to_digit(16)
+                .ok_or("Invalid hexadecimal digit")
+                .map(|val| (0..4).rev().map(move |i| ((val >> i) & 1) as u8))
         })
-        .collect()
+        .collect::<Result<Vec<_>, _>>()?
+        .into_iter()
+        .flatten()
+        .collect::<Vec<_>>();
+    Ok(result)
 }

@@ -29,8 +29,8 @@ pub fn parse(path: &str) -> Result<ResourceStorage<Holiday>, Box<dyn Error>> {
 
     let data = parser
         .parse()
-        .map(|(_, _, values)| create_instance(values, &auto_increment))
-        .collect();
+        .map(|x| x.and_then(|(_, _, values)| create_instance(values, &auto_increment)))
+        .collect::<Result<Vec<_>, _>>()?;
     let data = Holiday::vec_to_map(data);
 
     Ok(ResourceStorage::new(data))
@@ -40,14 +40,17 @@ pub fn parse(path: &str) -> Result<ResourceStorage<Holiday>, Box<dyn Error>> {
 // --- Data Processing Functions
 // ------------------------------------------------------------------------------------------------
 
-fn create_instance(mut values: Vec<ParsedValue>, auto_increment: &AutoIncrement) -> Holiday {
+fn create_instance(
+    mut values: Vec<ParsedValue>,
+    auto_increment: &AutoIncrement,
+) -> Result<Holiday, Box<dyn Error>> {
     let date: String = values.remove(0).into();
     let name_translations: String = values.remove(0).into();
 
-    let date = NaiveDate::parse_from_str(&date, "%d.%m.%Y").unwrap();
+    let date = NaiveDate::parse_from_str(&date, "%d.%m.%Y")?;
     let name = parse_name_translations(name_translations);
 
-    Holiday::new(auto_increment.next(), date, name)
+    Ok(Holiday::new(auto_increment.next(), date, name))
 }
 
 // ------------------------------------------------------------------------------------------------

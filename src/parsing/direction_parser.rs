@@ -29,8 +29,8 @@ pub fn parse(
 
     let data = parser
         .parse()
-        .map(|(_, _, values)| create_instance(values, &mut pk_type_converter))
-        .collect();
+        .map(|x| x.and_then(|(_, _, values)| create_instance(values, &mut pk_type_converter)))
+        .collect::<Result<Vec<_>, _>>()?;
     let data = Direction::vec_to_map(data);
 
     Ok((ResourceStorage::new(data), pk_type_converter))
@@ -43,14 +43,14 @@ pub fn parse(
 fn create_instance(
     mut values: Vec<ParsedValue>,
     pk_type_converter: &mut FxHashMap<String, i32>,
-) -> Direction {
+) -> Result<Direction, Box<dyn Error>> {
     let legacy_id: String = values.remove(0).into();
     let name: String = values.remove(0).into();
 
-    let id = remove_first_char(&legacy_id).parse::<i32>().unwrap();
+    let id = remove_first_char(&legacy_id).parse::<i32>()?;
 
     pk_type_converter.insert(legacy_id, id);
-    Direction::new(id, name)
+    Ok(Direction::new(id, name))
 }
 
 // ------------------------------------------------------------------------------------------------

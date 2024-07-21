@@ -105,7 +105,8 @@ pub fn parse(
     let mut data = Vec::new();
     let mut pk_type_converter = FxHashMap::default();
 
-    for (id, _, values) in parser.parse() {
+    for x in parser.parse() {
+        let (id, _, values) = x?;
         match id {
             ROW_A => data.push(create_instance(
                 values,
@@ -113,17 +114,17 @@ pub fn parse(
                 &mut pk_type_converter,
             )),
             _ => {
-                let journey = data.last_mut().unwrap();
+                let journey = data.last_mut().ok_or("Type A row missing.")?;
 
                 match id {
                     ROW_B => {
-                        set_transport_type(values, journey, &transport_types_pk_type_converter)
+                        set_transport_type(values, journey, &transport_types_pk_type_converter)?
                     }
                     ROW_C => set_bit_field(values, journey),
-                    ROW_D => add_attribute(values, journey, &attributes_pk_type_converter),
+                    ROW_D => add_attribute(values, journey, &attributes_pk_type_converter)?,
                     ROW_E => add_information_text(values, journey),
                     ROW_F => set_line(values, journey),
-                    ROW_G => set_direction(values, journey, directions_pk_type_converter),
+                    ROW_G => set_direction(values, journey, directions_pk_type_converter)?,
                     ROW_H => set_boarding_or_disembarking_exchange_time(values, journey),
                     ROW_I => add_route_entry(values, journey),
                     _ => unreachable!(),
@@ -159,12 +160,14 @@ fn set_transport_type(
     mut values: Vec<ParsedValue>,
     journey: &mut Journey,
     transport_types_pk_type_converter: &FxHashMap<String, i32>,
-) {
+) -> Result<(), Box<dyn Error>> {
     let designation: String = values.remove(0).into();
     let from_stop_id: Option<i32> = values.remove(0).into();
     let until_stop_id: Option<i32> = values.remove(0).into();
 
-    let transport_type_id = *transport_types_pk_type_converter.get(&designation).unwrap();
+    let transport_type_id = *transport_types_pk_type_converter
+        .get(&designation)
+        .ok_or("Unknown legacy ID")?;
 
     journey.add_metadata_entry(
         JourneyMetadataType::TransportType,
@@ -179,6 +182,8 @@ fn set_transport_type(
             None,
         ),
     );
+
+    Ok(())
 }
 
 fn set_bit_field(mut values: Vec<ParsedValue>, journey: &mut Journey) {
@@ -205,12 +210,14 @@ fn add_attribute(
     mut values: Vec<ParsedValue>,
     journey: &mut Journey,
     attributes_pk_type_converter: &FxHashMap<String, i32>,
-) {
+) -> Result<(), Box<dyn Error>> {
     let designation: String = values.remove(0).into();
     let from_stop_id: Option<i32> = values.remove(0).into();
     let until_stop_id: Option<i32> = values.remove(0).into();
 
-    let attribute_id = *attributes_pk_type_converter.get(&designation).unwrap();
+    let attribute_id = *attributes_pk_type_converter
+        .get(&designation)
+        .ok_or("Unknown legacy ID")?;
 
     journey.add_metadata_entry(
         JourneyMetadataType::Attribute,
@@ -225,6 +232,8 @@ fn add_attribute(
             None,
         ),
     );
+
+    Ok(())
 }
 
 fn add_information_text(mut values: Vec<ParsedValue>, journey: &mut Journey) {
@@ -289,7 +298,7 @@ fn set_direction(
     mut values: Vec<ParsedValue>,
     journey: &mut Journey,
     directions_pk_type_converter: &FxHashMap<String, i32>,
-) {
+) -> Result<(), Box<dyn Error>> {
     let direction_type: String = values.remove(0).into();
     let direction_id: String = values.remove(0).into();
     let from_stop_id: Option<i32> = values.remove(0).into();
@@ -303,7 +312,10 @@ fn set_direction(
     let direction_id = if direction_id.is_empty() {
         None
     } else {
-        Some(*directions_pk_type_converter.get(&direction_id).unwrap())
+        let id = *directions_pk_type_converter
+            .get(&direction_id)
+            .ok_or("Unknown legacy ID")?;
+        Some(id)
     };
 
     journey.add_metadata_entry(
@@ -319,6 +331,8 @@ fn set_direction(
             None,
         ),
     );
+
+    Ok(())
 }
 
 fn set_boarding_or_disembarking_exchange_time(mut values: Vec<ParsedValue>, journey: &mut Journey) {

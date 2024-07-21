@@ -40,10 +40,12 @@ pub fn parse(
 
     let data = parser
         .parse()
-        .map(|(_, _, values)| {
-            create_instance(values, &auto_increment, transport_types_pk_type_converter)
+        .map(|x| {
+            x.and_then(|(_, _, values)| {
+                create_instance(values, &auto_increment, transport_types_pk_type_converter)
+            })
         })
-        .collect();
+        .collect::<Result<Vec<_>, _>>()?;
     let data = ExchangeTimeLine::vec_to_map(data);
 
     Ok(ResourceStorage::new(data))
@@ -57,7 +59,7 @@ fn create_instance(
     mut values: Vec<ParsedValue>,
     auto_increment: &AutoIncrement,
     transport_types_pk_type_converter: &FxHashMap<String, i32>,
-) -> ExchangeTimeLine {
+) -> Result<ExchangeTimeLine, Box<dyn Error>> {
     let stop_id: Option<i32> = values.remove(0).into();
     let administration_1: String = values.remove(0).into();
     let transport_type_id_1: String = values.remove(0).into();
@@ -72,7 +74,7 @@ fn create_instance(
 
     let transport_type_id_1 = *transport_types_pk_type_converter
         .get(&transport_type_id_1)
-        .unwrap();
+        .ok_or("Unknown legacy ID")?;
 
     let line_id_1 = if line_id_1 == "*" {
         None
@@ -83,12 +85,12 @@ fn create_instance(
     let direction_1 = if direction_1 == "*" {
         None
     } else {
-        Some(DirectionType::from_str(&direction_1).unwrap())
+        Some(DirectionType::from_str(&direction_1)?)
     };
 
     let transport_type_id_2 = *transport_types_pk_type_converter
         .get(&transport_type_id_2)
-        .unwrap();
+        .ok_or("Unknown legacy ID")?;
 
     let line_id_2 = if line_id_2 == "*" {
         None
@@ -99,12 +101,12 @@ fn create_instance(
     let direction_2 = if direction_2 == "*" {
         None
     } else {
-        Some(DirectionType::from_str(&direction_2).unwrap())
+        Some(DirectionType::from_str(&direction_2)?)
     };
 
     let is_guaranteed = is_guaranteed == "!";
 
-    ExchangeTimeLine::new(
+    Ok(ExchangeTimeLine::new(
         auto_increment.next(),
         stop_id,
         administration_1,
@@ -117,5 +119,5 @@ fn create_instance(
         direction_2,
         duration,
         is_guaranteed,
-    )
+    ))
 }

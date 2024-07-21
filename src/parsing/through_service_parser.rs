@@ -36,8 +36,12 @@ pub fn parse(
 
     let data = parser
         .parse()
-        .map(|(_, _, values)| create_instance(values, &auto_increment, journeys_pk_type_converter))
-        .collect();
+        .map(|x| {
+            x.and_then(|(_, _, values)| {
+                create_instance(values, &auto_increment, journeys_pk_type_converter)
+            })
+        })
+        .collect::<Result<Vec<_>, _>>()?;
     let data = ThroughService::vec_to_map(data);
 
     Ok(ResourceStorage::new(data))
@@ -51,7 +55,7 @@ fn create_instance(
     mut values: Vec<ParsedValue>,
     auto_increment: &AutoIncrement,
     journeys_pk_type_converter: &FxHashMap<(i32, String), i32>,
-) -> ThroughService {
+) -> Result<ThroughService, Box<dyn Error>> {
     let journey_1_id: i32 = values.remove(0).into();
     let journey_1_administration: String = values.remove(0).into();
     let journey_1_stop_id: i32 = values.remove(0).into();
@@ -62,18 +66,18 @@ fn create_instance(
 
     let journey_1_id = *journeys_pk_type_converter
         .get(&(journey_1_id, journey_1_administration))
-        .unwrap();
+        .ok_or("Unknown legacy ID")?;
 
     let journey_2_id = *journeys_pk_type_converter
         .get(&(journey_2_id, journey_2_administration))
-        .unwrap();
+        .ok_or("Unknown legacy ID")?;
 
-    ThroughService::new(
+    Ok(ThroughService::new(
         auto_increment.next(),
         journey_1_id,
         journey_1_stop_id,
         journey_2_id,
         journey_2_stop_id,
         bit_field_id,
-    )
+    ))
 }
