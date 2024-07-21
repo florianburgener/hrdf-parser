@@ -21,6 +21,7 @@ impl Hrdf {
     pub async fn new(
         version: Version,
         url_or_path: &str,
+        force_rebuild_cache: bool,
         verbose: bool,
     ) -> Result<Self, Box<dyn Error>> {
         let now = Instant::now();
@@ -28,8 +29,7 @@ impl Hrdf {
         let unique_filename = format!("{:x}", Sha256::digest(url_or_path.as_bytes()));
         let cache_path = format!("{unique_filename}.cache");
 
-        // TODO: FORCE_REBUILD_CACHE as variable.
-        let hrdf = if Path::new(&cache_path).exists() {
+        let hrdf = if Path::new(&cache_path).exists() && !force_rebuild_cache {
             // Loading from cache.
             if verbose {
                 println!("Reading from cache...");
