@@ -100,7 +100,7 @@ impl DataStorage {
         let exchange_times_line =
             parsing::load_exchange_times_line(path, &transport_types_pk_type_converter)?;
 
-        let bit_fields_by_day = create_bit_fields_by_day(&bit_fields, &timetable_metadata);
+        let bit_fields_by_day = create_bit_fields_by_day(&bit_fields, &timetable_metadata)?;
         let bit_fields_by_stop_id = create_bit_fields_by_stop_id(&journeys);
         let journeys_by_stop_id_and_bit_field_id =
             create_journeys_by_stop_id_and_bit_field_id(&journeys);
@@ -267,9 +267,10 @@ impl<M: Model<M>> ResourceStorage<M> {
 fn create_bit_fields_by_day(
     bit_fields: &ResourceStorage<BitField>,
     timetable_metadata: &ResourceStorage<TimetableMetadataEntry>,
-) -> FxHashMap<NaiveDate, FxHashSet<i32>> {
-    let start_date = timetable_start_date(timetable_metadata);
-    let num_days = count_days_between_two_dates(start_date, timetable_end_date(timetable_metadata));
+) -> Result<FxHashMap<NaiveDate, FxHashSet<i32>>, Box<dyn Error>> {
+    let start_date = timetable_start_date(timetable_metadata)?;
+    let num_days =
+        count_days_between_two_dates(start_date, timetable_end_date(timetable_metadata)?);
 
     let dates: Vec<NaiveDate> = (0..num_days)
         .into_iter()
@@ -287,7 +288,7 @@ fn create_bit_fields_by_day(
         map.entry(*date).or_insert(FxHashSet::default()).insert(0);
     });
 
-    bit_fields.data().keys().fold(map, |mut acc, bit_field_id| {
+    let result = bit_fields.data().keys().fold(map, |mut acc, bit_field_id| {
         let bit_field = bit_fields.find(*bit_field_id);
         let indexes: Vec<usize> = bit_field
             .bits()
@@ -299,14 +300,15 @@ fn create_bit_fields_by_day(
             .map(|(i, _)| i)
             .collect();
 
-        indexes.into_iter().for_each(|i| {
+        indexes.iter().for_each(|&i| {
             acc.entry(dates[i])
                 .or_insert(FxHashSet::default())
                 .insert(bit_field.id());
         });
 
         acc
-    })
+    });
+    Ok(result)
 }
 
 fn create_bit_fields_by_stop_id(

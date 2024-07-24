@@ -48,7 +48,7 @@ fn create_instance(
     let name_translations: String = values.remove(0).into();
 
     let date = NaiveDate::parse_from_str(&date, "%d.%m.%Y")?;
-    let name = parse_name_translations(name_translations);
+    let name = parse_name_translations(name_translations)?;
 
     Ok(Holiday::new(auto_increment.next(), date, name))
 }
@@ -57,20 +57,25 @@ fn create_instance(
 // --- Helper Functions
 // ------------------------------------------------------------------------------------------------
 
-fn parse_name_translations(name_translations: String) -> FxHashMap<Language, String> {
+fn parse_name_translations(
+    name_translations: String,
+) -> Result<FxHashMap<Language, String>, Box<dyn Error>> {
     name_translations
         .split('>')
         .filter(|&s| !s.is_empty())
-        .map(|s| {
+        .map(|s| -> Result<(Language, String), Box<dyn Error>> {
             let mut parts = s.split('<');
 
-            let v = parts.next().unwrap().to_string();
-            let k = parts.next().unwrap().to_string();
+            let v = parts.next().ok_or("Missing value part")?.to_string();
+            let k = parts.next().ok_or("Missing value part")?.to_string();
+            let k = Language::from_str(&k)?;
 
-            (k, v)
+            Ok((k, v))
         })
-        .fold(FxHashMap::default(), |mut acc, (k, v)| {
-            acc.insert(Language::from_str(&k).unwrap(), v);
-            acc
+        .fold(Ok(FxHashMap::default()), |acc, item| {
+            let mut acc = acc?;
+            let (k, v) = item?;
+            acc.insert(k, v);
+            Ok(acc)
         })
 }

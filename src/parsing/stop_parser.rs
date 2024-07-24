@@ -1,6 +1,6 @@
-// 8.5 file(s).
+// 8 file(s).
 // File(s) read by the parser:
-// BAHNHOF, BFKOORD_LV95, BFKOORD_WGS, BFPRIOS, KMINFO, UMSTEIGB, METABHF, BHFART_60
+// BAHNHOF, BFKOORD_LV95, BFKOORD_WGS, BFPRIOS, KMINFO, UMSTEIGB, BHFART_60
 // ---
 // Files not used by the parser:
 // BHFART
@@ -11,8 +11,8 @@ use rustc_hash::FxHashMap;
 use crate::{
     models::{CoordinateSystem, Coordinates, Model, Stop, Version},
     parsing::{
-        AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser,
-        ParsedValue, RowDefinition, RowParser,
+        ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, ParsedValue, RowDefinition,
+        RowParser,
     },
     storage::ResourceStorage,
 };
@@ -34,7 +34,7 @@ pub fn parse(
 
     let data = parser
         .parse()
-        .map(|x| x.map(|(_, _, values)| create_instance(values)))
+        .map(|x| x.map(|(_, _, values)| create_instance(values))?)
         .collect::<Result<Vec<_>, _>>()?;
     let mut data = Stop::vec_to_map(data);
 
@@ -48,8 +48,6 @@ pub fn parse(
     load_exchange_flags(path, &mut data)?;
     println!("Parsing UMSTEIGB...");
     let default_exchange_time = load_exchange_times(path, &mut data)?;
-    println!("Parsing METABHF 1/2...");
-    load_connections(path, &mut data)?;
     println!("Parsing BHFART_60...");
     load_descriptions(path, &mut data)?;
 
@@ -162,36 +160,6 @@ fn load_exchange_times(
     Ok(default_exchange_time)
 }
 
-fn load_connections(path: &str, data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
-    const ROW_A: i32 = 1;
-    const ROW_B: i32 = 2;
-    const ROW_C: i32 = 3;
-
-    #[rustfmt::skip]
-    let row_parser = RowParser::new(vec![
-        // This row is ignored.
-        RowDefinition::new(ROW_A, Box::new(AdvancedRowMatcher::new(r"[0-9]{7} [0-9]{7} [0-9]{3}")?), Vec::new()),
-        // This row is ignored.
-        RowDefinition::new(ROW_B, Box::new(FastRowMatcher::new(1, 1, "*", true)), Vec::new()),
-        // This row contains the connections to nearby stops.
-        RowDefinition::new(ROW_C, Box::new(FastRowMatcher::new(8, 1, ":", true)), vec![
-            ColumnDefinition::new(1, 7, ExpectedType::Integer32),
-            ColumnDefinition::new(11, -1, ExpectedType::String),
-        ]),
-    ]);
-    let parser = FileParser::new(&format!("{path}/METABHF"), row_parser)?;
-
-    parser.parse().try_for_each(|x| {
-        let (id, _, values) = x?;
-        match id {
-            ROW_A | ROW_B => {}
-            ROW_C => set_connections(values, data)?,
-            _ => unreachable!(),
-        }
-        Ok(())
-    })
-}
-
 fn load_descriptions(path: &str, data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -237,13 +205,13 @@ fn load_descriptions(path: &str, data: &mut FxHashMap<i32, Stop>) -> Result<(), 
 // --- Data Processing Functions
 // ------------------------------------------------------------------------------------------------
 
-fn create_instance(mut values: Vec<ParsedValue>) -> Stop {
+fn create_instance(mut values: Vec<ParsedValue>) -> Result<Stop, Box<dyn Error>> {
     let id: i32 = values.remove(0).into();
     let designations: String = values.remove(0).into();
 
-    let (name, long_name, abbreviation, synonyms) = parse_designations(designations);
+    let (name, long_name, abbreviation, synonyms) = parse_designations(designations)?;
 
-    Stop::new(id, name, long_name, abbreviation, synonyms)
+    Ok(Stop::new(id, name, long_name, abbreviation, synonyms))
 }
 
 fn set_coordinates(
@@ -320,21 +288,6 @@ fn set_exchange_time(
     }
 }
 
-fn set_connections(
-    mut values: Vec<ParsedValue>,
-    data: &mut FxHashMap<i32, Stop>,
-) -> Result<(), Box<dyn Error>> {
-    let stop_id: i32 = values.remove(0).into();
-    let connections: String = values.remove(0).into();
-
-    let connections = parse_connections(connections);
-
-    let stop = data.get_mut(&stop_id).ok_or("Unknown ID")?;
-    stop.set_connections(connections);
-
-    Ok(())
-}
-
 fn set_restrictions(
     mut values: Vec<ParsedValue>,
     data: &mut FxHashMap<i32, Stop>,
@@ -380,35 +333,33 @@ fn add_boarding_area(
 
 fn parse_designations(
     designations: String,
-) -> (String, Option<String>, Option<String>, Option<Vec<String>>) {
-    let designations: FxHashMap<i32, Vec<String>> = designations
+) -> Result<(String, Option<String>, Option<String>, Option<Vec<String>>), Box<dyn Error>> {
+    let designations = designations
         .split('>')
         .filter(|&s| !s.is_empty())
-        .map(|s| {
+        .map(|s| -> Result<(i32, String), Box<dyn Error>> {
             let s = s.replace('$', "");
             let mut parts = s.split('<');
 
-            let v = parts.next().unwrap().to_string();
-            let k = parts.next().unwrap().parse::<i32>().unwrap();
+            let v = parts.next().ok_or("Missing value part")?.to_string();
+            let k = parts.next().ok_or("Missing value part")?.parse::<i32>()?;
 
-            (k, v)
+            Ok((k, v))
         })
-        .fold(FxHashMap::default(), |mut acc, (k, v)| {
-            acc.entry(k).or_insert(Vec::new()).push(v);
-            acc
-        });
+        .fold(
+            Ok(FxHashMap::default()),
+            |acc: Result<std::collections::HashMap<i32, Vec<String>, _>, Box<dyn Error>>, item| {
+                let mut acc = acc?;
+                let (k, v) = item?;
+                acc.entry(k).or_insert(Vec::new()).push(v);
+                Ok(acc)
+            },
+        )?;
 
-    let name = designations.get(&1).unwrap()[0].clone();
+    let name = designations.get(&1).ok_or("Missing stop name")?[0].clone();
     let long_name = designations.get(&2).map(|x| x[0].clone());
     let abbreviation = designations.get(&3).map(|x| x[0].clone());
     let synonyms = designations.get(&4).cloned();
 
-    (name, long_name, abbreviation, synonyms)
-}
-
-fn parse_connections(connections: String) -> Vec<i32> {
-    connections
-        .split_whitespace()
-        .filter_map(|s| s.parse().ok())
-        .collect()
+    Ok((name, long_name, abbreviation, synonyms))
 }

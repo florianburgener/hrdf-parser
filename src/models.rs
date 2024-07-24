@@ -558,7 +558,7 @@ impl Journey {
 
     pub fn count_stops(&self, departure_stop_id: i32, arrival_stop_id: i32) -> usize {
         self.route()
-            .into_iter()
+            .iter()
             .skip_while(|stop| stop.stop_id() != departure_stop_id)
             .take_while(|stop| stop.stop_id() != arrival_stop_id)
             .count()
@@ -977,7 +977,6 @@ pub struct Stop {
     exchange_priority: i16,
     exchange_flag: i16,
     exchange_time: Option<(i16, i16)>, // (InterCity exchange time, Exchange time for all other journey types)
-    connections: Vec<i32>,             // Vec of Stop.id
     restrictions: i16,
     sloid: String,
     boarding_areas: Vec<String>,
@@ -1004,7 +1003,6 @@ impl Stop {
             exchange_priority: 8, // 8 is the default priority.
             exchange_flag: 0,
             exchange_time: None,
-            connections: Vec::default(),
             restrictions: 0,
             sloid: String::default(),
             boarding_areas: Vec::new(),
@@ -1051,11 +1049,6 @@ impl Stop {
 
     pub fn set_exchange_time(&mut self, value: Option<(i16, i16)>) {
         self.exchange_time = value;
-    }
-
-    // Useless.
-    pub fn set_connections(&mut self, value: Vec<i32>) {
-        self.connections = value;
     }
 
     pub fn set_restrictions(&mut self, value: i16) {

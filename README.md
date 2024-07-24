@@ -90,11 +90,4 @@ Catégorisation des fichiers :
   * ZEITVS
 
 TODO :
-* Refactoring
-  * Errors handling
-  * unwrap => except
-  * iter vs into_inter ?
-  * "utils"
-  * Delete unnecessary getters
-  * Clean the code
 * Comments

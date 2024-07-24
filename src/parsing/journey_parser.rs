@@ -123,7 +123,7 @@ pub fn parse(
                     ROW_C => set_bit_field(values, journey),
                     ROW_D => add_attribute(values, journey, &attributes_pk_type_converter)?,
                     ROW_E => add_information_text(values, journey),
-                    ROW_F => set_line(values, journey),
+                    ROW_F => set_line(values, journey)?,
                     ROW_G => set_direction(values, journey, directions_pk_type_converter)?,
                     ROW_H => set_boarding_or_disembarking_exchange_time(values, journey),
                     ROW_I => add_route_entry(values, journey),
@@ -263,7 +263,7 @@ fn add_information_text(mut values: Vec<ParsedValue>, journey: &mut Journey) {
     );
 }
 
-fn set_line(mut values: Vec<ParsedValue>, journey: &mut Journey) {
+fn set_line(mut values: Vec<ParsedValue>, journey: &mut Journey) -> Result<(), Box<dyn Error>> {
     let line_designation: String = values.remove(0).into();
     let from_stop_id: Option<i32> = values.remove(0).into();
     let until_stop_id: Option<i32> = values.remove(0).into();
@@ -273,8 +273,12 @@ fn set_line(mut values: Vec<ParsedValue>, journey: &mut Journey) {
     let arrival_time = create_time(arrival_time);
     let departure_time = create_time(departure_time);
 
-    let (resource_id, extra_field_1) = if line_designation.chars().next().unwrap() == '#' {
-        (Some(line_designation[1..].parse::<i32>().unwrap()), None)
+    let line_designation_first_char = line_designation
+        .chars()
+        .next()
+        .ok_or("Missing designation")?;
+    let (resource_id, extra_field_1) = if line_designation_first_char == '#' {
+        (Some(line_designation[1..].parse::<i32>()?), None)
     } else {
         (None, Some(line_designation))
     };
@@ -292,6 +296,8 @@ fn set_line(mut values: Vec<ParsedValue>, journey: &mut Journey) {
             None,
         ),
     );
+
+    Ok(())
 }
 
 fn set_direction(
