@@ -1,11 +1,24 @@
 # HRDF Parser
 
+This library can be used to parse the HRDF format. Currently only available for Switzerland.
+
+Example of use:
+```rs
+let hrdf = Hrdf::new(
+    Version::V_5_40_41_2_0_5,
+    "https://opentransportdata.swiss/en/dataset/timetable-54-2024-hrdf/permalink",
+    false,
+    true,
+)
+.await?;
+```
+
 HRDF 5.40.41, V 2.04 (38 fichiers) :
 * ATTRIBUT
-* ATTRIBUT_DE (fichier pas utilisé dans le code)
-* ATTRIBUT_EN (fichier pas utilisé dans le code)
-* ATTRIBUT_FR (fichier pas utilisé dans le code)
-* ATTRIBUT_IT (fichier pas utilisé dans le code)
+* ATTRIBUT_DE (file not used)
+* ATTRIBUT_EN (file not used)
+* ATTRIBUT_FR (file not used)
+* ATTRIBUT_IT (file not used)
 * BAHNHOF
 * BETRIEB_DE
 * BETRIEB_EN
@@ -14,7 +27,7 @@ HRDF 5.40.41, V 2.04 (38 fichiers) :
 * BFKOORD_LV95
 * BFKOORD_WGS
 * BFPRIOS
-* BHFART (fichier pas utilisé dans le code)
+* BHFART (file not used)
 * BHFART_60
 * BITFELD
 * DURCHBI
@@ -24,7 +37,7 @@ HRDF 5.40.41, V 2.04 (38 fichiers) :
 * GLEIS
 * GLEIS_LV95
 * GLEIS_WGS
-* GRENZHLT (fichier pas utilisé dans le code)
+* GRENZHLT (file not used)
 * INFOTEXT_DE
 * INFOTEXT_EN
 * INFOTEXT_FR
@@ -38,56 +51,11 @@ HRDF 5.40.41, V 2.04 (38 fichiers) :
 * UMSTEIGV
 * UMSTEIGZ
 * ZUGART
-* ZEITVS (fichier pas utilisé dans le code)
+* ZEITVS (file not used)
 
-HRDF 5.40.41, V 2.04 (cette version contient également les 38 fichiers listés ci-dessus) :
-* GLEISE_LV95 (fichier pas utilisé dans le code)
-* GLEISE_WGS (fichier pas utilisé dans le code)
-
-Catégorisation des fichiers :
-* Affichage
-  * ATTRIBUT
-  * BAHNHOF
-  * BETRIEB_DE
-  * BETRIEB_EN
-  * BETRIEB_FR
-  * BETRIEB_IT
-  * DURCHBI
-  * FEIERTAG
-  * GLEIS
-  * GLEIS_LV95
-  * GLEIS_WGS
-  * INFOTEXT_DE
-  * INFOTEXT_EN
-  * INFOTEXT_FR
-  * INFOTEXT_IT
-  * LINIE
-  * RICHTUNG
-* Affichage + Algorithme
-  * BFKOORD_LV95
-  * BFKOORD_WGS
-  * ECKDATEN
-  * FPLAN
-  * METABHF
-* Algorithme
-  * BITFELD
-  * KMINFO
-  * UMSTEIGB
-  * UMSTEIGL
-  * UMSTEIGV
-  * UMSTEIGZ
-  * ZUGART
-* ???
-  * BFPRIOS
-  * BHFART_60
-* Inutilisé
-  * ATTRIBUT_DE
-  * ATTRIBUT_EN
-  * ATTRIBUT_FR
-  * ATTRIBUT_IT
-  * BHFART
-  * GREENZHLT
-  * ZEITVS
+HRDF 5.40.41, V 2.04 (this version also contains the 38 files listed above) :
+* GLEISE_LV95 (file not used)
+* GLEISE_WGS (file not used)
 
 TODO :
 * Comments

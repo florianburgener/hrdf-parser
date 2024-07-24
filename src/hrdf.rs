@@ -18,6 +18,9 @@ pub struct Hrdf {
 }
 
 impl Hrdf {
+    /// Loads and parses the data.<br>
+    /// If an URL is provided, the HRDF archive (ZIP file) is downloaded automatically. If a path is provided, it must absolutely point to an HRDF archive (ZIP file).<br>
+    /// The ZIP archive is automatically decompressed into the /tmp folder.
     pub async fn new(
         version: Version,
         url_or_path: &str,
