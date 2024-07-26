@@ -3,6 +3,8 @@
 // LINIE
 use std::error::Error;
 
+use log::info;
+
 use crate::{
     models::{Color, Line, Model},
     parsing::{
@@ -13,7 +15,7 @@ use crate::{
 };
 
 pub fn parse(path: &str) -> Result<ResourceStorage<Line>, Box<dyn Error>> {
-    println!("Parsing LINIE...");
+    info!("Parsing LINIE...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
     const ROW_C: i32 = 3;

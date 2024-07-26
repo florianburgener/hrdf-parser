@@ -7,6 +7,7 @@ use std::{
 };
 
 use crate::{models::Version, storage::DataStorage};
+use log::info;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use url::Url;
@@ -25,7 +26,6 @@ impl Hrdf {
         version: Version,
         url_or_path: &str,
         force_rebuild_cache: bool,
-        verbose: bool,
     ) -> Result<Self, Box<dyn Error>> {
         let now = Instant::now();
 
@@ -34,9 +34,7 @@ impl Hrdf {
 
         let hrdf = if Path::new(&cache_path).exists() && !force_rebuild_cache {
             // Loading from cache.
-            if verbose {
-                println!("Reading from cache...");
-            }
+            info!("Reading from cache file {cache_path}...");
 
             // If loading from cache fails, None is returned.
             Hrdf::load_from_cache(&cache_path).ok()
@@ -56,7 +54,7 @@ impl Hrdf {
 
                 if !Path::new(&compressed_data_path).exists() {
                     // The data must be downloaded.
-                    println!("Downloading data...");
+                    info!("Downloading data into {compressed_data_path}...");
                     let response = reqwest::get(url_or_path).await?;
                     let mut file = std::fs::File::create(&compressed_data_path)?;
                     let mut content = Cursor::new(response.bytes().await?);
@@ -72,16 +70,14 @@ impl Hrdf {
 
             if !Path::new(&decompressed_data_path).exists() {
                 // The data must be decompressed.
-                println!("Unzipping archive...");
+                info!("Unzipping archive into {decompressed_data_path}...");
                 let file = File::open(&compressed_data_path)?;
                 let mut archive = ZipArchive::new(BufReader::new(file))?;
                 archive.extract(&decompressed_data_path)?;
             }
 
-            if verbose {
-                println!("{decompressed_data_path}");
-                println!("Building cache...");
-            }
+            info!("{decompressed_data_path}");
+            info!("Building cache...");
 
             let hrdf = Self {
                 data_storage: DataStorage::new(version, &decompressed_data_path)?,
@@ -93,9 +89,7 @@ impl Hrdf {
 
         let elapsed = now.elapsed();
 
-        if verbose {
-            println!("{:.2?}", elapsed);
-        }
+        info!("Hrdf data loaded: {:.2?}", elapsed);
 
         Ok(hrdf)
     }

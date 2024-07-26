@@ -507,6 +507,7 @@ version = "0.1.0"
 dependencies = [
  "bincode",
  "chrono",
+ "log",
  "regex",
  "reqwest",
  "rustc-hash",

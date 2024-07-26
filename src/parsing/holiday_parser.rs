@@ -4,6 +4,7 @@
 use std::{error::Error, str::FromStr};
 
 use chrono::NaiveDate;
+use log::info;
 use rustc_hash::FxHashMap;
 
 use crate::{
@@ -14,7 +15,7 @@ use crate::{
 };
 
 pub fn parse(path: &str) -> Result<ResourceStorage<Holiday>, Box<dyn Error>> {
-    println!("Parsing FEIERTAG...");
+    info!("Parsing FEIERTAG...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row is used to create a Holiday instance.

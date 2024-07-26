@@ -3,6 +3,8 @@
 // BITFELD
 use std::error::Error;
 
+use log::info;
+
 use crate::{
     models::{BitField, Model},
     parsing::{ColumnDefinition, ExpectedType, FileParser, ParsedValue, RowDefinition, RowParser},
@@ -10,7 +12,7 @@ use crate::{
 };
 
 pub fn parse(path: &str) -> Result<ResourceStorage<BitField>, Box<dyn Error>> {
-    println!("Parsing BITFELD...");
+    info!("Parsing BITFELD...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row is used to create a BitField instance.
