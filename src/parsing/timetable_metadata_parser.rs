@@ -4,7 +4,6 @@
 use std::error::Error;
 
 use chrono::NaiveDate;
-use log::info;
 
 use crate::{
     models::{Model, TimetableMetadataEntry},
@@ -17,7 +16,7 @@ use crate::{
 };
 
 pub fn parse(path: &str) -> Result<ResourceStorage<TimetableMetadataEntry>, Box<dyn Error>> {
-    info!("Parsing ECKDATEN...");
+    log::info!("Parsing ECKDATEN...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
 

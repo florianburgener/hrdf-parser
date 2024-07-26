@@ -7,7 +7,6 @@ use std::{
 };
 
 use crate::{models::Version, storage::DataStorage};
-use log::info;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use url::Url;
@@ -34,7 +33,7 @@ impl Hrdf {
 
         let hrdf = if Path::new(&cache_path).exists() && !force_rebuild_cache {
             // Loading from cache.
-            info!("Reading from cache file {cache_path}...");
+            log::info!("Loading HRDF data from cache ({cache_path})...");
 
             // If loading from cache fails, None is returned.
             Hrdf::load_from_cache(&cache_path).ok()
@@ -54,7 +53,7 @@ impl Hrdf {
 
                 if !Path::new(&compressed_data_path).exists() {
                     // The data must be downloaded.
-                    info!("Downloading data into {compressed_data_path}...");
+                    log::info!("Downloading HRDF data to {compressed_data_path}...");
                     let response = reqwest::get(url_or_path).await?;
                     let mut file = std::fs::File::create(&compressed_data_path)?;
                     let mut content = Cursor::new(response.bytes().await?);
@@ -70,26 +69,26 @@ impl Hrdf {
 
             if !Path::new(&decompressed_data_path).exists() {
                 // The data must be decompressed.
-                info!("Unzipping archive into {decompressed_data_path}...");
+                log::info!("Unzipping HRDF archive into {decompressed_data_path}...");
                 let file = File::open(&compressed_data_path)?;
                 let mut archive = ZipArchive::new(BufReader::new(file))?;
                 archive.extract(&decompressed_data_path)?;
             }
 
-            info!("{decompressed_data_path}");
-            info!("Building cache...");
+            log::info!("Parsing HRDF data from {decompressed_data_path}...");
 
             let hrdf = Self {
                 data_storage: DataStorage::new(version, &decompressed_data_path)?,
             };
 
+            log::info!("Building cache...");
             hrdf.build_cache(&cache_path)?;
             hrdf
         };
 
         let elapsed = now.elapsed();
 
-        info!("Hrdf data loaded: {:.2?}", elapsed);
+        log::info!("HRDF data loaded in {:.2?}!", elapsed);
 
         Ok(hrdf)
     }

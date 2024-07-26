@@ -3,7 +3,6 @@
 // RICHTUNG
 use std::error::Error;
 
-use log::info;
 use rustc_hash::FxHashMap;
 
 use crate::{
@@ -15,7 +14,7 @@ use crate::{
 pub fn parse(
     path: &str,
 ) -> Result<(ResourceStorage<Direction>, FxHashMap<String, i32>), Box<dyn Error>> {
-    info!("Parsing RICHTUNG...");
+    log::info!("Parsing RICHTUNG...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row is used to create a Direction instance.

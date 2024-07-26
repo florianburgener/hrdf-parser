@@ -3,7 +3,6 @@
 // UMSTEIGL
 use std::{error::Error, str::FromStr};
 
-use log::info;
 use rustc_hash::FxHashMap;
 
 use crate::{
@@ -17,7 +16,7 @@ pub fn parse(
     path: &str,
     transport_types_pk_type_converter: &FxHashMap<String, i32>,
 ) -> Result<ResourceStorage<ExchangeTimeLine>, Box<dyn Error>> {
-    info!("Parsing UMSTEIGL...");
+    log::info!("Parsing UMSTEIGL...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row is used to create a LineExchangeTime instance.

@@ -5,7 +5,6 @@
 // Note: this parser collects both the Platform and JourneyPlatform resources.
 use std::error::Error;
 
-use log::info;
 use rustc_hash::FxHashMap;
 
 use crate::{
@@ -22,7 +21,7 @@ pub fn parse(
     path: &str,
     journeys_pk_type_converter: &FxHashMap<(i32, String), i32>,
 ) -> Result<(ResourceStorage<JourneyPlatform>, ResourceStorage<Platform>), Box<dyn Error>> {
-    info!("Parsing GLEIS...");
+    log::info!("Parsing GLEIS...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
 
@@ -85,10 +84,10 @@ pub fn parse(
         .collect::<Result<Vec<_>, _>>()?;
     let journey_platform = JourneyPlatform::vec_to_map(journey_platform);
 
-    info!("Parsing GLEIS_LV95...");
+    log::info!("Parsing GLEIS_LV95...");
     #[rustfmt::skip]
     load_coordinates_for_platforms(path, CoordinateSystem::LV95, bytes_offset, &platforms_pk_type_converter, &mut platforms)?;
-    info!("Parsing GLEIS_WGS84...");
+    log::info!("Parsing GLEIS_WGS84...");
     #[rustfmt::skip]
     load_coordinates_for_platforms(path, CoordinateSystem::WGS84, bytes_offset, &platforms_pk_type_converter, &mut platforms)?;
 

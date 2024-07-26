@@ -6,7 +6,6 @@
 // BHFART
 use std::{error::Error, vec};
 
-use log::info;
 use rustc_hash::FxHashMap;
 
 use crate::{
@@ -22,7 +21,7 @@ pub fn parse(
     version: Version,
     path: &str,
 ) -> Result<(ResourceStorage<Stop>, (i16, i16)), Box<dyn Error>> {
-    info!("Parsing BAHNHOF...");
+    log::info!("Parsing BAHNHOF...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row is used to create a Stop instance.
@@ -39,17 +38,17 @@ pub fn parse(
         .collect::<Result<Vec<_>, _>>()?;
     let mut data = Stop::vec_to_map(data);
 
-    info!("Parsing BFKOORD_LV95...");
+    log::info!("Parsing BFKOORD_LV95...");
     load_coordinates(version, path, CoordinateSystem::LV95, &mut data)?;
-    info!("Parsing BFKOORD_WGS...");
+    log::info!("Parsing BFKOORD_WGS...");
     load_coordinates(version, path, CoordinateSystem::WGS84, &mut data)?;
-    info!("Parsing BFPRIOS...");
+    log::info!("Parsing BFPRIOS...");
     load_exchange_priorities(path, &mut data)?;
-    info!("Parsing KMINFO...");
+    log::info!("Parsing KMINFO...");
     load_exchange_flags(path, &mut data)?;
-    info!("Parsing UMSTEIGB...");
+    log::info!("Parsing UMSTEIGB...");
     let default_exchange_time = load_exchange_times(path, &mut data)?;
-    info!("Parsing BHFART_60...");
+    log::info!("Parsing BHFART_60...");
     load_descriptions(path, &mut data)?;
 
     Ok((ResourceStorage::new(data), default_exchange_time))

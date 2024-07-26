@@ -3,8 +3,6 @@
 // UMSTEIGV
 use std::error::Error;
 
-use log::info;
-
 use crate::{
     models::{ExchangeTimeAdministration, Model},
     parsing::{ColumnDefinition, ExpectedType, FileParser, ParsedValue, RowDefinition, RowParser},
@@ -13,7 +11,7 @@ use crate::{
 };
 
 pub fn parse(path: &str) -> Result<ResourceStorage<ExchangeTimeAdministration>, Box<dyn Error>> {
-    info!("Parsing UMSTEIGV...");
+    log::info!("Parsing UMSTEIGV...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row is used to create a AdministrationExchangeTime instance.

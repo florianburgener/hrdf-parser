@@ -100,13 +100,19 @@ impl DataStorage {
         let exchange_times_line =
             parsing::load_exchange_times_line(path, &transport_types_pk_type_converter)?;
 
+        log::info!("Building bit_fields_by_day...");
         let bit_fields_by_day = create_bit_fields_by_day(&bit_fields, &timetable_metadata)?;
+        log::info!("Building bit_fields_by_stop_id...");
         let bit_fields_by_stop_id = create_bit_fields_by_stop_id(&journeys);
+        log::info!("Building journeys_by_stop_id_and_bit_field_id...");
         let journeys_by_stop_id_and_bit_field_id =
             create_journeys_by_stop_id_and_bit_field_id(&journeys);
+        log::info!("Building stop_connections_by_stop_id...");
         let stop_connections_by_stop_id = create_stop_connections_by_stop_id(&stop_connections);
+        log::info!("Building exchange_times_administration_map...");
         let exchange_times_administration_map =
             create_exchange_times_administration_map(&exchange_times_administration);
+        log::info!("Building exchange_times_journey_map...");
         let exchange_times_journey_map = create_exchange_times_journey_map(&exchange_times_journey);
 
         let mut data_storage = Self {
@@ -193,8 +199,6 @@ impl DataStorage {
         &self.exchange_times_line
     }
 
-    // ...
-
     pub fn bit_fields_by_day(&self) -> &FxHashMap<NaiveDate, FxHashSet<i32>> {
         &self.bit_fields_by_day
     }
@@ -220,8 +224,6 @@ impl DataStorage {
     pub fn exchange_times_journey_map(&self) -> &FxHashMap<(i32, i32, i32), FxHashSet<i32>> {
         &self.exchange_times_journey_map
     }
-
-    // ...
 
     pub fn default_exchange_time(&self) -> (i16, i16) {
         self.default_exchange_time

@@ -3,7 +3,6 @@
 // DURCHBI
 use std::error::Error;
 
-use log::info;
 use rustc_hash::FxHashMap;
 
 use crate::{
@@ -17,7 +16,7 @@ pub fn parse(
     path: &str,
     journeys_pk_type_converter: &FxHashMap<(i32, String), i32>,
 ) -> Result<ResourceStorage<ThroughService>, Box<dyn Error>> {
-    info!("Parsing DURCHBI...");
+    log::info!("Parsing DURCHBI...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row is used to create a ThroughService instance.
