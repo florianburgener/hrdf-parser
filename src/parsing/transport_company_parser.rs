@@ -3,6 +3,7 @@
 // BETRIEB_DE, BETRIEB_EN, BETRIEB_FR, BETRIEB_IT
 use std::error::Error;
 
+use log::info;
 use regex::Regex;
 use rustc_hash::FxHashMap;
 
@@ -16,10 +17,10 @@ use crate::{
 };
 
 pub fn parse(path: &str) -> Result<ResourceStorage<TransportCompany>, Box<dyn Error>> {
-    println!("Parsing BETRIEB_DE...");
-    println!("Parsing BETRIEB_EN...");
-    println!("Parsing BETRIEB_FR...");
-    println!("Parsing BETRIEB_IT...");
+    info!("Parsing BETRIEB_DE...");
+    info!("Parsing BETRIEB_EN...");
+    info!("Parsing BETRIEB_FR...");
+    info!("Parsing BETRIEB_IT...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
 

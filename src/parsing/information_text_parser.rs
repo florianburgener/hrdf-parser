@@ -3,6 +3,7 @@
 // INFOTEXT_DE, INFOTEXT_EN, INFOTEXT_FR, INFOTEXT_IT
 use std::error::Error;
 
+use log::info;
 use rustc_hash::FxHashMap;
 
 use crate::{
@@ -12,10 +13,10 @@ use crate::{
 };
 
 pub fn parse(path: &str) -> Result<ResourceStorage<InformationText>, Box<dyn Error>> {
-    println!("Parsing INFOTEXT_DE...");
-    println!("Parsing INFOTEXT_EN...");
-    println!("Parsing INFOTEXT_FR...");
-    println!("Parsing INFOTEXT_IT...");
+    info!("Parsing INFOTEXT_DE...");
+    info!("Parsing INFOTEXT_EN...");
+    info!("Parsing INFOTEXT_FR...");
+    info!("Parsing INFOTEXT_IT...");
 
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![

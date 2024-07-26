@@ -3,6 +3,7 @@
 // ZUGART
 use std::error::Error;
 
+use log::info;
 use rustc_hash::FxHashMap;
 
 use crate::{
@@ -18,7 +19,7 @@ use crate::{
 pub fn parse(
     path: &str,
 ) -> Result<(ResourceStorage<TransportType>, FxHashMap<String, i32>), Box<dyn Error>> {
-    println!("Parsing ZUGART...");
+    info!("Parsing ZUGART...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
     const ROW_C: i32 = 3;
