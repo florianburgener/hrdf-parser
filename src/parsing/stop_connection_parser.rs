@@ -20,7 +20,7 @@ pub fn parse(
     path: &str,
     attributes_pk_type_converter: &FxHashMap<String, i32>,
 ) -> Result<ResourceStorage<StopConnection>, Box<dyn Error>> {
-    info!("Parsing METABHF 2/2...");
+    info!("Parsing METABHF...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
     const ROW_C: i32 = 3;
