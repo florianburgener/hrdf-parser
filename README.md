@@ -56,6 +56,3 @@ HRDF 5.40.41, V 2.04 (38 fichiers) :
 HRDF 5.40.41, V 2.04 (this version also contains the 38 files listed above) :
 * GLEISE_LV95 (file not used)
 * GLEISE_WGS (file not used)
-
-TODO :
-* Comments

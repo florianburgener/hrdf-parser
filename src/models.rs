@@ -83,8 +83,6 @@ impl Attribute {
     pub fn set_description(&mut self, language: Language, value: &str) {
         self.description.insert(language, value.to_string());
     }
-
-    // Functions
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -109,8 +107,6 @@ impl BitField {
     pub fn bits(&self) -> &Vec<u8> {
         &self.bits
     }
-
-    // Functions
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -143,8 +139,6 @@ impl Color {
     pub fn b(&self) -> i16 {
         self.b
     }
-
-    // Functions
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -218,10 +212,6 @@ impl Direction {
     pub fn new(id: i32, name: String) -> Self {
         Self { id, name }
     }
-
-    // Getters/Setters
-
-    // Functions
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -257,10 +247,6 @@ impl Holiday {
     pub fn new(id: i32, date: NaiveDate, name: FxHashMap<Language, String>) -> Self {
         Self { id, date, name }
     }
-
-    // Getters/Setters
-
-    // Functions
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -312,8 +298,6 @@ impl ExchangeTimeAdministration {
     pub fn duration(&self) -> i16 {
         self.duration
     }
-
-    // Functions
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -375,8 +359,6 @@ impl ExchangeTimeJourney {
     pub fn bit_field_id(&self) -> Option<i32> {
         self.bit_field_id
     }
-
-    // Functions
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -431,10 +413,6 @@ impl ExchangeTimeLine {
             is_guaranteed,
         }
     }
-
-    // Getters/Setters
-
-    // Functions
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -462,8 +440,6 @@ impl InformationText {
     pub fn set_content(&mut self, language: Language, value: &str) {
         self.content.insert(language, value.to_string());
     }
-
-    // Functions
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -535,8 +511,6 @@ impl Journey {
             .transport_types()
             .find(self.transport_type_id())
     }
-
-    // ...
 
     pub fn first_stop_id(&self) -> i32 {
         // unwrap: The route always contains at least 2 entries.
@@ -758,10 +732,6 @@ impl JourneyMetadataEntry {
             extra_field_2,
         }
     }
-
-    // Getters/Setters
-
-    // Functions
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -835,10 +805,6 @@ impl JourneyPlatform {
             bit_field_id,
         }
     }
-
-    // Getters/Setters
-
-    // Functions
 }
 
 impl Model<JourneyPlatform> for JourneyPlatform {
@@ -910,8 +876,6 @@ impl Line {
     pub fn set_background_color(&mut self, value: Color) {
         self.background_color = value;
     }
-
-    // Functions
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -957,8 +921,6 @@ impl Platform {
     pub fn set_wgs84_coordinates(&mut self, value: Coordinates) {
         self.wgs84_coordinates = value;
     }
-
-    // Functions
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -1113,8 +1075,6 @@ impl StopConnection {
     pub fn set_attribute(&mut self, value: i32) {
         self.attribute = value;
     }
-
-    // Functions
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -1151,10 +1111,6 @@ impl ThroughService {
             bit_field_id,
         }
     }
-
-    // Getters/Setters
-
-    // Functions
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -1190,8 +1146,6 @@ impl TimetableMetadataEntry {
     pub fn value_as_NaiveDate(&self) -> NaiveDate {
         NaiveDate::parse_from_str(self.value(), "%Y-%m-%d").unwrap()
     }
-
-    // Functions
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -1233,8 +1187,6 @@ impl TransportCompany {
     pub fn set_full_name(&mut self, language: Language, value: &str) {
         self.full_name.insert(language, value.to_string());
     }
-
-    // Functions
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -1299,8 +1251,6 @@ impl TransportType {
     pub fn set_category_name(&mut self, language: Language, value: &str) {
         self.category_name.insert(language, value.to_string());
     }
-
-    // Functions
 }
 
 // ------------------------------------------------------------------------------------------------

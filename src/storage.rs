@@ -21,12 +21,12 @@ use crate::{
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DataStorage {
-    // Time-relevant data
+    // Time-relevant data.
     bit_fields: ResourceStorage<BitField>,
     holidays: ResourceStorage<Holiday>,
     timetable_metadata: ResourceStorage<TimetableMetadataEntry>,
 
-    // Master data
+    // Basic data.
     attributes: ResourceStorage<Attribute>,
     information_texts: ResourceStorage<InformationText>,
     directions: ResourceStorage<Direction>,
@@ -69,7 +69,7 @@ impl DataStorage {
         let holidays = parsing::load_holidays(path)?;
         let timetable_metadata = parsing::load_timetable_metadata(path)?;
 
-        // Master data
+        // Basic data
         let (attributes, attributes_pk_type_converter) = parsing::load_attributes(path)?;
         let (directions, directions_pk_type_converter) = parsing::load_directions(path)?;
         let information_texts = parsing::load_information_texts(path)?;
@@ -120,7 +120,7 @@ impl DataStorage {
             bit_fields,
             holidays,
             timetable_metadata,
-            // Master data
+            // Basic data
             attributes,
             information_texts,
             directions,
