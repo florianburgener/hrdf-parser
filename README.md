@@ -1,8 +1,11 @@
 # HRDF Parser
 
-This library can be used to parse the HRDF format. Currently only available for Switzerland.
+This library is dedicated to the parsing of the HRDF format. For the moment, it can only parse the Swiss version of the HRDF format.
 
-Example of use:
+Author: Florian Burgener
+
+## Usage
+
 ```rs
 let hrdf = Hrdf::new(
     Version::V_5_40_41_2_0_5,
@@ -12,6 +15,8 @@ let hrdf = Hrdf::new(
 )
 .await?;
 ```
+
+## Supported HRDF format versions
 
 HRDF 5.40.41, V 2.04 (38 fichiers) :
 * ATTRIBUT
