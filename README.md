@@ -4,6 +4,18 @@ This library is dedicated to the parsing of the HRDF format. For the moment, it 
 
 Author: Florian Burgener
 
+[https://crates.io/crates/hrdf-parser](https://crates.io/crates/hrdf-parser)
+
+## Prerequisites
+
+* OpenSSL (`apt install libssl-dev` on Ubuntu)
+
+## Installation
+
+```sh
+cargo add hrdf-parser
+```
+
 ## Usage
 
 ```rs
