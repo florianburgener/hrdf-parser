@@ -140,7 +140,7 @@ digraph {
         subgraph cluster_4 {
             color=gray94
             fontsize=34
-            label=< <B>Données relative aux arrêts</B> >
+            label=< <B>Données relatives aux arrêts</B> >
             margin=30
             style=filled
 
