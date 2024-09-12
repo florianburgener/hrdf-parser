@@ -250,7 +250,7 @@ impl<M: Model<M>> ResourceStorage<M> {
 
     /// unwrap: Do not call this function if the key is not associated with data.
     pub fn find(&self, k: M::K) -> &M {
-        &self.data().get(&k).unwrap()
+        self.data().get(&k).unwrap()
     }
 
     pub fn entries(&self) -> Vec<&M> {
@@ -275,7 +275,6 @@ fn create_bit_fields_by_day(
         count_days_between_two_dates(start_date, timetable_end_date(timetable_metadata)?);
 
     let dates: Vec<NaiveDate> = (0..num_days)
-        .into_iter()
         .map(|i| {
             start_date
                 // unwrap: Converting i from usize to u64 will never fail.
@@ -303,9 +302,7 @@ fn create_bit_fields_by_day(
             .collect();
 
         indexes.iter().for_each(|&i| {
-            acc.entry(dates[i])
-                .or_insert(FxHashSet::default())
-                .insert(bit_field.id());
+            acc.entry(dates[i]).or_default().insert(bit_field.id());
         });
 
         acc
@@ -322,7 +319,7 @@ fn create_bit_fields_by_stop_id(
         .fold(FxHashMap::default(), |mut acc, journey| {
             journey.route().iter().for_each(|route_entry| {
                 acc.entry(route_entry.stop_id())
-                    .or_insert(FxHashSet::default())
+                    .or_default()
                     // If the journey has no bit_field_id, the default value is 0. A value of 0 means that the journey operates every day.
                     .insert(journey.bit_field_id().unwrap_or(0));
             });
@@ -340,7 +337,7 @@ fn create_journeys_by_stop_id_and_bit_field_id(
             journey.route().iter().for_each(|route_entry| {
                 // If the journey has no bit_field_id, the default value is 0. A value of 0 means that the journey operates every day.
                 acc.entry((route_entry.stop_id(), journey.bit_field_id().unwrap_or(0)))
-                    .or_insert(Vec::new())
+                    .or_default()
                     .push(journey.id());
             });
             acc
@@ -355,7 +352,7 @@ fn create_stop_connections_by_stop_id(
         .into_iter()
         .fold(FxHashMap::default(), |mut acc, stop_connection| {
             acc.entry(stop_connection.stop_id_1())
-                .or_insert(FxHashSet::default())
+                .or_default()
                 .insert(stop_connection.id());
             acc
         })
@@ -373,9 +370,7 @@ fn create_exchange_times_journey_map(
                 exchange_time.journey_id_2(),
             );
 
-            acc.entry(key)
-                .or_insert(FxHashSet::default())
-                .insert(exchange_time.id());
+            acc.entry(key).or_default().insert(exchange_time.id());
             acc
         },
     )

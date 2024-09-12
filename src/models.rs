@@ -483,7 +483,7 @@ impl Journey {
     // Functions
 
     pub fn add_metadata_entry(&mut self, k: JourneyMetadataType, v: JourneyMetadataEntry) {
-        self.metadata.entry(k).or_insert(Vec::new()).push(v);
+        self.metadata.entry(k).or_default().push(v);
     }
 
     pub fn add_route_entry(&mut self, entry: JourneyRouteEntry) {
@@ -657,7 +657,7 @@ impl Journey {
     ) -> Vec<&JourneyRouteEntry> {
         let mut route_iter = self.route().iter();
 
-        while let Some(route_entry) = route_iter.next() {
+        for route_entry in route_iter.by_ref() {
             if route_entry.stop_id() == departure_stop_id {
                 break;
             }
@@ -665,7 +665,7 @@ impl Journey {
 
         let mut result = Vec::new();
 
-        while let Some(route_entry) = route_iter.next() {
+        for route_entry in route_iter {
             result.push(route_entry);
 
             if route_entry.stop_id() == arrival_stop_id {

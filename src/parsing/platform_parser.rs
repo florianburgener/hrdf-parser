@@ -238,7 +238,7 @@ fn platform_set_coordinates(
     let id = &pk_type_converter
         .get(&(stop_id, index))
         .ok_or("Unknown legacy ID")?;
-    let platform = data.get_mut(&id).ok_or("Unknown ID")?;
+    let platform = data.get_mut(id).ok_or("Unknown ID")?;
 
     match coordinate_system {
         CoordinateSystem::LV95 => platform.set_lv95_coordinates(coordinate),
