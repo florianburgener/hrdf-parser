@@ -369,46 +369,52 @@ impl ExchangeTimeJourney {
 pub struct ExchangeTimeLine {
     id: i32,
     stop_id: Option<i32>,
-    administration_1: String,
-    transport_type_id_1: i32,
-    line_id_1: Option<String>, // If the value is None, then the exchange time applies to all lines in administration_1.
-    direction_1: Option<DirectionType>, // If the value is None, then the match time applies in both directions.
-    administration_2: String,
-    transport_type_id_2: i32,
-    line_id_2: Option<String>, // If the value is None, then the exchange time applies to all lines in administration_2.
-    direction_2: Option<DirectionType>, // If the value is None, then the match time applies in both directions.
-    duration: i16,                      // Exchange time from line 1 to line 2 is in minutes.
+    line_1: LineInfo,
+    line_2: LineInfo,
+    duration: i16, // Exchange time from line 1 to line 2 is in minutes.
     is_guaranteed: bool,
 }
 
 impl_Model!(ExchangeTimeLine);
 
+#[derive(Debug, Serialize, Deserialize)]
+pub(crate) struct LineInfo {
+    administration: String,
+    transport_type_id: i32,
+    line_id: Option<String>,
+    direction: Option<DirectionType>,
+}
+
+impl LineInfo {
+    pub(crate) fn new(
+        administration: String,
+        transport_type_id: i32,
+        line_id: Option<String>,
+        direction: Option<DirectionType>,
+    ) -> Self {
+        Self {
+            administration,
+            transport_type_id,
+            line_id,
+            direction,
+        }
+    }
+}
+
 impl ExchangeTimeLine {
-    pub fn new(
+    pub(crate) fn new(
         id: i32,
         stop_id: Option<i32>,
-        administration_1: String,
-        transport_type_id_1: i32,
-        line_id_1: Option<String>,
-        direction_1: Option<DirectionType>,
-        administration_2: String,
-        transport_type_id_2: i32,
-        line_id_2: Option<String>,
-        direction_2: Option<DirectionType>,
+        line_1: LineInfo,
+        line_2: LineInfo,
         duration: i16,
         is_guaranteed: bool,
     ) -> Self {
         Self {
             id,
             stop_id,
-            administration_1,
-            transport_type_id_1,
-            line_id_1,
-            direction_1,
-            administration_2,
-            transport_type_id_2,
-            line_id_2,
-            direction_2,
+            line_1,
+            line_2,
             duration,
             is_guaranteed,
         }
@@ -711,6 +717,7 @@ pub struct JourneyMetadataEntry {
 }
 
 impl JourneyMetadataEntry {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         from_stop_id: Option<i32>,
         until_stop_id: Option<i32>,
@@ -1210,6 +1217,7 @@ pub struct TransportType {
 impl_Model!(TransportType);
 
 impl TransportType {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: i32,
         designation: String,
