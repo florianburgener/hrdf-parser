@@ -16,12 +16,14 @@ use crate::{
     utils::{create_time_from_value, AutoIncrement},
 };
 
+type JourneyAndTypeConverter = (ResourceStorage<Journey>, FxHashMap<(i32, String), i32>);
+
 pub fn parse(
     path: &str,
     transport_types_pk_type_converter: &FxHashMap<String, i32>,
     attributes_pk_type_converter: &FxHashMap<String, i32>,
     directions_pk_type_converter: &FxHashMap<String, i32>,
-) -> Result<(ResourceStorage<Journey>, FxHashMap<(i32, String), i32>), Box<dyn Error>> {
+) -> Result<JourneyAndTypeConverter, Box<dyn Error>> {
     log::info!("Parsing FPLAN...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -118,10 +120,10 @@ pub fn parse(
 
                 match id {
                     ROW_B => {
-                        set_transport_type(values, journey, &transport_types_pk_type_converter)?
+                        set_transport_type(values, journey, transport_types_pk_type_converter)?
                     }
                     ROW_C => set_bit_field(values, journey),
-                    ROW_D => add_attribute(values, journey, &attributes_pk_type_converter)?,
+                    ROW_D => add_attribute(values, journey, attributes_pk_type_converter)?,
                     ROW_E => add_information_text(values, journey),
                     ROW_F => set_line(values, journey)?,
                     ROW_G => set_direction(values, journey, directions_pk_type_converter)?,

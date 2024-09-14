@@ -6,7 +6,7 @@ use std::{error::Error, str::FromStr};
 use rustc_hash::FxHashMap;
 
 use crate::{
-    models::{DirectionType, ExchangeTimeLine, Model},
+    models::{DirectionType, ExchangeTimeLine, LineInfo, Model},
     parsing::{ColumnDefinition, ExpectedType, FileParser, ParsedValue, RowDefinition, RowParser},
     storage::ResourceStorage,
     utils::AutoIncrement,
@@ -106,17 +106,24 @@ fn create_instance(
 
     let is_guaranteed = is_guaranteed == "!";
 
-    Ok(ExchangeTimeLine::new(
-        auto_increment.next(),
-        stop_id,
+    let line_1 = LineInfo::new(
         administration_1,
         transport_type_id_1,
         line_id_1,
         direction_1,
+    );
+    let line_2 = LineInfo::new(
         administration_2,
         transport_type_id_2,
         line_id_2,
         direction_2,
+    );
+
+    Ok(ExchangeTimeLine::new(
+        auto_increment.next(),
+        stop_id,
+        line_1,
+        line_2,
         duration,
         is_guaranteed,
     ))

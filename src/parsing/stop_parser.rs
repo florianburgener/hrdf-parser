@@ -17,10 +17,9 @@ use crate::{
     storage::ResourceStorage,
 };
 
-pub fn parse(
-    version: Version,
-    path: &str,
-) -> Result<(ResourceStorage<Stop>, (i16, i16)), Box<dyn Error>> {
+type StopStorageAndExchangeTimes = (ResourceStorage<Stop>, (i16, i16));
+
+pub fn parse(version: Version, path: &str) -> Result<StopStorageAndExchangeTimes, Box<dyn Error>> {
     log::info!("Parsing BAHNHOF...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -331,9 +330,9 @@ fn add_boarding_area(
 // --- Helper Functions
 // ------------------------------------------------------------------------------------------------
 
-fn parse_designations(
-    designations: String,
-) -> Result<(String, Option<String>, Option<String>, Option<Vec<String>>), Box<dyn Error>> {
+type NameAndAlternatives = (String, Option<String>, Option<String>, Option<Vec<String>>);
+
+fn parse_designations(designations: String) -> Result<NameAndAlternatives, Box<dyn Error>> {
     let designations = designations
         .split('>')
         .filter(|&s| !s.is_empty())
@@ -346,13 +345,12 @@ fn parse_designations(
 
             Ok((k, v))
         })
-        .fold(
-            Ok(FxHashMap::default()),
-            |acc: Result<std::collections::HashMap<i32, Vec<String>, _>, Box<dyn Error>>, item| {
-                let mut acc = acc?;
+        .try_fold(
+            FxHashMap::default(),
+            |mut acc: std::collections::HashMap<i32, Vec<String>, _>, item| {
                 let (k, v) = item?;
-                acc.entry(k).or_insert(Vec::new()).push(v);
-                Ok(acc)
+                acc.entry(k).or_default().push(v);
+                Ok::<_, Box<dyn Error>>(acc)
             },
         )?;
 

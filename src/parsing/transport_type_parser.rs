@@ -15,9 +15,9 @@ use crate::{
     utils::AutoIncrement,
 };
 
-pub fn parse(
-    path: &str,
-) -> Result<(ResourceStorage<TransportType>, FxHashMap<String, i32>), Box<dyn Error>> {
+type TransportTypeAndTypeConverter = (ResourceStorage<TransportType>, FxHashMap<String, i32>);
+
+pub fn parse(path: &str) -> Result<TransportTypeAndTypeConverter, Box<dyn Error>> {
     log::info!("Parsing ZUGART...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;

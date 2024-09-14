@@ -304,8 +304,7 @@ impl RowParser {
             // unwrap: "row_matcher" is guaranteed to always have a value when there are multiple row definitions.
             .find(|row_definition| row_definition.row_matcher.as_ref().unwrap().match_row(row));
 
-        return matched_row_definition
-            .ok_or(format!("This type of row is unknown:\n{}", row).into());
+        matched_row_definition.ok_or(format!("This type of row is unknown:\n{}", row).into())
     }
 }
 
@@ -365,8 +364,7 @@ impl Iterator for ParsedRowIterator<'_> {
     fn next(&mut self) -> Option<Self::Item> {
         self.rows_iter
             .by_ref()
-            .skip_while(|row| row.trim().is_empty())
-            .next()
+            .find(|row| !row.trim().is_empty())
             .map(|row| self.row_parser.parse(row))
     }
 }

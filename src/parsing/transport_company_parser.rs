@@ -49,7 +49,7 @@ pub fn parse(path: &str) -> Result<ResourceStorage<TransportCompany>, Box<dyn Er
         })
         .collect::<Result<Vec<_>, _>>()?;
     // If there are no errors, "None" values are removed.
-    let data = data.into_iter().filter_map(|x| x).collect();
+    let data = data.into_iter().flatten().collect();
     let mut data = TransportCompany::vec_to_map(data);
 
     load_designations(path, &mut data, Language::German)?;
@@ -88,9 +88,8 @@ fn load_designations(
 
     parser.parse().try_for_each(|x| {
         let (id, _, values) = x?;
-        match id {
-            ROW_A => set_designations(values, data, language)?,
-            _ => {}
+        if id == ROW_A {
+            set_designations(values, data, language)?
         }
         Ok(())
     })

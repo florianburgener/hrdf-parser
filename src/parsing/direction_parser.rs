@@ -11,9 +11,9 @@ use crate::{
     storage::ResourceStorage,
 };
 
-pub fn parse(
-    path: &str,
-) -> Result<(ResourceStorage<Direction>, FxHashMap<String, i32>), Box<dyn Error>> {
+type DirectionAndTypeConverter = (ResourceStorage<Direction>, FxHashMap<String, i32>);
+
+pub fn parse(path: &str) -> Result<DirectionAndTypeConverter, Box<dyn Error>> {
     log::info!("Parsing RICHTUNG...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
