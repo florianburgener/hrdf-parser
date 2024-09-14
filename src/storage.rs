@@ -248,16 +248,16 @@ impl<M: Model<M>> ResourceStorage<M> {
         &self.data
     }
 
-    /// unwrap: Do not call this function if the key is not associated with data.
-    pub fn find(&self, k: M::K) -> &M {
-        self.data().get(&k).unwrap()
+    pub fn find(&self, k: M::K) -> Option<&M> {
+        // TODO: there might be a problem when k is not in data so we can't unwrap here
+        self.data().get(&k)
     }
 
     pub fn entries(&self) -> Vec<&M> {
         self.data.values().collect()
     }
 
-    pub fn resolve_ids(&self, ids: &FxHashSet<M::K>) -> Vec<&M> {
+    pub fn resolve_ids(&self, ids: &FxHashSet<M::K>) -> Option<Vec<&M>> {
         ids.iter().map(|&id| self.find(id)).collect()
     }
 }
@@ -290,7 +290,9 @@ fn create_bit_fields_by_day(
     });
 
     let result = bit_fields.data().keys().fold(map, |mut acc, bit_field_id| {
-        let bit_field = bit_fields.find(*bit_field_id);
+        let bit_field = bit_fields
+            .find(*bit_field_id)
+            .unwrap_or_else(|| panic!("Bitfield id {:?} not found.", bit_field_id));
         let indexes: Vec<usize> = bit_field
             .bits()
             .iter()
