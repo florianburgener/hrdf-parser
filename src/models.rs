@@ -510,6 +510,7 @@ impl Journey {
         data_storage
             .transport_types()
             .find(self.transport_type_id())
+            .unwrap_or_else(|| panic!("Transport type {:?} not found.", self.transport_type_id()))
     }
 
     pub fn first_stop_id(&self) -> i32 {
@@ -775,7 +776,10 @@ impl JourneyRouteEntry {
     // Functions
 
     pub fn stop<'a>(&'a self, data_storage: &'a DataStorage) -> &Stop {
-        data_storage.stops().find(self.stop_id())
+        data_storage
+            .stops()
+            .find(self.stop_id())
+            .unwrap_or_else(|| panic!("Stop {:?} not found.", self.stop_id()))
     }
 }
 
