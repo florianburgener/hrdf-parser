@@ -18,9 +18,9 @@ use crate::{
     utils::AutoIncrement,
 };
 
-pub fn parse(
-    path: &str,
-) -> Result<(ResourceStorage<Attribute>, FxHashMap<String, i32>), Box<dyn Error>> {
+type AttributeAndTypeConverter = (ResourceStorage<Attribute>, FxHashMap<String, i32>);
+
+pub fn parse(path: &str) -> Result<AttributeAndTypeConverter, Box<dyn Error>> {
     log::info!("Parsing ATTRIBUT...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;

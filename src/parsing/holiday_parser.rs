@@ -72,8 +72,7 @@ fn parse_name_translations(
 
             Ok((k, v))
         })
-        .fold(Ok(FxHashMap::default()), |acc, item| {
-            let mut acc = acc?;
+        .try_fold(FxHashMap::default(), |mut acc, item| {
             let (k, v) = item?;
             acc.insert(k, v);
             Ok(acc)
