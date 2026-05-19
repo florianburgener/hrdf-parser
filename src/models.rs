@@ -949,10 +949,12 @@ pub struct Line {
     name: String,
     short_name: String,
     long_name: String,
+    region_name: String,
     internal_designation: String,
     description: String,
     text_color: Color,
     background_color: Color,
+    infotext_id: i32,
 }
 
 impl_Model!(Line);
@@ -964,10 +966,12 @@ impl Line {
             name,
             short_name: String::default(),
             long_name: String::default(),
+            region_name: String::default(),
             internal_designation: String::default(),
             description: String::default(),
             text_color: Color::default(),
             background_color: Color::default(),
+            infotext_id: -1,
         }
     }
 
@@ -979,6 +983,10 @@ impl Line {
 
     pub fn set_long_name(&mut self, value: String) {
         self.long_name = value;
+    }
+
+    pub fn set_region_name(&mut self, value: String) {
+        self.region_name = value;
     }
 
     pub fn set_internal_designation(&mut self, value: String) {
@@ -995,6 +1003,10 @@ impl Line {
 
     pub fn set_background_color(&mut self, value: Color) {
         self.background_color = value;
+    }
+
+    pub fn set_infotext_id(&mut self, value: i32) {
+        self.infotext_id = value;
     }
 }
 

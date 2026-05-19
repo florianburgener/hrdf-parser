@@ -46,7 +46,12 @@ use std::path::Path;
 /// File(s) read by the parser:
 /// LINIE
 use nom::{
-    IResult, Parser, branch::alt, bytes::tag, character::char, combinator::map, sequence::preceded,
+    IResult, Parser,
+    branch::alt,
+    bytes::{complete::take_till, tag},
+    character::char,
+    combinator::{map, map_res},
+    sequence::preceded,
 };
 use rustc_hash::FxHashMap;
 
@@ -61,6 +66,22 @@ use crate::{
     },
     storage::ResourceStorage,
 };
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum InfotextType {
+    TU,
+}
+
+impl TryFrom<&str> for InfotextType {
+    type Error = ParsingError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value {
+            "TU" => Ok(InfotextType::TU),
+            s => Err(ParsingError::MinssingInfotextTypeCode(String::from(s))),
+        }
+    }
+}
 
 #[derive(Debug)]
 enum LineType {
@@ -85,8 +106,10 @@ enum LineType {
         long_name: String,
     },
     // * Line type R T: Line region name (reserved for BAV ID)
-    #[allow(unused)]
-    RTline,
+    RTline {
+        id: i32,
+        region_name: String,
+    },
     // * Line type D T: Line description
     DTline {
         id: i32,
@@ -110,17 +133,27 @@ enum LineType {
     #[allow(unused)]
     Hline,
     // * Line type I: Line info texts (not present)
-    #[allow(unused)]
-    Iline,
+    Iline {
+        id: i32,
+        infotext_type: InfotextType,
+        infotext_id: i32,
+    },
 }
 
-fn row_k_nt_lt_dt_w_combinator(input: &str) -> IResult<&str, Option<LineType>> {
+fn row_k_nt_lt_dt_rt_w_combinator(input: &str) -> IResult<&str, Option<LineType>> {
     map(
         (
             i32_from_n_digits_parser(7),
             preceded(
                 char(' '),
-                alt((tag("K "), tag("N T "), tag("L T "), tag("W "), tag("D T "))),
+                alt((
+                    tag("K "),
+                    tag("N T "),
+                    tag("L T "),
+                    tag("W "),
+                    tag("D T "),
+                    tag("R T "),
+                )),
             ),
             string_till_eol_parser,
         ),
@@ -142,7 +175,32 @@ fn row_k_nt_lt_dt_w_combinator(input: &str) -> IResult<&str, Option<LineType>> {
                 id,
                 description: name,
             }),
+            "R T " => Some(LineType::RTline {
+                id,
+                region_name: name,
+            }),
             _ => None,
+        },
+    )
+    .parse(input)
+}
+
+fn row_i_combinator(input: &str) -> IResult<&str, Option<LineType>> {
+    map(
+        (
+            i32_from_n_digits_parser(7),
+            tag(" I "),
+            map_res(take_till(|c| c == ' '), |c: &str| {
+                TryFrom::try_from(c.trim())
+            }),
+            preceded(char(' '), i32_from_n_digits_parser(9)),
+        ),
+        |(id, _, infotext_type, infotext_id)| {
+            Some(LineType::Iline {
+                id,
+                infotext_type,
+                infotext_id,
+            })
         },
     )
     .parse(input)
@@ -169,7 +227,12 @@ fn row_f_b_combinator(input: &str) -> IResult<&str, Option<LineType>> {
 }
 
 fn parse_line(line: &str, data: &mut FxHashMap<i32, Line>) -> PResult<()> {
-    let (_, line_row) = alt((row_k_nt_lt_dt_w_combinator, row_f_b_combinator)).parse(line)?;
+    let (_, line_row) = alt((
+        row_k_nt_lt_dt_rt_w_combinator,
+        row_i_combinator,
+        row_f_b_combinator,
+    ))
+    .parse(line)?;
 
     match line_row.ok_or(ParsingError::MissingLineType)? {
         LineType::Kline { id, name } => {
@@ -225,6 +288,35 @@ fn parse_line(line: &str, data: &mut FxHashMap<i32, Line>) -> PResult<()> {
                 )));
             }
             line.set_description(description);
+        }
+        LineType::RTline { id, region_name } => {
+            let line = data.get_mut(&id).ok_or_else(|| {
+                ParsingError::UnknownId(format!("For id: {id}, type K row missing."))
+            })?;
+            if id != line.id() {
+                return Err(ParsingError::UnknownId(format!(
+                    "Line id not corresponding, {id}, {}",
+                    line.id()
+                )));
+            }
+            line.set_region_name(region_name);
+        }
+        LineType::Iline {
+            id,
+            infotext_type: _infotext_type,
+            infotext_id,
+        } => {
+            let line = data.get_mut(&id).ok_or_else(|| {
+                ParsingError::UnknownId(format!("For id: {id}, type K row missing."))
+            })?;
+            if id != line.id() {
+                return Err(ParsingError::UnknownId(format!(
+                    "Line id not corresponding, {id}, {}",
+                    line.id()
+                )));
+            }
+            // TODO: InfotextType not used for the moment.
+            line.set_infotext_id(infotext_id);
         }
 
         LineType::Fline { id, r, g, b } => {
@@ -293,7 +385,7 @@ mod tests {
     #[test]
     fn test_row_k_combinator_valid() {
         let input = "0000001 K ch:1:SLNID:33:1";
-        let result = row_k_nt_lt_dt_w_combinator(input);
+        let result = row_k_nt_lt_dt_rt_w_combinator(input);
         assert!(result.is_ok());
         let (_, line_type) = result.unwrap();
         match line_type {
@@ -308,7 +400,7 @@ mod tests {
     #[test]
     fn test_row_k_combinator_with_spaces() {
         let input = "0000010 K 68";
-        let result = row_k_nt_lt_dt_w_combinator(input);
+        let result = row_k_nt_lt_dt_rt_w_combinator(input);
         assert!(result.is_ok());
         let (_, line_type) = result.unwrap();
         match line_type {
@@ -323,7 +415,7 @@ mod tests {
     #[test]
     fn test_row_nt_combinator_valid() {
         let input = "0000001 N T Kurzname";
-        let result = row_k_nt_lt_dt_w_combinator(input);
+        let result = row_k_nt_lt_dt_rt_w_combinator(input);
         assert!(result.is_ok());
         let (_, line_type) = result.unwrap();
         match line_type {
@@ -336,9 +428,29 @@ mod tests {
     }
 
     #[test]
+    fn test_row_i_combinator_valid() {
+        let input = "0000001 I TU 000000001";
+        let result = row_i_combinator(input);
+        assert!(result.is_ok());
+        let (_, line_type) = result.unwrap();
+        match line_type {
+            Some(LineType::Iline {
+                id,
+                infotext_type,
+                infotext_id,
+            }) => {
+                assert_eq!(id, 1);
+                assert_eq!(infotext_type, InfotextType::TU);
+                assert_eq!(infotext_id, 1);
+            }
+            _ => panic!("Expected Iline variant"),
+        }
+    }
+
+    #[test]
     fn test_row_lt_combinator_valid() {
         let input = "0000001 L T Langname";
-        let result = row_k_nt_lt_dt_w_combinator(input);
+        let result = row_k_nt_lt_dt_rt_w_combinator(input);
         assert!(result.is_ok());
         let (_, line_type) = result.unwrap();
         match line_type {
@@ -353,7 +465,7 @@ mod tests {
     #[test]
     fn test_row_w_combinator_valid() {
         let input = "0000001 W interne Bezeichnung";
-        let result = row_k_nt_lt_dt_w_combinator(input);
+        let result = row_k_nt_lt_dt_rt_w_combinator(input);
         assert!(result.is_ok());
         let (_, line_type) = result.unwrap();
         match line_type {
@@ -371,7 +483,7 @@ mod tests {
     #[test]
     fn test_row_dt_combinator_valid() {
         let input = "0000001 D T interne Bezeichnung";
-        let result = row_k_nt_lt_dt_w_combinator(input);
+        let result = row_k_nt_lt_dt_rt_w_combinator(input);
         assert!(result.is_ok());
         let (_, line_type) = result.unwrap();
         match line_type {
@@ -379,7 +491,22 @@ mod tests {
                 assert_eq!(id, 1);
                 assert_eq!(description, "interne Bezeichnung");
             }
-            _ => panic!("Expected Wline variant"),
+            _ => panic!("Expected DTline variant"),
+        }
+    }
+
+    #[test]
+    fn test_row_rt_combinator_valid() {
+        let input = "0000001 R T interne Bezeichnung";
+        let result = row_k_nt_lt_dt_rt_w_combinator(input);
+        assert!(result.is_ok());
+        let (_, line_type) = result.unwrap();
+        match line_type {
+            Some(LineType::RTline { id, region_name }) => {
+                assert_eq!(id, 1);
+                assert_eq!(region_name, "interne Bezeichnung");
+            }
+            _ => panic!("Expected RTline variant"),
         }
     }
 
@@ -463,10 +590,12 @@ mod tests {
                 "name": "TestLine",
                 "short_name": "",
                 "long_name": "",
+                "region_name": "",
                 "internal_designation": "",
                 "description": "",
                 "text_color": {"r":0,"g":0,"b":0},
-                "background_color": {"r":0,"g":0,"b":0}
+                "background_color": {"r":0,"g":0,"b":0},
+                "infotext_id": -1
             }"#;
         let (line, reference) = get_json_values(line, reference).unwrap();
         assert_eq!(line, reference);
@@ -488,8 +617,10 @@ mod tests {
         parse_line("0000001 N T Short", &mut data).unwrap();
         parse_line("0000001 L T Long Name", &mut data).unwrap();
         parse_line("0000001 D T Wow what a description", &mut data).unwrap();
+        parse_line("0000001 R T Region line name", &mut data).unwrap();
         parse_line("0000001 F 255 128 064", &mut data).unwrap();
         parse_line("0000001 B 010 020 030", &mut data).unwrap();
+        parse_line("0000001 I TU 000000001", &mut data).unwrap();
 
         assert_eq!(data.len(), 1);
         let line = data.get(&1).unwrap();
@@ -499,10 +630,12 @@ mod tests {
                 "name": "ch:1:SLNID:33:1",
                 "short_name": "Short",
                 "long_name": "Long Name",
+                "region_name": "Region line name",
                 "internal_designation": "internal",
                 "description": "Wow what a description",
                 "text_color": {"r":255,"g":128,"b":64},
-                "background_color": {"r":10,"g":20,"b":30}
+                "background_color": {"r":10,"g":20,"b":30},
+                "infotext_id": 1
             }"#;
         let (line, reference) = get_json_values(line, reference).unwrap();
         assert_eq!(line, reference);
@@ -525,10 +658,12 @@ mod tests {
                 "name": "Line1",
                 "short_name": "L1",
                 "long_name": "",
+                "region_name": "",
                 "internal_designation": "",
                 "description": "",
                 "text_color": {"r":0,"g":0,"b":0},
-                "background_color": {"r":0,"g":0,"b":0}
+                "background_color": {"r":0,"g":0,"b":0},
+                "infotext_id": -1
             }"#;
         let (line, reference) = get_json_values(line, reference).unwrap();
         assert_eq!(line, reference);
@@ -539,10 +674,12 @@ mod tests {
                 "name": "Line2",
                 "short_name": "L2",
                 "long_name": "",
+                "region_name": "",
                 "internal_designation": "",
                 "description": "",
                 "text_color": {"r":0,"g":0,"b":0},
-                "background_color": {"r":0,"g":0,"b":0}
+                "background_color": {"r":0,"g":0,"b":0},
+                "infotext_id": -1
             }"#;
         let (line, reference) = get_json_values(line, reference).unwrap();
         assert_eq!(line, reference);
@@ -580,10 +717,12 @@ mod tests {
                 "name": "ColorTest",
                 "short_name": "",
                 "long_name": "",
+                "region_name": "",
                 "internal_designation": "",
                 "description": "",
                 "text_color": {"r":255,"g":0,"b":128},
-                "background_color": {"r":64,"g":128,"b":255}
+                "background_color": {"r":64,"g":128,"b":255},
+                "infotext_id": -1
             }"#;
         let (line, reference) = get_json_values(line, reference).unwrap();
         assert_eq!(line, reference);
