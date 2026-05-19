@@ -954,6 +954,7 @@ pub struct Line {
     description: String,
     text_color: Color,
     background_color: Color,
+    infotext_id: i32,
 }
 
 impl_Model!(Line);
@@ -970,6 +971,7 @@ impl Line {
             description: String::default(),
             text_color: Color::default(),
             background_color: Color::default(),
+            infotext_id: -1,
         }
     }
 
@@ -1001,6 +1003,10 @@ impl Line {
 
     pub fn set_background_color(&mut self, value: Color) {
         self.background_color = value;
+    }
+
+    pub fn set_infotext_id(&mut self, value: i32) {
+        self.infotext_id = value;
     }
 }
 

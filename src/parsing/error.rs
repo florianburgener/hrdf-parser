@@ -24,6 +24,8 @@ pub enum ParsingError {
     ParseDate(#[from] chrono::ParseError),
     #[error("Unable to build NaiveTime from {0} hours, {1} minutes, {2} seconds")]
     UnableToBuildTime(u32, u32, u32),
+    #[error("InfotextType {0} does not exist")]
+    MinssingInfotextTypeCode(String),
 }
 
 impl From<nom::Err<nom::error::Error<&str>>> for ParsingError {
