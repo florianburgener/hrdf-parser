@@ -15,9 +15,11 @@ pub use utils::timetable_start_date;
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
     use super::*;
     use chrono::NaiveDate;
     use test_log::test;
+    use crate::hrdf::ModifiableTypes;
 
     #[test(tokio::test)]
     async fn url_not_found() {
@@ -99,5 +101,16 @@ mod tests {
     #[ignore]
     async fn parsing_from_year_2026() {
         let _hrdf = Hrdf::try_from_year(2026, false, None).await.unwrap();
+    }
+
+    #[test(tokio::test)]
+    #[ignore]
+    async fn filtering_lines_and_stops_2026() {
+        let filter = HashMap::from([
+            (ModifiableTypes::Line, vec!["29", "30", "9", "5"]),
+            (ModifiableTypes::Stop, vec!["Palladium", "Rive", "Bel-Air"]),
+        ]);
+        let _hrdf = Hrdf::try_from_year(2026, false, None).await.unwrap();
+        _hrdf.filter(filter);
     }
 }
