@@ -104,13 +104,19 @@ mod tests {
     }
 
     #[test(tokio::test)]
-    #[ignore]
     async fn filtering_lines_and_stops_2026() {
         let filter = HashMap::from([
             (ModifiableTypes::Line, vec!["29", "30", "9", "5"]),
             (ModifiableTypes::Stop, vec!["Palladium", "Rive", "Bel-Air"]),
         ]);
         let _hrdf = Hrdf::try_from_year(2026, false, None).await.unwrap();
-        _hrdf.filter(filter);
+        let before_lines = _hrdf.data_storage().lines().data().len();
+        let before_stops = _hrdf.data_storage().stops().data().len();
+        let filtered_hrdf = _hrdf.filter(filter).unwrap();
+        let after_lines = filtered_hrdf.data_storage().lines().data().len();
+        let after_stops = filtered_hrdf.data_storage().stops().data().len();
+        assert_eq!(before_lines, after_lines + 4);
+        assert_eq!(before_stops, after_stops + 3);
+
     }
 }
