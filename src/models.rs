@@ -985,6 +985,8 @@ impl Line {
         self.long_name = value;
     }
 
+    pub fn get_long_name(&self) -> &String {&self.long_name}
+
     pub fn set_region_name(&mut self, value: String) {
         self.region_name = value;
     }
