@@ -1,5 +1,5 @@
 use std::{path::Path, time::Instant};
-
+use std::collections::HashMap;
 use chrono::{Days, NaiveDate};
 use rustc_hash::{FxHashMap, FxHashSet};
 use serde::{Deserialize, Serialize};
@@ -16,7 +16,7 @@ use crate::{
     parsing,
     utils::{count_days_between_two_dates, timetable_end_date, timetable_start_date},
 };
-
+use crate::hrdf::ModifiableTypes;
 // ------------------------------------------------------------------------------------------------
 // --- DataStorage
 // ------------------------------------------------------------------------------------------------
@@ -315,6 +315,19 @@ impl DataStorage {
     pub fn default_exchange_time(&self) -> (i16, i16) {
         self.default_exchange_time
     }
+
+    pub fn filter(self, elements_to_remove: HashMap<ModifiableTypes, Vec<&str>>) -> Self {
+        let mut filtered = self;
+        for (rem_type, elements) in elements_to_remove.iter() {
+            match rem_type {
+                ModifiableTypes::Line => {filtered.lines = filtered.lines.filter(|_, l| !elements.contains(&&**l.get_long_name()))}
+                ModifiableTypes::Stop => {filtered.stops = filtered.stops.filter(|_, s| !elements.contains(&s.name()))}
+                ModifiableTypes::TransportType => {}
+                ModifiableTypes::TransportCompany => {}
+            }
+        }
+        filtered
+    }
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -346,6 +359,11 @@ impl<M: Model<M>> ResourceStorage<M> {
 
     pub fn resolve_ids(&self, ids: &FxHashSet<M::K>) -> Option<Vec<&M>> {
         ids.iter().map(|&id| self.find(id)).collect()
+    }
+
+    pub fn filter<F>(mut self, predicate: F) -> Self where F: FnMut(&M::K, &mut M) -> bool{
+        self.data.retain(predicate);
+        self
     }
 }
 

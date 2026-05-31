@@ -981,6 +981,8 @@ impl Line {
         self.long_name = value;
     }
 
+    pub fn get_long_name(&self) -> &String {&self.long_name}
+
     pub fn set_internal_designation(&mut self, value: String) {
         self.internal_designation = value;
     }

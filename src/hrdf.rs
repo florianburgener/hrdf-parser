@@ -5,18 +5,21 @@ use std::{
     path::{Path, PathBuf},
     time::Instant,
 };
-
-use crate::{
-    error::{HResult, HrdfError},
-    models::Version,
-    storage::DataStorage,
-};
+use std::collections::HashMap;
+use crate::{error::{HResult, HrdfError}, models::Version, storage::DataStorage, Line};
 use bincode::config;
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use url::Url;
 use zip::ZipArchive;
+
+pub enum ModifiableTypes {
+    Line,
+    Stop,
+    TransportType,
+    TransportCompany,
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Hrdf {
@@ -143,5 +146,18 @@ impl Hrdf {
         let data = fs::read(path)?;
         let (hrdf, _) = bincode::serde::decode_from_slice(&data, config::standard())?;
         Ok(hrdf)
+    }
+
+    pub fn filter(mut self, elements_to_remove: HashMap<ModifiableTypes, Vec<&str>>) -> HResult<Self> {
+        self.data_storage = self.data_storage.filter(elements_to_remove);
+        Ok(self)
+    }
+
+    pub fn modify(self, ) -> HResult<Self> {
+        Ok(self)
+    }
+
+    pub fn add(self, ) -> HResult<Self> {
+        Ok(self)
     }
 }
