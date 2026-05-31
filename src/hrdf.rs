@@ -14,6 +14,7 @@ use sha2::{Digest, Sha256};
 use url::Url;
 use zip::ZipArchive;
 
+#[derive(Hash, Eq, PartialEq)]
 pub enum ModifiableTypes {
     Line,
     Stop,
