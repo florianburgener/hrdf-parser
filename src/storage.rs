@@ -320,7 +320,7 @@ impl DataStorage {
         let mut filtered = self;
         for (rem_type, elements) in elements_to_remove.iter() {
             match rem_type {
-                ModifiableTypes::Line => {filtered.lines = filtered.lines.filter(|_, l| !elements.contains(&&**l.get_long_name()))}
+                ModifiableTypes::Line => {filtered.lines = filtered.lines.filter(|_, l| !elements.contains(&&**l.get_name()))}
                 ModifiableTypes::Stop => {filtered.stops = filtered.stops.filter(|_, s| !elements.contains(&s.name()))}
                 ModifiableTypes::TransportType => {}
                 ModifiableTypes::TransportCompany => {}
