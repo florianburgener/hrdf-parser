@@ -149,7 +149,7 @@ impl Hrdf {
         Ok(hrdf)
     }
 
-    pub fn filter(mut self, elements_to_remove: HashMap<ModifiableTypes, Vec<&str>>) -> HResult<Self> {
+    pub fn filter(mut self, elements_to_remove: &HashMap<ModifiableTypes, Vec<&str>>) -> HResult<Self> {
         self.data_storage = self.data_storage.filter(elements_to_remove);
         Ok(self)
     }

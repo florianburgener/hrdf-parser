@@ -316,7 +316,7 @@ impl DataStorage {
         self.default_exchange_time
     }
 
-    pub fn filter(self, elements_to_remove: HashMap<ModifiableTypes, Vec<&str>>) -> Self {
+    pub fn filter(self, elements_to_remove: &HashMap<ModifiableTypes, Vec<&str>>) -> Self {
         let mut filtered = self;
         for (rem_type, elements) in elements_to_remove.iter() {
             match rem_type {
