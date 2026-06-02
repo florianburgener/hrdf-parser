@@ -8,6 +8,7 @@ mod utils;
 
 pub use error::HrdfError as Error;
 pub use hrdf::Hrdf;
+pub use hrdf::ModifiableTypes;
 pub use models::*;
 pub use storage::DataStorage;
 pub use utils::timetable_end_date;
@@ -19,7 +20,7 @@ mod tests {
     use super::*;
     use chrono::NaiveDate;
     use test_log::test;
-    use crate::hrdf::ModifiableTypes;
+    use crate::ModifiableTypes;
 
     #[test(tokio::test)]
     async fn url_not_found() {
