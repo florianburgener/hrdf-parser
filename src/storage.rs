@@ -325,20 +325,17 @@ impl DataStorage {
             match rem_type {
                 RemovableTypes::Line => {
                     // First translate line names to ids
-                    // todo: handle name collisions
                     let removed_line_ids = elements
                         .into_iter()
                         .map(|value| {
-                            match filtered
+                            filtered
                                 .lines
                                 .data
                                 .iter()
-                                .find(|(key, line)| value == line.get_name())
-                            {
-                                Some((index, _)) => *index,
-                                None => -1,
-                            }
+                                .filter(move |(key, line)| value == line.get_name())
+                                .map(|(key, _value)| *key)
                         })
+                        .flatten()
                         .collect::<Vec<i32>>();
 
                     // Then remove lines we don't want to keep
