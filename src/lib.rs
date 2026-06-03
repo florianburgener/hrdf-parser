@@ -117,11 +117,14 @@ mod tests {
             .await
             .unwrap();
         let before_lines = _hrdf.data_storage().lines().data().len();
+        let before_journeys = _hrdf.data_storage().journeys().data().len();
         let before_stops = _hrdf.data_storage().stops().data().len();
         let filtered_hrdf = _hrdf.filter(&filter).unwrap();
         let after_lines = filtered_hrdf.data_storage().lines().data().len();
+        let after_journeys = filtered_hrdf.data_storage().journeys().data().len();
         let after_stops = filtered_hrdf.data_storage().stops().data().len();
         assert!(before_lines >= after_lines + 4);
+        assert!(before_journeys >= after_journeys + 4);
         assert!(before_stops >= after_stops + 3);
 
     }
