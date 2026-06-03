@@ -501,7 +501,7 @@ impl Journey {
         self.legacy_id
     }
 
-    fn metadata(&self) -> &FxHashMap<JourneyMetadataType, Vec<JourneyMetadataEntry>> {
+    pub(crate) fn metadata(&self) -> &FxHashMap<JourneyMetadataType, Vec<JourneyMetadataEntry>> {
         &self.metadata
     }
 
@@ -796,7 +796,7 @@ pub enum JourneyMetadataType {
 pub struct JourneyMetadataEntry {
     from_stop_id: Option<i32>,
     until_stop_id: Option<i32>,
-    resource_id: Option<i32>,
+    pub(crate) resource_id: Option<i32>,
     bit_field_id: Option<i32>,
     departure_time: Option<NaiveTime>,
     arrival_time: Option<NaiveTime>,

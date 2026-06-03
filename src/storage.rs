@@ -5,20 +5,15 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::hash::Hasher;
 use std::{path::Path, time::Instant};
-
+use sha2::digest::consts::True;
 use crate::hrdf::{AddableTypes, ModifiableTypes, RemovableTypes};
-use crate::{
-    JourneyError, JourneyId,
-    error::{HResult, HrdfError},
-    models::{
-        Attribute, BitField, Direction, ExchangeTimeAdministration, ExchangeTimeJourney,
-        ExchangeTimeLine, Holiday, InformationText, Journey, JourneyPlatform, Line, Model,
-        Platform, Stop, StopConnection, ThroughService, TimetableMetadataEntry, TransportCompany,
-        TransportType, Version,
-    },
-    parsing,
-    utils::{count_days_between_two_dates, timetable_end_date, timetable_start_date},
-};
+use crate::{JourneyError, JourneyId, error::{HResult, HrdfError}, models::{
+    Attribute, BitField, Direction, ExchangeTimeAdministration, ExchangeTimeJourney,
+    ExchangeTimeLine, Holiday, InformationText, Journey, JourneyPlatform, Line, Model,
+    Platform, Stop, StopConnection, ThroughService, TimetableMetadataEntry, TransportCompany,
+    TransportType, Version,
+}, parsing, utils::{count_days_between_two_dates, timetable_end_date, timetable_start_date}, JourneyMetadataType};
+
 // ------------------------------------------------------------------------------------------------
 // --- DataStorage
 // ------------------------------------------------------------------------------------------------
@@ -323,9 +318,38 @@ impl DataStorage {
         for (rem_type, elements) in elements_to_remove.iter() {
             match rem_type {
                 RemovableTypes::Line => {
+
+                    // First translate line names to ids
+                    let removed_line_ids = elements.into_iter().map(
+                        |value| match filtered.lines.data.iter().find(
+                            |(key, line)| value == line.get_name()
+                        ) {
+                            Some((index, _)) => *index,
+                            None => -1
+                        }
+                    ).collect::<Vec<i32>>();
+
+                    // Then remove lines we don't want to keep
                     filtered.lines = filtered
                         .lines
-                        .filter(|_, l| !elements.contains(&&**l.get_name()))
+                        .filter(|_, l| !elements.contains(&&**l.get_name()));
+
+                    // Finally remove journeys using removed lines
+                    filtered.journeys = filtered.journeys.filter(
+                        |key, journey: &mut Journey| {
+                            match journey.metadata().get(&JourneyMetadataType::Line) {
+                                Some(entry) => {entry.iter().find(
+                                    |entry| {
+                                        match entry.resource_id {
+                                            Some(id) => !removed_line_ids.contains(&id),
+                                            None => true
+                                        }
+                                    }
+                                ).is_some()},
+                                None => {true}
+                            }
+                        }
+                    );
                 }
                 RemovableTypes::Stop => {
                     filtered.stops = filtered.stops.filter(|_, s| !elements.contains(&s.name()))
@@ -343,16 +367,16 @@ impl DataStorage {
             // todo: Check if copy is avoidable
             ModifiableTypes::Line { modifications } => {
                 modified.lines = modified.lines.map(
-                    |(key, value)| if modifications.contains_key(key){
+                    |(key, value)| if modifications.contains_key(key) {
                         (*key, modifications[key].clone())
-                    } else { (*key, value.clone())}
+                    } else { (*key, value.clone()) }
                 )
             }
             ModifiableTypes::Stop { modifications } => {
                 modified.stops = modified.stops.map(
-                    |(key, value)| if modifications.contains_key(key){
+                    |(key, value)| if modifications.contains_key(key) {
                         (*key, modifications[key].clone())
-                    } else { (*key, value.clone())}
+                    } else { (*key, value.clone()) }
                 )
             }
             ModifiableTypes::TransportType => {}
@@ -431,7 +455,7 @@ impl<M: Model<M>> ResourceStorage<M> {
 
     pub fn map<F>(mut self, predicate: F) -> Self
     where
-        F: FnMut((&M::K, &M)) -> (M::K, M)
+        F: FnMut((&M::K, &M)) -> (M::K, M),
     {
         self.data = self.data.iter().map(predicate).collect();
         self
