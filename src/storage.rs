@@ -1,9 +1,12 @@
-use std::{path::Path, time::Instant};
-use std::collections::HashMap;
 use chrono::{Days, NaiveDate};
+use nom::sequence::Tuple;
 use rustc_hash::{FxHashMap, FxHashSet};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::hash::Hasher;
+use std::{path::Path, time::Instant};
 
+use crate::hrdf::{AddableTypes, ModifiableTypes, RemovableTypes};
 use crate::{
     JourneyError, JourneyId,
     error::{HResult, HrdfError},
@@ -16,7 +19,6 @@ use crate::{
     parsing,
     utils::{count_days_between_two_dates, timetable_end_date, timetable_start_date},
 };
-use crate::hrdf::ModifiableTypes;
 // ------------------------------------------------------------------------------------------------
 // --- DataStorage
 // ------------------------------------------------------------------------------------------------
@@ -316,17 +318,75 @@ impl DataStorage {
         self.default_exchange_time
     }
 
-    pub fn filter(self, elements_to_remove: &HashMap<ModifiableTypes, Vec<&str>>) -> Self {
+    pub fn filter(self, elements_to_remove: &HashMap<RemovableTypes, Vec<&str>>) -> Self {
         let mut filtered = self;
         for (rem_type, elements) in elements_to_remove.iter() {
             match rem_type {
-                ModifiableTypes::Line => {filtered.lines = filtered.lines.filter(|_, l| !elements.contains(&&**l.get_name()))}
-                ModifiableTypes::Stop => {filtered.stops = filtered.stops.filter(|_, s| !elements.contains(&s.name()))}
-                ModifiableTypes::TransportType => {}
-                ModifiableTypes::TransportCompany => {}
+                RemovableTypes::Line => {
+                    filtered.lines = filtered
+                        .lines
+                        .filter(|_, l| !elements.contains(&&**l.get_name()))
+                }
+                RemovableTypes::Stop => {
+                    filtered.stops = filtered.stops.filter(|_, s| !elements.contains(&s.name()))
+                }
+                RemovableTypes::TransportType => {}
+                RemovableTypes::TransportCompany => {}
             }
         }
         filtered
+    }
+
+    pub fn modify(self, elements_to_modify: &ModifiableTypes) -> Self {
+        let mut modified = self;
+        match elements_to_modify {
+            // todo: Check if copy is avoidable
+            ModifiableTypes::Line { modifications } => {
+                modified.lines = modified.lines.map(
+                    |(key, value)| if modifications.contains_key(key){
+                        (*key, modifications[key].clone())
+                    } else { (*key, value.clone())}
+                )
+            }
+            ModifiableTypes::Stop { modifications } => {
+                modified.stops = modified.stops.map(
+                    |(key, value)| if modifications.contains_key(key){
+                        (*key, modifications[key].clone())
+                    } else { (*key, value.clone())}
+                )
+            }
+            ModifiableTypes::TransportType => {}
+            ModifiableTypes::TransportCompany => {}
+        }
+        modified
+    }
+
+    pub fn add(self, elements_to_add: &AddableTypes) -> Self {
+        let mut completed = self;
+        match elements_to_add {
+            AddableTypes::Line { add_list } => {
+                // todo: fix hashmap new indices
+                completed.lines = completed.lines.extend(
+                    add_list
+                        .iter()
+                        .enumerate()
+                        .map(|(i, line)| ((1000000 + i) as i32, line.clone()))
+                        .collect(),
+                )
+            }
+            AddableTypes::Stop { add_list } => {
+                completed.stops = completed.stops.extend(
+                    add_list
+                        .iter()
+                        .enumerate()
+                        .map(|(i, line)| ((1001000 + i) as i32, line.clone()))
+                        .collect(),
+                )
+            }
+            AddableTypes::TransportType => {}
+            AddableTypes::TransportCompany => {}
+        }
+        completed
     }
 }
 
@@ -361,8 +421,24 @@ impl<M: Model<M>> ResourceStorage<M> {
         ids.iter().map(|&id| self.find(id)).collect()
     }
 
-    pub fn filter<F>(mut self, predicate: F) -> Self where F: FnMut(&M::K, &mut M) -> bool{
+    pub fn filter<F>(mut self, predicate: F) -> Self
+    where
+        F: FnMut(&M::K, &mut M) -> bool,
+    {
         self.data.retain(predicate);
+        self
+    }
+
+    pub fn map<F>(mut self, predicate: F) -> Self
+    where
+        F: FnMut((&M::K, &M)) -> (M::K, M)
+    {
+        self.data = self.data.iter().map(predicate).collect();
+        self
+    }
+
+    pub fn extend(mut self, add_list: Vec<(<M as Model<M>>::K, M)>) -> Self {
+        self.data.extend(add_list);
         self
     }
 }

@@ -8,7 +8,9 @@ mod utils;
 
 pub use error::HrdfError as Error;
 pub use hrdf::Hrdf;
+pub use hrdf::RemovableTypes;
 pub use hrdf::ModifiableTypes;
+pub use hrdf::AddableTypes;
 pub use models::*;
 pub use storage::DataStorage;
 pub use utils::timetable_end_date;
@@ -20,7 +22,7 @@ mod tests {
     use super::*;
     use chrono::NaiveDate;
     use test_log::test;
-    use crate::ModifiableTypes;
+    use crate::RemovableTypes;
 
     #[test(tokio::test)]
     async fn url_not_found() {
@@ -107,8 +109,8 @@ mod tests {
     #[test(tokio::test)]
     async fn filtering_lines_and_stops_2026() {
         let filter = HashMap::from([
-            (ModifiableTypes::Line, vec!["41", "12", "9", "5"]),
-            (ModifiableTypes::Stop, vec!["Genève, Palladium", "Genève, Rive", "Genève, Bel-Air"]),
+            (RemovableTypes::Line, vec!["41", "12", "9", "5"]),
+            (RemovableTypes::Stop, vec!["Genève, Palladium", "Genève, Rive", "Genève, Bel-Air"]),
         ]);
         let _hrdf = Hrdf::try_from_date(NaiveDate::from_ymd_opt(2025, 1, 1).unwrap(),
                                         true, None)
@@ -116,7 +118,7 @@ mod tests {
             .unwrap();
         let before_lines = _hrdf.data_storage().lines().data().len();
         let before_stops = _hrdf.data_storage().stops().data().len();
-        let filtered_hrdf = _hrdf.filter(filter).unwrap();
+        let filtered_hrdf = _hrdf.filter(&filter).unwrap();
         let after_lines = filtered_hrdf.data_storage().lines().data().len();
         let after_stops = filtered_hrdf.data_storage().stops().data().len();
         assert!(before_lines >= after_lines + 4);

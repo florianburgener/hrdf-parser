@@ -110,7 +110,7 @@ impl BitField {
 // --- Color
 // ------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct Color {
     r: i16,
     g: i16,
@@ -943,7 +943,7 @@ pub enum Language {
 // --- Line
 // ------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct Line {
     id: i32,
     name: String,
@@ -1063,7 +1063,7 @@ impl Platform {
 // --- Stop
 // ------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Stop {
     id: i32,
     name: String,

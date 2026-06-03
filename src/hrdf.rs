@@ -6,7 +6,7 @@ use std::{
     time::Instant,
 };
 use std::collections::HashMap;
-use crate::{error::{HResult, HrdfError}, models::Version, storage::DataStorage, Line};
+use crate::{error::{HResult, HrdfError}, models::Version, storage::DataStorage, Line, Stop};
 use bincode::config;
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
@@ -15,9 +15,23 @@ use url::Url;
 use zip::ZipArchive;
 
 #[derive(Hash, Eq, PartialEq)]
-pub enum ModifiableTypes {
+pub enum RemovableTypes {
     Line,
     Stop,
+    TransportType,
+    TransportCompany,
+}
+
+pub enum ModifiableTypes<'a> {
+    Line{modifications: HashMap<&'a i32, Line>},
+    Stop{modifications: HashMap<&'a i32, Stop>},
+    TransportType,
+    TransportCompany,
+}
+
+pub enum AddableTypes {
+    Line{add_list: Vec<Line>},
+    Stop{add_list: Vec<Stop>},
     TransportType,
     TransportCompany,
 }
@@ -149,16 +163,18 @@ impl Hrdf {
         Ok(hrdf)
     }
 
-    pub fn filter(mut self, elements_to_remove: &HashMap<ModifiableTypes, Vec<&str>>) -> HResult<Self> {
+    pub fn filter(mut self, elements_to_remove: &HashMap<RemovableTypes, Vec<&str>>) -> HResult<Self> {
         self.data_storage = self.data_storage.filter(elements_to_remove);
         Ok(self)
     }
 
-    pub fn modify(self, ) -> HResult<Self> {
+    pub fn modify(mut self, elements_to_modify: &ModifiableTypes) -> HResult<Self> {
+        self.data_storage = self.data_storage.modify(elements_to_modify);
         Ok(self)
     }
 
-    pub fn add(self, ) -> HResult<Self> {
+    pub fn add(mut self, elements_to_add: &AddableTypes) -> HResult<Self> {
+        self.data_storage = self.data_storage.add(elements_to_add);
         Ok(self)
     }
 }
