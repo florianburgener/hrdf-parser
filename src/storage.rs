@@ -320,6 +320,7 @@ impl DataStorage {
                 RemovableTypes::Line => {
 
                     // First translate line names to ids
+                    // todo: handle name collisions
                     let removed_line_ids = elements.into_iter().map(
                         |value| match filtered.lines.data.iter().find(
                             |(key, line)| value == line.get_name()
@@ -433,7 +434,6 @@ impl<M: Model<M>> ResourceStorage<M> {
     }
 
     pub fn find(&self, k: M::K) -> Option<&M> {
-        // TODO: there might be a problem when k is not in data so we can't unwrap here
         self.data().get(&k)
     }
 
