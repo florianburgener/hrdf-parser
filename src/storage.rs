@@ -340,31 +340,34 @@ impl DataStorage {
                     // Then remove lines we don't want to keep
                     filtered.lines = filtered
                         .lines
-                        .filter(|_, l| !elements.contains(&&**l.get_name()));
+                        .retain(|_, l| !elements.contains(&&**l.get_name()));
 
                     // Finally remove journeys using removed lines
-                    filtered.journeys = filtered.journeys.filter(|key, journey: &mut Journey| {
+                    let removed_journeys_ids: Vec<_> = filtered.journeys.data().iter().filter_map(|(id, journey)| {
                         match journey.metadata().get(&JourneyMetadataType::Line) {
                             Some(entry) => entry
                                 .iter()
                                 .find(|entry| match entry.resource_id {
                                     Some(id) => !removed_line_ids.contains(&id),
-                                    None => true,
-                                })
-                                .is_some(),
-                            None => true,
+                                    None => match &entry.extra_field_1 {
+                                        Some(id) => !elements.contains(&&***&id),
+                                        None => panic!("journey with wrong format"),
+                                    },
+                                }).map(|entry| *id),
+                            None => { None },
                         }
-                    });
+                    }).collect();
+                    filtered.journeys = filtered.journeys.retain(|_key, journey: &mut Journey| {removed_journeys_ids.contains(&journey.id())});
                     filtered.journeys_by_stop_id_and_bit_field_id = filtered
                         .journeys_by_stop_id_and_bit_field_id
                         .iter_mut()
                         .map(|(index, journeys)| {
-                            journeys.retain(|journey_id| !removed_line_ids.contains(journey_id));
+                            journeys.retain(|journey_id| !removed_journeys_ids.contains(journey_id));
                                 (*index, journeys.clone())
                         }).collect();
                 }
                 RemovableTypes::Stop => {
-                    filtered.stops = filtered.stops.filter(|_, s| !elements.contains(&s.name()))
+                    filtered.stops = filtered.stops.retain(|_, s| !elements.contains(&s.name()))
                 }
                 RemovableTypes::TransportType => {}
                 RemovableTypes::TransportCompany => {}
@@ -460,7 +463,7 @@ impl<M: Model<M>> ResourceStorage<M> {
         ids.iter().map(|&id| self.find(id)).collect()
     }
 
-    pub fn filter<F>(mut self, predicate: F) -> Self
+    pub fn retain<F>(mut self, predicate: F) -> Self
     where
         F: FnMut(&M::K, &mut M) -> bool,
     {

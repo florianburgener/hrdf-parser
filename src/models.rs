@@ -800,7 +800,7 @@ pub struct JourneyMetadataEntry {
     bit_field_id: Option<i32>,
     departure_time: Option<NaiveTime>,
     arrival_time: Option<NaiveTime>,
-    extra_field_1: Option<String>,
+    pub(crate) extra_field_1: Option<String>,
     extra_field_2: Option<i32>,
 }
 
