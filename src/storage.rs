@@ -327,7 +327,7 @@ impl DataStorage {
                     // First translate line names to ids
                     let removed_line_ids = elements
                         .into_iter()
-                        .map(|value| {
+                        .flat_map(|value| {
                             filtered
                                 .lines
                                 .data
@@ -335,7 +335,6 @@ impl DataStorage {
                                 .filter(move |(key, line)| value == line.get_name())
                                 .map(|(key, _value)| *key)
                         })
-                        .flatten()
                         .collect::<Vec<i32>>();
 
                     // Then remove lines we don't want to keep
