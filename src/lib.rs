@@ -109,15 +109,16 @@ mod tests {
     #[test(tokio::test)]
     async fn filtering_lines_and_stops_2025() {
         let filter = HashMap::from([
-            (RemovableTypes::Line, vec!["41", "12", "9", "5", "14", "80"]),
+            (RemovableTypes::Line, vec!["41", "12", "9", "5", "19", "14", "80"]),
             (
                 RemovableTypes::Stop,
                 vec!["Genève, Jonction", "Genève, Rive", "Genève, Bel-Air"],
             ),
         ]);
+        let stop_id = 8592874; // This id should correspond to Palladium
+        let date = NaiveDate::from_ymd_opt(2026, 1, 24).unwrap();
         let _hrdf = Hrdf::try_from_date(NaiveDate::from_ymd_opt(2026, 1, 24).unwrap(), true, None)
-            .await
-            .unwrap();
+            .await.unwrap();
         let before_lines = _hrdf.data_storage().lines().data().len();
         let before_journeys = _hrdf.data_storage().journeys().data().len();
         let before_stops = _hrdf.data_storage().stops().data().len();
@@ -126,6 +127,32 @@ mod tests {
             .journeys_by_stop_id_and_bit_field_id()
             .iter()
             .fold(0, |acc, (_k, v)| acc + v.len());
+
+
+        let bit_fields_2 = _hrdf.data_storage().bit_fields_by_day().get(&date).unwrap();
+        let _before_found_journeys =
+            _hrdf.data_storage()
+                .bit_fields_by_stop_id()
+                .get(&stop_id)
+                .map_or(Vec::new(), |bit_fields_1| {
+                    let bit_fields: Vec<_> = bit_fields_1.intersection(bit_fields_2).collect();
+
+                    bit_fields
+                        .into_iter()
+                        .flat_map(|&bit_field_id| {
+                            _hrdf.data_storage()
+                                .journeys_by_stop_id_and_bit_field_id()
+                                .get(&(stop_id, bit_field_id))
+                                .unwrap()
+                        })
+                        .filter_map(|&journey_id| {
+                            _hrdf.data_storage().journeys().find(journey_id).or_else(|| {
+                                eprintln!("journey {} not found", journey_id);
+                                None
+                            })
+                        })
+                        .collect()
+                }).len();
 
         let filtered_hrdf = _hrdf.filter(&filter).unwrap();
 
@@ -145,16 +172,13 @@ mod tests {
         println!("removed {} journeys", before_total_journey_nb - after_total_journey_nb);
 
         // Test that it doesn't crash even when no journey exists at a stop
-        let stop_id = 8592874; // This id should correspond to Palladium
         let data_storage = filtered_hrdf.data_storage();
-        let date = NaiveDate::from_ymd_opt(2025, 4, 17).unwrap();
-        let default_journey = Journey::default();
         let mut left_unfound_journeys = 0;
-
-        let _stop_bit_field = data_storage.bit_fields_by_stop_id().get(&stop_id).unwrap();
         let bit_fields_2 = data_storage.bit_fields_by_day().get(&date).unwrap();
 
-        let found_journeys =
+        let _stop_bit_field = data_storage.bit_fields_by_stop_id().get(&stop_id).unwrap();
+
+        let _found_journeys =
             data_storage
                 .bit_fields_by_stop_id()
                 .get(&stop_id)
@@ -169,16 +193,17 @@ mod tests {
                                 .get(&(stop_id, bit_field_id))
                                 .unwrap()
                         })
-                        .map(|&journey_id| {
-                            data_storage.journeys().find(journey_id).unwrap_or_else(|| {
-                                eprintln!("Journey {:?} not found.", journey_id);
+                        .filter_map(|&journey_id| {
+                            data_storage.journeys().find(journey_id).or_else(|| {
                                 left_unfound_journeys += 1;
-                                &default_journey
+                                log::debug!("journey {} not found", journey_id);
+                                None
                             })
                         })
                         .collect()
                 });
-        assert_eq!(found_journeys.len(), 0);
+        eprintln!("found {} journeys before, {} after", _before_found_journeys, _found_journeys.len());
         assert_eq!(left_unfound_journeys, 0);
+        assert_eq!(_found_journeys.len(), 0);
     }
 }
