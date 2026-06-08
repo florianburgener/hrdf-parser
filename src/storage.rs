@@ -332,7 +332,7 @@ impl DataStorage {
                                 .lines
                                 .data
                                 .iter()
-                                .filter(move |(key, line)| value == line.get_name())
+                                .filter(move |(_key, line)| value == line.get_name())
                                 .map(|(key, _value)| *key)
                         })
                         .collect::<Vec<i32>>();
@@ -343,28 +343,49 @@ impl DataStorage {
                         .retain(|_, l| !elements.contains(&&**l.get_name()));
 
                     // Finally remove journeys using removed lines
-                    let removed_journeys_ids: Vec<_> = filtered.journeys.data().iter().filter_map(|(id, journey)| {
-                        match journey.metadata().get(&JourneyMetadataType::Line) {
-                            Some(entry) => entry
-                                .iter()
-                                .find(|entry| match entry.resource_id {
-                                    Some(id) => !removed_line_ids.contains(&id),
-                                    None => match &entry.extra_field_1 {
-                                        Some(id) => !elements.contains(&&***&id),
-                                        None => panic!("journey with wrong format"),
-                                    },
-                                }).map(|entry| *id),
-                            None => { None },
-                        }
-                    }).collect();
-                    filtered.journeys = filtered.journeys.retain(|_key, journey: &mut Journey| {removed_journeys_ids.contains(&journey.id())});
+                    let removed_journeys_ids: Vec<_> = filtered
+                        .journeys
+                        .data()
+                        .iter()
+                        .filter_map(|(id, journey)| {
+                            match journey.metadata().get(&JourneyMetadataType::Line) {
+                                Some(entry) => entry
+                                    .iter()
+                                    .find(|entry| match entry.resource_id {
+                                        Some(id) => !removed_line_ids.contains(&id),
+                                        None => match &entry.extra_field_1 {
+                                            Some(id) => !elements.contains(&&***&id),
+                                            None => panic!("journey with wrong format"),
+                                        },
+                                    })
+                                    .map(|_| *id),
+                                None => None,
+                            }
+                        })
+                        .collect();
+                    filtered.journeys = filtered.journeys.retain(|_key, journey: &mut Journey| {
+                        removed_journeys_ids.contains(&journey.id())
+                    });
                     filtered.journeys_by_stop_id_and_bit_field_id = filtered
                         .journeys_by_stop_id_and_bit_field_id
-                        .iter_mut()
+                        .iter()
                         .map(|(index, journeys)| {
-                            journeys.retain(|journey_id| !removed_journeys_ids.contains(journey_id));
-                                (*index, journeys.clone())
-                        }).collect();
+                            (
+                                *index,
+                                journeys
+                                    .iter()
+                                    .filter_map(|journey_id| {
+                                        if removed_journeys_ids.contains(journey_id) {
+                                            Some(*journey_id)
+                                        } else {
+                                            log::debug!("## {}", journey_id);
+                                            None
+                                        }
+                                    })
+                                    .collect(),
+                            )
+                        })
+                        .collect();
                 }
                 RemovableTypes::Stop => {
                     filtered.stops = filtered.stops.retain(|_, s| !elements.contains(&s.name()))
