@@ -324,6 +324,7 @@ impl DataStorage {
         for (rem_type, elements) in elements_to_remove.iter() {
             match rem_type {
                 RemovableTypes::Line => {
+                    let now = Instant::now();
                     // First translate line names to ids
                     let removed_line_ids = elements
                         .into_iter()
@@ -336,12 +337,16 @@ impl DataStorage {
                                 .map(|(key, _value)| *key)
                         })
                         .collect::<Vec<i32>>();
+                    log::info!("Done finding line ids, time elapsed: {:?}", now.elapsed());
 
+                    let now = Instant::now();
                     // Then remove lines we don't want to keep
                     filtered.lines = filtered
                         .lines
                         .filter(|_, l| !elements.contains(&&**l.get_name()));
+                    log::info!("Done filtering lines by name, time elapsed: {:?}", now.elapsed());
 
+                    let now = Instant::now();
                     // Finally remove journeys using removed lines
                     let removed_journeys_ids: Vec<_> = filtered
                         .journeys
@@ -363,6 +368,8 @@ impl DataStorage {
                             }
                         })
                         .collect();
+                    log::info!("Done finding journeys to remove by name, time elapsed: {:?}", now.elapsed());
+                    let now = Instant::now();
                     filtered.journeys = filtered.journeys.filter(|_key, journey: &mut Journey| {
                         removed_journeys_ids.contains(&journey.id())
                     });
@@ -386,6 +393,7 @@ impl DataStorage {
                             )
                         })
                         .collect();
+                    log::info!("Done filtering journeys by name, time elapsed: {:?}", now.elapsed());
                 }
                 RemovableTypes::Stop => {
                     filtered.stops = filtered.stops.filter(|_, s| !elements.contains(&s.name()))
