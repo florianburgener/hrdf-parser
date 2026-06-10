@@ -340,7 +340,7 @@ impl DataStorage {
                     // Then remove lines we don't want to keep
                     filtered.lines = filtered
                         .lines
-                        .retain(|_, l| !elements.contains(&&**l.get_name()));
+                        .filter(|_, l| !elements.contains(&&**l.get_name()));
 
                     // Finally remove journeys using removed lines
                     let removed_journeys_ids: Vec<_> = filtered
@@ -363,7 +363,7 @@ impl DataStorage {
                             }
                         })
                         .collect();
-                    filtered.journeys = filtered.journeys.retain(|_key, journey: &mut Journey| {
+                    filtered.journeys = filtered.journeys.filter(|_key, journey: &mut Journey| {
                         removed_journeys_ids.contains(&journey.id())
                     });
                     filtered.journeys_by_stop_id_and_bit_field_id = filtered
@@ -388,10 +388,10 @@ impl DataStorage {
                         .collect();
                 }
                 RemovableTypes::Stop => {
-                    filtered.stops = filtered.stops.retain(|_, s| !elements.contains(&s.name()))
+                    filtered.stops = filtered.stops.filter(|_, s| !elements.contains(&s.name()))
                 }
-                RemovableTypes::TransportType => {}
-                RemovableTypes::TransportCompany => {}
+                RemovableTypes::TransportType => {unimplemented!()}
+                RemovableTypes::TransportCompany => {unimplemented!()}
             }
         }
         filtered
@@ -419,8 +419,8 @@ impl DataStorage {
                     }
                 })
             }
-            ModifiableTypes::TransportType => {}
-            ModifiableTypes::TransportCompany => {}
+            ModifiableTypes::TransportType => {unimplemented!()}
+            ModifiableTypes::TransportCompany => {unimplemented!()}
         }
         modified
     }
@@ -484,7 +484,7 @@ impl<M: Model<M>> ResourceStorage<M> {
         ids.iter().map(|&id| self.find(id)).collect()
     }
 
-    pub fn retain<F>(mut self, predicate: F) -> Self
+    pub fn filter<F>(mut self, predicate: F) -> Self
     where
         F: FnMut(&M::K, &mut M) -> bool,
     {
