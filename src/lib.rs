@@ -196,7 +196,6 @@ mod tests {
                         .filter_map(|&journey_id| {
                             data_storage.journeys().find(journey_id).or_else(|| {
                                 left_unfound_journeys += 1;
-                                log::debug!("journey {} not found", journey_id);
                                 None
                             })
                         })

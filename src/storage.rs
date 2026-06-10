@@ -58,7 +58,7 @@ pub struct DataStorage {
     // Maps
     bit_fields_by_day: FxHashMap<NaiveDate, FxHashSet<i32>>,
     bit_fields_by_stop_id: FxHashMap<i32, FxHashSet<i32>>,
-    journeys_by_stop_id_and_bit_field_id: FxHashMap<(i32, i32), Vec<i32>>,
+    journeys_by_stop_id_and_bit_field_id: FxHashMap<(i32, i32), FxHashSet<i32>>,
     stop_connections_by_stop_id: FxHashMap<i32, FxHashSet<i32>>,
     bit_field_id_for_through_service_by_journey_id_stop_id:
         FxHashMap<(JourneyId, JourneyId, i32), i32>,
@@ -289,7 +289,7 @@ impl DataStorage {
         &self.bit_fields_by_stop_id
     }
 
-    pub fn journeys_by_stop_id_and_bit_field_id(&self) -> &FxHashMap<(i32, i32), Vec<i32>> {
+    pub fn journeys_by_stop_id_and_bit_field_id(&self) -> &FxHashMap<(i32, i32), FxHashSet<i32>> {
         &self.journeys_by_stop_id_and_bit_field_id
     }
 
@@ -318,6 +318,7 @@ impl DataStorage {
     pub fn default_exchange_time(&self) -> (i16, i16) {
         self.default_exchange_time
     }
+
 
     pub fn filter(self, elements_to_remove: &HashMap<RemovableTypes, Vec<&str>>) -> Self {
         let mut filtered = self;
@@ -348,7 +349,7 @@ impl DataStorage {
 
                     let now = Instant::now();
                     // Finally remove journeys using removed lines
-                    let removed_journeys_ids: Vec<_> = filtered
+                    let removed_journeys_ids: FxHashSet<_> = filtered
                         .journeys
                         .data()
                         .iter()
@@ -385,7 +386,6 @@ impl DataStorage {
                                         if removed_journeys_ids.contains(journey_id) {
                                             Some(*journey_id)
                                         } else {
-                                            log::debug!("## {}", journey_id);
                                             None
                                         }
                                     })
@@ -586,15 +586,15 @@ fn create_bit_fields_by_stop_id(
 
 fn create_journeys_by_stop_id_and_bit_field_id(
     journeys: &ResourceStorage<Journey>,
-) -> HResult<FxHashMap<(i32, i32), Vec<i32>>> {
+) -> HResult<FxHashMap<(i32, i32), FxHashSet<i32>>> {
     journeys.entries().into_iter().try_fold(
         FxHashMap::default(),
-        |mut acc: FxHashMap<(i32, i32), Vec<i32>>, journey| {
+        |mut acc: FxHashMap<(i32, i32), FxHashSet<i32>>, journey| {
             journey.route().iter().try_for_each(|route_entry| {
                 // If the journey has no bit_field_id, the default value is 0. A value of 0 means that the journey operates every day.
                 acc.entry((route_entry.stop_id(), journey.bit_field_id()?.unwrap_or(0)))
                     .or_default()
-                    .push(journey.id());
+                    .insert(journey.id());
                 Ok::<(), JourneyError>(())
             })?;
             Ok(acc)
@@ -779,9 +779,9 @@ mod tests {
         assert!(by_stop.get(&20).unwrap().contains(&7));
 
         let by_stop_and_bit = create_journeys_by_stop_id_and_bit_field_id(&journeys).unwrap();
-        assert_eq!(by_stop_and_bit.get(&(10, 7)).unwrap(), &vec![1]);
-        assert_eq!(by_stop_and_bit.get(&(10, 0)).unwrap(), &vec![2]);
-        assert_eq!(by_stop_and_bit.get(&(20, 7)).unwrap(), &vec![1]);
+        assert_eq!(by_stop_and_bit.get(&(10, 7)).unwrap(), &FxHashSet::from_iter([1]));
+        assert_eq!(by_stop_and_bit.get(&(10, 0)).unwrap(), &FxHashSet::from_iter([2]));
+        assert_eq!(by_stop_and_bit.get(&(20, 7)).unwrap(), &FxHashSet::from_iter([1]));
     }
 
     #[test]
