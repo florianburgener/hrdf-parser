@@ -4,7 +4,7 @@ use std::{
 };
 
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxHashMap, FxHashSet};
 use serde::{Deserialize, Serialize};
 use strum_macros::{self, Display, EnumString};
 
@@ -469,7 +469,7 @@ impl InformationText {
 // --- Journey
 // ------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct Journey {
     id: i32,
     legacy_id: i32,
@@ -507,6 +507,16 @@ impl Journey {
 
     pub fn route(&self) -> &Vec<JourneyRouteEntry> {
         &self.route
+    }
+
+    pub fn filter_route(&self, stop_ids: &FxHashSet<i32>) -> Self {
+        let mut new = self.clone();
+        new.route = new
+            .route
+            .into_iter()
+            .filter(|journey_rte_entry| !stop_ids.contains(&journey_rte_entry.stop_id()))
+            .collect();
+        new
     }
 
     // Functions
@@ -792,7 +802,7 @@ pub enum JourneyMetadataType {
 // --- JourneyMetadataEntry
 // ------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct JourneyMetadataEntry {
     from_stop_id: Option<i32>,
     until_stop_id: Option<i32>,
@@ -833,7 +843,7 @@ impl JourneyMetadataEntry {
 // --- JourneyRouteEntry
 // ------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct JourneyRouteEntry {
     stop_id: i32,
     arrival_time: Option<NaiveTime>,

@@ -396,7 +396,14 @@ impl DataStorage {
                     log::info!("Done filtering journeys by name, time elapsed: {:?}", now.elapsed());
                 }
                 RemovableTypes::Stop => {
-                    filtered.stops = filtered.stops.filter(|_, s| !elements.contains(&s.name()))
+                    let removed_stop_ids : FxHashSet<_> = filtered.stops.data.iter().filter_map(
+                        |(_, s)| if !elements.contains(&s.name()) {Some(s.id())} else { None }
+                    ).collect();
+                    filtered.stops = filtered.stops.filter(|_, s| !elements.contains(&s.name()));
+                    filtered.journeys = filtered.journeys.map(
+                        |(ix, journey)|
+                            (*ix, journey.filter_route(&removed_stop_ids))
+                    )
                 }
                 RemovableTypes::TransportType => {unimplemented!()}
                 RemovableTypes::TransportCompany => {unimplemented!()}
