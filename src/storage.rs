@@ -397,7 +397,7 @@ impl DataStorage {
                 }
                 RemovableTypes::Stop => {
                     let removed_stop_ids : FxHashSet<_> = filtered.stops.data.iter().filter_map(
-                        |(_, s)| if !elements.contains(&s.name()) {Some(s.id())} else { None }
+                        |(_, s)| if elements.contains(&s.name()) {Some(s.id())} else { None }
                     ).collect();
                     filtered.stops = filtered.stops.filter(|_, s| !elements.contains(&s.name()));
                     filtered.journeys = filtered.journeys.map(
