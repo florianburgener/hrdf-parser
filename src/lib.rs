@@ -205,4 +205,46 @@ mod tests {
         assert_eq!(left_unfound_journeys, 0);
         assert_eq!(_found_journeys.len(), 0);
     }
+
+    #[test(tokio::test)]
+    async fn filtering_stops() {
+        let filter = HashMap::from([
+            (
+                RemovableTypes::Stop,
+                vec!["Genève, Jonction", "Genève, Palladium", "Genève, Bel-Air"],
+            ),
+        ]);
+        let stop_id = 8592874; // This id should correspond to Palladium
+        let date = NaiveDate::from_ymd_opt(2026, 1, 24).unwrap();
+        let _hrdf = Hrdf::try_from_date(NaiveDate::from_ymd_opt(2026, 1, 24).unwrap(), true, None)
+            .await.unwrap();
+        let before_lines = _hrdf.data_storage().lines().data().len();
+        let before_journeys = _hrdf.data_storage().journeys().data().len();
+        let before_stops = _hrdf.data_storage().stops().data().len();
+
+        let _before_found_stop =
+            _hrdf.data_storage().journeys().data().iter().map(|(ix, journey)| {
+                journey.route().iter().filter(
+                    |journey_rte_entry| {journey_rte_entry.stop_id() == stop_id}).collect::<Vec<_>>().len()
+            }).sum::<usize>();
+
+        let filtered_hrdf = _hrdf.filter(&filter).unwrap();
+
+        let after_lines = filtered_hrdf.data_storage().lines().data().len();
+        let after_journeys = filtered_hrdf.data_storage().journeys().data().len();
+        let after_stops = filtered_hrdf.data_storage().stops().data().len();
+
+        let after_found_stop =
+            filtered_hrdf.data_storage().journeys().data().iter().map(|(_, journey)| {
+                journey.route().iter().filter(
+                    |journey_rte_entry| {journey_rte_entry.stop_id() == stop_id}).collect::<Vec<_>>().len()
+            }).sum::<usize>();
+        assert!(before_lines >= after_lines);
+        assert!(before_stops >= after_stops + 3);
+        // Checks that something has been deleted
+        println!("removed {} journeys", _before_found_stop - after_found_stop);
+        assert_eq!(0, after_found_stop);
+        assert!(_before_found_stop > after_found_stop + 6);
+
+    }
 }
