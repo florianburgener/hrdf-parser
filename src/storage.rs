@@ -344,7 +344,7 @@ impl DataStorage {
                     // Then remove lines we don't want to keep
                     filtered.lines = filtered
                         .lines
-                        .filter(|_, l| !elements.contains(&&**l.get_name()));
+                        .filter(|_, l| !elements.contains(l.get_name()));
                     log::info!("Done filtering lines by name, time elapsed: {:?}", now.elapsed());
 
                     let now = Instant::now();
@@ -374,6 +374,8 @@ impl DataStorage {
                     filtered.journeys = filtered.journeys.filter(|_key, journey: &mut Journey| {
                         removed_journeys_ids.contains(&journey.id())
                     });
+                    log::info!("Done filtering journeys by id, time elapsed: {:?}", now.elapsed());
+                    let now = Instant::now();
                     filtered.journeys_by_stop_id_and_bit_field_id = filtered
                         .journeys_by_stop_id_and_bit_field_id
                         .iter()
@@ -405,8 +407,8 @@ impl DataStorage {
                             (*ix, journey.filter_route(&removed_stop_ids))
                     )
                 }
-                RemovableTypes::TransportType => {unimplemented!()}
-                RemovableTypes::TransportCompany => {unimplemented!()}
+                RemovableTypes::TransportType => { unimplemented!() }
+                RemovableTypes::TransportCompany => { unimplemented!() }
             }
         }
         filtered
@@ -434,8 +436,8 @@ impl DataStorage {
                     }
                 })
             }
-            ModifiableTypes::TransportType => {unimplemented!()}
-            ModifiableTypes::TransportCompany => {unimplemented!()}
+            ModifiableTypes::TransportType => { unimplemented!() }
+            ModifiableTypes::TransportCompany => { unimplemented!() }
         }
         modified
     }
