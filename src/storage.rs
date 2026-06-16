@@ -320,7 +320,7 @@ impl DataStorage {
     }
 
 
-    pub fn filter(self, elements_to_remove: &HashMap<RemovableTypes, Vec<&str>>) -> Self {
+    pub fn filter(self, elements_to_remove: &HashMap<RemovableTypes, Vec<String>>) -> Self {
         let mut filtered = self;
         for (rem_type, elements) in elements_to_remove.iter() {
             match rem_type {
@@ -360,7 +360,7 @@ impl DataStorage {
                                     .find(|entry| match entry.resource_id {
                                         Some(id) => !removed_line_ids.contains(&id),
                                         None => match &entry.extra_field_1 {
-                                            Some(id) => !elements.contains(&&***&id),
+                                            Some(id) => !elements.contains(id),
                                             None => panic!("journey with wrong format"),
                                         },
                                     })
@@ -397,9 +397,9 @@ impl DataStorage {
                 }
                 RemovableTypes::Stop => {
                     let removed_stop_ids : FxHashSet<_> = filtered.stops.data.iter().filter_map(
-                        |(_, s)| if elements.contains(&s.name()) {Some(s.id())} else { None }
+                        |(_, s)| if elements.contains(&String::from(s.name())) {Some(s.id())} else { None }
                     ).collect();
-                    filtered.stops = filtered.stops.filter(|_, s| !elements.contains(&s.name()));
+                    filtered.stops = filtered.stops.filter(|_, s| !elements.contains(&String::from(s.name())));
                     filtered.journeys = filtered.journeys.map(
                         |(ix, journey)|
                             (*ix, journey.filter_route(&removed_stop_ids))

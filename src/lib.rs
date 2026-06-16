@@ -109,10 +109,10 @@ mod tests {
     #[test(tokio::test)]
     async fn filtering_lines_and_stops_2025() {
         let filter = HashMap::from([
-            (RemovableTypes::Line, vec!["41", "12", "9", "5", "19", "14", "80"]),
+            (RemovableTypes::Line, vec!["41", "12", "9", "5", "19", "14", "80"].iter().map(|s| String::from(*s)).collect()),
             (
                 RemovableTypes::Stop,
-                vec!["Genève, Jonction", "Genève, Rive", "Genève, Bel-Air"],
+                vec!["Genève, Jonction", "Genève, Rive", "Genève, Bel-Air"].iter().map(|s| String::from(*s)).collect(),
             ),
         ]);
         let stop_id = 8592874; // This id should correspond to Palladium
@@ -211,7 +211,7 @@ mod tests {
         let filter = HashMap::from([
             (
                 RemovableTypes::Stop,
-                vec!["Genève, Jonction", "Genève, Palladium", "Genève, Bel-Air"],
+                vec!["Genève, Jonction", "Genève, Palladium", "Genève, Bel-Air"].iter().map(|s| String::from(*s)).collect(),
             ),
         ]);
         let stop_id = 8592874; // This id should correspond to Palladium
