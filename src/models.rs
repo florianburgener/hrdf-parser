@@ -45,7 +45,7 @@ macro_rules! impl_Model {
 // --- Attribute
 // ------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Attribute {
     id: i32,
     designation: String,
@@ -86,7 +86,7 @@ impl Attribute {
 // --- BitField
 // ------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct BitField {
     id: i32,
     bits: Vec<u8>,
@@ -205,7 +205,7 @@ impl Coordinates {
 // --- Direction
 // ------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Direction {
     id: i32,
     name: String,
@@ -239,7 +239,7 @@ pub enum DirectionType {
 // --- Holiday
 // ------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Holiday {
     id: i32,
     date: NaiveDate,
@@ -258,7 +258,7 @@ impl Holiday {
 // --- ExchangeTimeAdministration
 // ------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ExchangeTimeAdministration {
     id: i32,
     stop_id: Option<i32>, // A None value means that the exchange time applies to all stops if there is no specific entry for the stop and the 2 administrations.
@@ -309,7 +309,7 @@ impl ExchangeTimeAdministration {
 // --- ExchangeTimeJourney
 // ------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ExchangeTimeJourney {
     id: i32,
     stop_id: i32,
@@ -382,7 +382,7 @@ impl ExchangeTimeJourney {
 // --- ExchangeTimeLine
 // ------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ExchangeTimeLine {
     id: i32,
     stop_id: Option<i32>,
@@ -394,7 +394,7 @@ pub struct ExchangeTimeLine {
 
 impl_Model!(ExchangeTimeLine);
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub(crate) struct LineInfo {
     administration: String,
     transport_type_id: i32,
@@ -442,7 +442,7 @@ impl ExchangeTimeLine {
 // --- InformationText
 // ------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct InformationText {
     id: i32,
     content: FxHashMap<Language, String>,
@@ -892,7 +892,7 @@ impl JourneyRouteEntry {
 // --- JourneyPlatform
 // ------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct JourneyPlatform {
     journey_legacy_id: i32,
     administration: String,
@@ -1028,7 +1028,7 @@ impl Line {
 // --- Platform
 // ------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Platform {
     id: i32,
     name: String,
@@ -1182,7 +1182,7 @@ impl Stop {
 // --- StopConnection
 // ------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct StopConnection {
     id: i32,
     stop_id_1: i32,
@@ -1227,7 +1227,7 @@ impl StopConnection {
 // --- ThroughService
 // ------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ThroughService {
     id: i32,
     journey_1_id: JourneyId,
@@ -1283,7 +1283,7 @@ impl ThroughService {
 // --- TimetableMetadataEntry
 // ------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TimetableMetadataEntry {
     id: i32,
     key: String,
@@ -1317,7 +1317,7 @@ impl TimetableMetadataEntry {
 // --- TransportCompany
 // ------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TransportCompany {
     id: i32,
     short_name: FxHashMap<Language, String>,
@@ -1362,7 +1362,7 @@ impl TransportCompany {
 // --- TransportType
 // ------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct TransportType {
     id: i32,
     designation: String,

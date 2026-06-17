@@ -25,7 +25,7 @@ use std::{path::Path, time::Instant};
 // ------------------------------------------------------------------------------------------------
 //
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DataStorage {
     // Time-relevant data.
     bit_fields: ResourceStorage<BitField>,
@@ -475,7 +475,7 @@ impl DataStorage {
 // --- ResourceStorage
 // ------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ResourceStorage<M: Model<M>> {
     data: FxHashMap<M::K, M>,
 }

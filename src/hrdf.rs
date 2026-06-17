@@ -36,7 +36,7 @@ pub enum AddableTypes {
     TransportCompany,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Hrdf {
     data_storage: DataStorage,
 }
