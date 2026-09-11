@@ -322,6 +322,7 @@ impl DataStorage {
 
     pub fn filter(self, elements_to_remove: &HashMap<RemovableTypes, Vec<String>>) -> Self {
         let mut filtered = self;
+        let administration = String::from("000881");
         for (rem_type, elements) in elements_to_remove.iter() {
             match rem_type {
                 RemovableTypes::Line => {
@@ -354,19 +355,21 @@ impl DataStorage {
                         .data()
                         .iter()
                         .filter_map(|(id, journey)| {
-                            match journey.metadata().get(&JourneyMetadataType::Line) {
-                                Some(entry) => entry
-                                    .iter()
-                                    .find(|entry| match entry.resource_id {
-                                        Some(id) => !removed_line_ids.contains(&id),
-                                        None => match &entry.extra_field_1 {
-                                            Some(id) => !elements.contains(id),
-                                            None => panic!("journey with wrong format"),
-                                        },
-                                    })
-                                    .map(|_| *id),
-                                None => None,
-                            }
+                            if journey.administration() == administration {
+                                match journey.metadata().get(&JourneyMetadataType::Line) {
+                                    Some(entry) => entry
+                                        .iter()
+                                        .find(|entry| match entry.resource_id {
+                                            Some(id) => !removed_line_ids.contains(&id),
+                                            None => match &entry.extra_field_1 {
+                                                Some(id) => !elements.contains(id),
+                                                None => panic!("journey with wrong format"),
+                                            },
+                                        })
+                                        .map(|_| *id),
+                                    None => None,
+                                }
+                            } else { None }
                         })
                         .collect();
                     log::info!("Done finding journeys to remove by name, time elapsed: {:?}", now.elapsed());
